@@ -1,0 +1,68 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    --background: 216 28% 10%;
+    --foreground: 210 20% 95%;
+
+    --card: 217 28% 13%;
+    --card-foreground: 210 20% 95%;
+
+    --popover: 217 28% 13%;
+    --popover-foreground: 210 20% 95%;
+
+    --primary: 174 72% 56%;
+    --primary-foreground: 217 28% 10%;
+
+    --secondary: 217 25% 18%;
+    --secondary-foreground: 210 20% 95%;
+
+    --muted: 217 25% 18%;
+    --muted-foreground: 215 15% 65%;
+
+    --accent: 174 72% 56%;
+    --accent-foreground: 217 28% 10%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 210 20% 95%;
+
+    --border: 217 20% 25%;
+    --input: 217 20% 25%;
+    --ring: 174 72% 56%;
+
+    --radius: 0.5rem;
+
+    --code-bg: 217 30% 8%;
+    --git-add: 142 71% 45%;
+    --git-delete: 0 72% 51%;
+    --git-modify: 45 93% 58%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+
+  /* Allow text selection in specific areas */
+  input,
+  textarea,
+  [contenteditable="true"],
+  .diff-viewer-content,
+  .diff-viewer-content * {
+    user-select: text !important;
+    -webkit-user-select: text !important;
+  }
+}
