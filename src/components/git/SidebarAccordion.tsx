@@ -285,10 +285,7 @@ export const SidebarAccordion = ({
                       </div>
                     </ContextMenuTrigger>
                     <ContextMenuContent className="w-48">
-                      <ContextMenuItem
-                        className="hover:bg-secondary focus:bg-secondary focus:text-foreground"
-                        onSelect={() => console.log("Pull:", branch.name)}
-                      >
+                      <ContextMenuItem className="hover:bg-secondary focus:bg-secondary focus:text-foreground">
                         <span className="flex-1">Pull</span>
                         <Download className="h-4 w-4" />
                       </ContextMenuItem>
@@ -296,16 +293,12 @@ export const SidebarAccordion = ({
                         className="hover:bg-secondary focus:bg-secondary focus:text-foreground"
                         onSelect={() => {
                           navigator.clipboard.writeText(branch.name);
-                          console.log("Copied:", branch.name);
                         }}
                       >
                         <span className="flex-1">Copy Branch Name</span>
                         <Copy className="h-4 w-4" />
                       </ContextMenuItem>
-                      <ContextMenuItem
-                        className="hover:bg-secondary focus:bg-secondary focus:text-foreground"
-                        onSelect={() => console.log("Rename:", branch.name)}
-                      >
+                      <ContextMenuItem className="hover:bg-secondary focus:bg-secondary focus:text-foreground">
                         <span className="flex-1">Rename</span>
                         <Edit className="h-4 w-4" />
                       </ContextMenuItem>

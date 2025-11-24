@@ -38,7 +38,7 @@ export const BranchList = ({
   onSelectBranch,
   onCreateBranch,
 }: BranchListProps) => {
-const [isCreatingBranch, setIsCreatingBranch] = useState(false);
+  const [isCreatingBranch, setIsCreatingBranch] = useState(false);
   const [newBranchName, setNewBranchName] = useState("");
 
   const handleCreateBranch = () => {
@@ -101,19 +101,19 @@ const [isCreatingBranch, setIsCreatingBranch] = useState(false);
             </div>
           )}
         </div>
-        
+
         {/* Test context menu - DELETE THIS AFTER TESTING */}
         <ContextMenu>
           <ContextMenuTrigger className="p-2 bg-blue-500 text-white m-2">
             Right-click me to test
           </ContextMenuTrigger>
           <ContextMenuContent>
-            <ContextMenuItem onSelect={() => alert('Test works!')}>
+            <ContextMenuItem onSelect={() => alert("Test works!")}>
               Test Item
             </ContextMenuItem>
           </ContextMenuContent>
         </ContextMenu>
-        
+
         <ScrollArea className="flex-1 min-h-0">
           <div className="p-2">
             {branches.map((branch) => (
@@ -135,22 +135,19 @@ const [isCreatingBranch, setIsCreatingBranch] = useState(false);
                   </button>
                 </ContextMenuTrigger>
                 <ContextMenuContent className="w-48">
-                  <ContextMenuItem onSelect={() => console.log('Pull clicked')}>
+                  <ContextMenuItem>
                     <Download className="mr-2 h-4 w-4" />
                     <span>Pull</span>
                   </ContextMenuItem>
-                  <ContextMenuItem onSelect={() => console.log('Copy clicked')}>
+                  <ContextMenuItem>
                     <Copy className="mr-2 h-4 w-4" />
                     <span>Copy Branch Name</span>
                   </ContextMenuItem>
-                  <ContextMenuItem onSelect={() => console.log('Rename clicked')}>
+                  <ContextMenuItem>
                     <Edit className="mr-2 h-4 w-4" />
                     <span>Rename</span>
                   </ContextMenuItem>
-                  <ContextMenuItem 
-                    className="text-destructive focus:text-destructive"
-                    onSelect={() => console.log('Delete clicked')}
-                  >
+                  <ContextMenuItem className="text-destructive focus:text-destructive">
                     <Trash2 className="mr-2 h-4 w-4" />
                     <span>Delete</span>
                   </ContextMenuItem>

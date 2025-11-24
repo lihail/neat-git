@@ -18,20 +18,20 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 //       ├── main.js
 //       └── preload.js
 
-process.env.APP_ROOT = path.join(__dirname, "../");
-
-const MAIN_DIST = path.join(process.env.APP_ROOT, "dist-electron");
-const RENDERER_DIST = path.join(process.env.APP_ROOT, "dist");
-
 // Check if we're in development mode
 const isDev = process.env.NODE_ENV === "development" || !app.isPackaged;
-const VITE_DEV_SERVER_URL = isDev ? "http://localhost:8080" : undefined;
 
-console.log(
-  "Electron starting in",
-  isDev ? "development" : "production",
-  "mode"
-);
+// In production (packaged app), __dirname will be inside app.asar
+// We need to properly resolve paths whether in asar or not
+const APP_ROOT = isDev
+  ? path.join(__dirname, "../")
+  : path.join(__dirname, "../");
+
+const MAIN_DIST = path.join(APP_ROOT, "dist-electron");
+const RENDERER_DIST = path.join(APP_ROOT, "dist");
+
+process.env.APP_ROOT = APP_ROOT;
+const VITE_DEV_SERVER_URL = isDev ? "http://localhost:8080" : undefined;
 
 process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL
   ? path.join(process.env.APP_ROOT, "public")
@@ -76,6 +76,7 @@ async function createWindow() {
 
   if (VITE_DEV_SERVER_URL) {
     // Load from Vite dev server
+    console.log("Loading from dev server:", VITE_DEV_SERVER_URL);
     win.loadURL(VITE_DEV_SERVER_URL).catch((err) => {
       console.error("Failed to load from dev server:", err);
       // Fallback to file if dev server fails
@@ -83,7 +84,10 @@ async function createWindow() {
     });
   } else {
     // Load from built files
-    win.loadFile(indexHtml);
+    win.loadFile(indexHtml).catch((err) => {
+      console.error("Failed to load file:", err);
+      console.error("Tried to load:", indexHtml);
+    });
   }
 }
 
@@ -1893,7 +1897,7 @@ ipcMain.handle(
           // If URL parsing or remote setting fails, return a clean error
           const errorMessage = error.stderr || error.message || String(error);
           const lowerError = errorMessage.toLowerCase();
-          
+
           // Check if this is an authentication error
           if (
             lowerError.includes("authentication failed") ||
@@ -1909,7 +1913,7 @@ ipcMain.handle(
               needsAuth: false,
             };
           }
-          
+
           return {
             success: false,
             error: `Failed to configure authentication: ${errorMessage}`,
@@ -2111,7 +2115,7 @@ ipcMain.handle(
           // If URL parsing or remote setting fails, return a clean error
           const errorMessage = error.stderr || error.message || String(error);
           const lowerError = errorMessage.toLowerCase();
-          
+
           // Check if this is an authentication error
           if (
             lowerError.includes("authentication failed") ||
@@ -2127,7 +2131,7 @@ ipcMain.handle(
               needsAuth: false,
             };
           }
-          
+
           return {
             success: false,
             error: `Failed to configure authentication: ${errorMessage}`,
@@ -2189,12 +2193,18 @@ ipcMain.handle(
         if (lowerError.includes("non-fast-forward")) {
           cleanError = "Push rejected: Remote has changes. Please pull first.";
         } else if (lowerError.includes("fetch first")) {
-          cleanError = "Push rejected: Remote has changes. Please fetch/pull first.";
+          cleanError =
+            "Push rejected: Remote has changes. Please fetch/pull first.";
         } else {
-          cleanError = "Push rejected. The remote may have changes or you may need to pull first.";
+          cleanError =
+            "Push rejected. The remote may have changes or you may need to pull first.";
         }
-      } else if (lowerError.includes("no upstream") || lowerError.includes("no tracking")) {
-        cleanError = "No upstream branch configured. Use 'git push --set-upstream' first.";
+      } else if (
+        lowerError.includes("no upstream") ||
+        lowerError.includes("no tracking")
+      ) {
+        cleanError =
+          "No upstream branch configured. Use 'git push --set-upstream' first.";
       } else {
         // Extract the actual error message
         const lines = errorMessage.split("\n");
@@ -2343,7 +2353,7 @@ ipcMain.handle(
           // If URL parsing or remote setting fails, return a clean error
           const errorMessage = error.stderr || error.message || String(error);
           const lowerError = errorMessage.toLowerCase();
-          
+
           // Check if this is an authentication error
           if (
             lowerError.includes("authentication failed") ||
@@ -2359,7 +2369,7 @@ ipcMain.handle(
               needsAuth: false,
             };
           }
-          
+
           return {
             success: false,
             error: `Failed to configure authentication: ${errorMessage}`,
@@ -2418,11 +2428,20 @@ ipcMain.handle(
         lowerError.includes("conflict") ||
         lowerError.includes("automatic merge failed")
       ) {
-        cleanError = "Pull resulted in merge conflicts. Please resolve conflicts manually.";
-      } else if (lowerError.includes("uncommitted changes") || lowerError.includes("overwritten by merge")) {
-        cleanError = "You have uncommitted changes. Please commit or stash them before pulling.";
-      } else if (lowerError.includes("no tracking information") || lowerError.includes("no upstream")) {
-        cleanError = "No upstream branch configured. Please set up tracking first.";
+        cleanError =
+          "Pull resulted in merge conflicts. Please resolve conflicts manually.";
+      } else if (
+        lowerError.includes("uncommitted changes") ||
+        lowerError.includes("overwritten by merge")
+      ) {
+        cleanError =
+          "You have uncommitted changes. Please commit or stash them before pulling.";
+      } else if (
+        lowerError.includes("no tracking information") ||
+        lowerError.includes("no upstream")
+      ) {
+        cleanError =
+          "No upstream branch configured. Please set up tracking first.";
       } else {
         // Extract the actual error message
         const lines = errorMessage.split("\n");
