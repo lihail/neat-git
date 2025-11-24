@@ -1,0 +1,1632 @@
+import { useState, useEffect } from "react";
+import { RepoSelector } from "@/components/git/RepoSelector";
+import { SidebarAccordion } from "@/components/git/SidebarAccordion";
+import { FileStatus } from "@/components/git/FileStatus";
+import { DiffViewer } from "@/components/git/DiffViewer";
+import { CommitPanel } from "@/components/git/CommitPanel";
+import { RepoTabs, type RepoTab } from "@/components/git/RepoTabs";
+import { GitSetupDialog } from "@/components/git/GitSetupDialog";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Eye, EyeOff } from "lucide-react";
+import {
+  listBranches,
+  listRemoteBranches,
+  getCurrentBranch,
+  getStatus,
+  stageFile,
+  unstageFile,
+  stageAll,
+  unstageAll,
+  getDiff,
+  createBranch,
+  checkoutBranch,
+  deleteBranch,
+  getCommitHistory,
+  commit,
+  stash,
+  listStashes,
+  popStash,
+  deleteStash,
+  stageLines,
+  unstageLines,
+  fetchFromRemote,
+  pullFromRemote,
+  pushToRemote,
+  type Branch,
+  type FileStatus as GitFileStatus,
+  type DiffLine,
+  type Commit,
+  type Stash,
+} from "@/lib/git";
+
+// Demo data
+const demoBranches = [
+  { name: "main" },
+  { name: "develop" },
+  { name: "feature/new-ui" },
+  { name: "feature/api-integration" },
+  { name: "feature/user-dashboard" },
+  { name: "bugfix/login-error" },
+  { name: "hotfix/security-patch" },
+  { name: "feature/search-functionality" },
+  { name: "refactor/component-structure" },
+];
+
+const TABS_STORAGE_KEY = "neatgit_tabs";
+const ACTIVE_TAB_STORAGE_KEY = "neatgit_active_tab";
+const WORD_WRAP_STORAGE_KEY = "neatgit_word_wrap";
+const GIT_SETUP_COMPLETE_KEY = "neatgit_git_setup_complete";
+
+// State for each repo tab
+interface RepoState {
+  currentBranch: string;
+  branches: Branch[];
+  remoteBranches: Branch[];
+  commits: Commit[];
+  stashes: Stash[];
+  files: GitFileStatus[];
+  selectedFile?: string;
+  diffLines: DiffLine[];
+}
+
+// Helper function to extract repo name from path
+const getRepoNameFromPath = (path: string): string => {
+  const parts = path.split("/");
+  return parts[parts.length - 1] || path;
+};
+
+const Index = () => {
+  // Load saved tabs from localStorage on mount
+  const [tabs, setTabs] = useState<RepoTab[]>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem(TABS_STORAGE_KEY);
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch {
+          return [];
+        }
+      }
+    }
+    return [];
+  });
+
+  const [activeTabId, setActiveTabId] = useState<string | null>(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem(ACTIVE_TAB_STORAGE_KEY);
+    }
+    return null;
+  });
+
+  const [selectedCommit, setSelectedCommit] = useState<string>();
+  const [repoStates, setRepoStates] = useState<Record<string, RepoState>>({});
+  const [isSelectingRepo, setIsSelectingRepo] = useState(tabs.length === 0);
+  const [loadingRepos, setLoadingRepos] = useState<Record<string, boolean>>({});
+  const [loadingDiff, setLoadingDiff] = useState(false);
+  const [isCloning, setIsCloning] = useState(false);
+  const [fetchingRepos, setFetchingRepos] = useState<Record<string, boolean>>({});
+  const [pullingRepos, setPullingRepos] = useState<Record<string, boolean>>({});
+  const [pushingRepos, setPushingRepos] = useState<Record<string, boolean>>({});
+  
+  // Fetch authentication state
+  const [showFetchAuthDialog, setShowFetchAuthDialog] = useState(false);
+  const [fetchAuthUsername, setFetchAuthUsername] = useState("");
+  const [fetchAuthPassword, setFetchAuthPassword] = useState("");
+  const [fetchAuthError, setFetchAuthError] = useState<string | null>(null);
+  const [saveFetchCredentials, setSaveFetchCredentials] = useState(true);
+  const [showFetchPassword, setShowFetchPassword] = useState(false);
+  
+  // Pull authentication state
+  const [showPullAuthDialog, setShowPullAuthDialog] = useState(false);
+  const [pullAuthUsername, setPullAuthUsername] = useState("");
+  const [pullAuthPassword, setPullAuthPassword] = useState("");
+  const [pullAuthError, setPullAuthError] = useState<string | null>(null);
+  const [savePullCredentials, setSavePullCredentials] = useState(true);
+  const [showPullPassword, setShowPullPassword] = useState(false);
+  
+  // Push authentication state
+  const [showPushAuthDialog, setShowPushAuthDialog] = useState(false);
+  const [pushAuthUsername, setPushAuthUsername] = useState("");
+  const [pushAuthPassword, setPushAuthPassword] = useState("");
+  const [pushAuthError, setPushAuthError] = useState<string | null>(null);
+  const [savePushCredentials, setSavePushCredentials] = useState(true);
+  const [showPushPassword, setShowPushPassword] = useState(false);
+  
+  const [wordWrap, setWordWrap] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem(WORD_WRAP_STORAGE_KEY);
+      return saved === "true";
+    }
+    return false;
+  });
+  const [showGitSetup, setShowGitSetup] = useState(false);
+
+  // Check for Git setup on mount
+  useEffect(() => {
+    const checkGitSetup = async () => {
+      if (typeof window === "undefined" || !window.ipcRenderer) return;
+
+      // Check if we've already completed setup
+      const setupComplete = localStorage.getItem(GIT_SETUP_COMPLETE_KEY);
+      if (setupComplete === "true") return;
+
+      // On first launch, always show the setup dialog
+      // It will display existing config (if any) and let user confirm/edit
+      // Or let them enter new config if missing
+      setShowGitSetup(true);
+    };
+
+    checkGitSetup();
+  }, []);
+
+  const handleGitSetupComplete = () => {
+    localStorage.setItem(GIT_SETUP_COMPLETE_KEY, "true");
+    setShowGitSetup(false);
+  };
+
+  // Save tabs to localStorage whenever they change
+  useEffect(() => {
+    if (tabs.length > 0) {
+      localStorage.setItem(TABS_STORAGE_KEY, JSON.stringify(tabs));
+    } else {
+      localStorage.removeItem(TABS_STORAGE_KEY);
+    }
+  }, [tabs]);
+
+  // Save active tab to localStorage
+  useEffect(() => {
+    if (activeTabId) {
+      localStorage.setItem(ACTIVE_TAB_STORAGE_KEY, activeTabId);
+    } else {
+      localStorage.removeItem(ACTIVE_TAB_STORAGE_KEY);
+    }
+  }, [activeTabId]);
+
+  // Save word wrap setting to localStorage
+  useEffect(() => {
+    localStorage.setItem(WORD_WRAP_STORAGE_KEY, wordWrap.toString());
+  }, [wordWrap]);
+
+  // Get current repo path and state
+  const activeTab = tabs.find((tab) => tab.id === activeTabId);
+  const repoPath = activeTab?.path || null;
+  const currentState = repoPath ? repoStates[repoPath] : null;
+  const isLoading = repoPath ? loadingRepos[repoPath] || false : false;
+  const isFetching = repoPath ? fetchingRepos[repoPath] || false : false;
+  const isPulling = repoPath ? pullingRepos[repoPath] || false : false;
+  const isPushing = repoPath ? pushingRepos[repoPath] || false : false;
+
+  // Helper to update state for a specific repo
+  const updateRepoState = (path: string, updates: Partial<RepoState>) => {
+    setRepoStates((prev) => ({
+      ...prev,
+      [path]: {
+        ...(prev[path] || {
+          currentBranch: "main",
+          branches: [],
+          remoteBranches: [],
+          commits: [],
+          stashes: [],
+          files: [],
+          diffLines: [],
+        }),
+        ...updates,
+      },
+    }));
+  };
+
+  // Load real Git data when active tab changes
+  useEffect(() => {
+    if (repoPath && !repoStates[repoPath]) {
+      const loadGitData = async () => {
+        // Set loading state
+        setLoadingRepos((prev) => ({ ...prev, [repoPath]: true }));
+
+        try {
+          const current = await getCurrentBranch(repoPath);
+          const branchList = await listBranches(repoPath);
+          const remoteBranchList = await listRemoteBranches(repoPath);
+          const statusList = await getStatus(repoPath);
+          const commitHistory = await getCommitHistory(repoPath);
+          const stashList = await listStashes(repoPath);
+
+          updateRepoState(repoPath, {
+            currentBranch: current,
+            branches: branchList,
+            remoteBranches: remoteBranchList,
+            files: statusList,
+            commits: commitHistory,
+            stashes: stashList,
+            diffLines: [],
+          });
+        } catch (error) {
+          console.error("Error loading Git data:", error);
+          toast.error(
+            `Failed to load Git repository data: ${
+              error instanceof Error ? error.message : "Unknown error"
+            }`
+          );
+        } finally {
+          // Clear loading state
+          setLoadingRepos((prev) => ({ ...prev, [repoPath]: false }));
+        }
+      };
+      loadGitData();
+    }
+  }, [repoPath]);
+
+  // Load diff when selected file changes
+  useEffect(() => {
+    if (repoPath && currentState?.selectedFile) {
+      const loadDiff = async () => {
+        setLoadingDiff(true);
+        try {
+          const diff = await getDiff(repoPath, currentState.selectedFile!);
+          updateRepoState(repoPath, { diffLines: diff });
+        } catch (error) {
+          console.error("Error loading diff:", error);
+          toast.error(
+            `Failed to load diff: ${
+              error instanceof Error ? error.message : "Unknown error"
+            }`
+          );
+          updateRepoState(repoPath, { diffLines: [] });
+        } finally {
+          setLoadingDiff(false);
+        }
+      };
+      loadDiff();
+    } else if (repoPath) {
+      updateRepoState(repoPath, { diffLines: [] });
+      setLoadingDiff(false);
+    }
+  }, [repoPath, currentState?.selectedFile]);
+
+  // Refresh git data when window regains focus
+  useEffect(() => {
+    if (!repoPath) return;
+
+    const handleFocus = async () => {
+      try {
+        const statusList = await getStatus(repoPath);
+        const commitHistory = await getCommitHistory(repoPath);
+        const branchList = await listBranches(repoPath);
+        const current = await getCurrentBranch(repoPath);
+        const stashList = await listStashes(repoPath);
+
+        updateRepoState(repoPath, {
+          files: statusList,
+          commits: commitHistory,
+          branches: branchList,
+          currentBranch: current,
+          stashes: stashList,
+        });
+
+        // Reload diff if a file is selected
+        if (currentState?.selectedFile) {
+          const diff = await getDiff(repoPath, currentState.selectedFile);
+          updateRepoState(repoPath, { diffLines: diff });
+        }
+      } catch (error) {
+        console.error("Error refreshing git data:", error);
+      }
+    };
+
+    window.addEventListener("focus", handleFocus);
+
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, [repoPath, currentState?.selectedFile]);
+
+  // Tab management functions
+  const handleOpenRepo = (path: string) => {
+    const existingTab = tabs.find((tab) => tab.path === path);
+
+    if (existingTab) {
+      // If tab already exists, just switch to it
+      setActiveTabId(existingTab.id);
+    } else {
+      // Create new tab
+      const newTab: RepoTab = {
+        id: `${Date.now()}-${Math.random()}`,
+        path,
+        name: getRepoNameFromPath(path),
+      };
+      setTabs((prev) => [...prev, newTab]);
+      setActiveTabId(newTab.id);
+    }
+    setIsSelectingRepo(false);
+  };
+
+  const handleCloseTab = (tabId: string) => {
+    const tabIndex = tabs.findIndex((tab) => tab.id === tabId);
+    const newTabs = tabs.filter((tab) => tab.id !== tabId);
+    setTabs(newTabs);
+
+    // Clean up state for closed tab
+    const closedTab = tabs.find((tab) => tab.id === tabId);
+    if (closedTab) {
+      setRepoStates((prev) => {
+        const newStates = { ...prev };
+        delete newStates[closedTab.path];
+        return newStates;
+      });
+    }
+
+    // If closing active tab, switch to another
+    if (tabId === activeTabId) {
+      if (newTabs.length > 0) {
+        // Switch to adjacent tab
+        const newIndex = Math.min(tabIndex, newTabs.length - 1);
+        setActiveTabId(newTabs[newIndex].id);
+      } else {
+        setActiveTabId(null);
+        setIsSelectingRepo(true);
+      }
+    }
+  };
+
+  const handleReorderTabs = (newTabs: RepoTab[]) => {
+    setTabs(newTabs);
+  };
+
+  const handleToggleStage = async (path: string) => {
+    if (!repoPath || !currentState) return;
+
+    const file = currentState.files.find((f) => f.path === path);
+    if (!file) return;
+
+    try {
+      if (file.staged) {
+        // Unstage the file
+        await unstageFile(repoPath, path);
+      } else {
+        // Stage the file
+        await stageFile(repoPath, path);
+      }
+
+      // Refresh the git status
+      const statusList = await getStatus(repoPath);
+      updateRepoState(repoPath, { files: statusList });
+    } catch (error) {
+      console.error("Error toggling stage:", error);
+      toast.error(
+        `Failed to ${file.staged ? "unstage" : "stage"} file: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
+    }
+  };
+
+  const handleStageLine = async (lineIndex: number) => {
+    if (!repoPath || !currentState || !currentState.selectedFile) return;
+
+    try {
+      setLoadingDiff(true);
+      const line = currentState.diffLines[lineIndex];
+      await stageLines(repoPath, currentState.selectedFile, [line]);
+
+      // Refresh both status and diff
+      const [statusList, newDiff] = await Promise.all([
+        getStatus(repoPath),
+        getDiff(repoPath, currentState.selectedFile),
+      ]);
+
+      updateRepoState(repoPath, {
+        files: statusList,
+        diffLines: newDiff,
+      });
+    } catch (error) {
+      console.error("Error staging line:", error);
+      toast.error(
+        `Failed to stage: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
+    } finally {
+      setLoadingDiff(false);
+    }
+  };
+
+  const handleUnstageLine = async (lineIndex: number) => {
+    if (!repoPath || !currentState || !currentState.selectedFile) return;
+
+    try {
+      setLoadingDiff(true);
+      const line = currentState.diffLines[lineIndex];
+      await unstageLines(repoPath, currentState.selectedFile, [line]);
+
+      // Refresh both status and diff
+      const [statusList, newDiff] = await Promise.all([
+        getStatus(repoPath),
+        getDiff(repoPath, currentState.selectedFile),
+      ]);
+
+      updateRepoState(repoPath, {
+        files: statusList,
+        diffLines: newDiff,
+      });
+    } catch (error) {
+      console.error("Error unstaging line:", error);
+      toast.error(
+        `Failed to unstage: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
+    } finally {
+      setLoadingDiff(false);
+    }
+  };
+
+  const handleStageAll = async () => {
+    if (!repoPath || !currentState) return;
+
+    try {
+      // Get all unstaged files
+      const unstagedFiles = currentState.files.filter((f) => !f.staged);
+
+      // Stage each file individually to properly handle deleted files
+      for (const file of unstagedFiles) {
+        await stageFile(repoPath, file.path);
+      }
+
+      // Refresh the git status
+      const statusList = await getStatus(repoPath);
+      updateRepoState(repoPath, { files: statusList });
+    } catch (error) {
+      console.error("Error staging all files:", error);
+      toast.error(
+        `Failed to stage all files: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
+    }
+  };
+
+  const handleUnstageAll = async () => {
+    if (!repoPath || !currentState) return;
+
+    try {
+      // Get all staged files
+      const stagedFiles = currentState.files.filter((f) => f.staged);
+
+      // Unstage each file individually
+      for (const file of stagedFiles) {
+        await unstageFile(repoPath, file.path);
+      }
+
+      // Refresh the git status
+      const statusList = await getStatus(repoPath);
+      updateRepoState(repoPath, { files: statusList });
+    } catch (error) {
+      console.error("Error unstaging all files:", error);
+      toast.error(
+        `Failed to unstage all files: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
+    }
+  };
+
+  const handleCommit = async (message: string, description?: string) => {
+    if (!repoPath || !currentState) return;
+
+    const stagedCount = currentState.files.filter((f) => f.staged).length;
+
+    if (stagedCount === 0) {
+      toast.error("No files staged for commit");
+      return;
+    }
+
+    try {
+      const result = await commit(repoPath, message, description);
+
+      if (result.success) {
+        toast.success(
+          `Committed ${stagedCount} file${
+            stagedCount !== 1 ? "s" : ""
+          }: ${message}`
+        );
+
+        // Refresh git status and commit history after commit
+        const statusList = await getStatus(repoPath);
+        const commitHistory = await getCommitHistory(repoPath);
+        updateRepoState(repoPath, {
+          files: statusList,
+          commits: commitHistory,
+          selectedFile: null, // Clear the diff viewer after commit
+        });
+      }
+    } catch (error) {
+      console.error("Error committing:", error);
+      toast.error(
+        `Failed to commit: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
+    }
+  };
+
+  const handleSelectBranch = async (branch: string) => {
+    if (!repoPath || !currentState) return;
+
+    // Don't switch if already on this branch
+    if (branch === currentState.currentBranch) {
+      return;
+    }
+
+    try {
+      await checkoutBranch(repoPath, branch);
+      toast.info(`Switched to branch: ${branch}`);
+
+      // Refresh git status and commit history after branch switch
+      const statusList = await getStatus(repoPath);
+      const commitHistory = await getCommitHistory(repoPath);
+      updateRepoState(repoPath, {
+        currentBranch: branch,
+        files: statusList,
+        commits: commitHistory,
+      });
+    } catch (error) {
+      console.error("Error switching branch:", error);
+      toast.error(
+        `Failed to switch branch: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
+    }
+  };
+
+  const handleCreateBranch = async (branchName: string) => {
+    if (!repoPath) return;
+
+    try {
+      await createBranch(repoPath, branchName);
+      toast.success(`Created and switched to branch: ${branchName}`);
+
+      // Refresh branches and update current branch
+      const branchList = await listBranches(repoPath);
+      const current = await getCurrentBranch(repoPath);
+
+      // Refresh git status and commit history
+      const statusList = await getStatus(repoPath);
+      const commitHistory = await getCommitHistory(repoPath);
+
+      updateRepoState(repoPath, {
+        branches: branchList,
+        currentBranch: current,
+        files: statusList,
+        commits: commitHistory,
+      });
+    } catch (error) {
+      console.error("Error creating branch:", error);
+      toast.error(
+        `Failed to create branch: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
+    }
+  };
+
+  const handleDeleteBranch = async (branchName: string) => {
+    if (!repoPath) return;
+
+    try {
+      await deleteBranch(repoPath, branchName);
+      toast.success(`Branch deleted: ${branchName}`);
+
+      // Refresh branches
+      const branchList = await listBranches(repoPath);
+      updateRepoState(repoPath, { branches: branchList });
+    } catch (error) {
+      console.error("Error deleting branch:", error);
+      toast.error(
+        `Failed to delete branch: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
+    }
+  };
+
+  const handleStash = async () => {
+    if (!repoPath || !currentState) return;
+
+    // Check if there are any changes to stash
+    if (currentState.files.length === 0) {
+      toast.error("No changes to stash");
+      return;
+    }
+
+    try {
+      // Create a human-readable timestamp with 24-hour format and date
+      const now = new Date();
+      const hours = now.getHours().toString().padStart(2, "0");
+      const minutes = now.getMinutes().toString().padStart(2, "0");
+      const months = [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec",
+      ];
+      const month = months[now.getMonth()];
+      const day = now.getDate();
+
+      const message = `Stash at ${month}. ${day}, ${hours}:${minutes}`;
+
+      const result = await stash(repoPath, message);
+
+      if (result.success) {
+        toast.success(`Changes stashed: ${message}`);
+
+        // Refresh git status, commit history, and stashes after stash
+        const statusList = await getStatus(repoPath);
+        const commitHistory = await getCommitHistory(repoPath);
+        const stashList = await listStashes(repoPath);
+        updateRepoState(repoPath, {
+          files: statusList,
+          commits: commitHistory,
+          stashes: stashList,
+          selectedFile: undefined,
+          diffLines: [],
+        });
+      } else {
+        toast.error(result.message || "Failed to stash changes");
+      }
+    } catch (error) {
+      console.error("Error stashing changes:", error);
+      toast.error(
+        `Failed to stash changes: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
+    }
+  };
+
+  const handlePopStash = async (index: number) => {
+    if (!repoPath || !currentState) return;
+
+    try {
+      const stash = currentState.stashes[index];
+      const result = await popStash(repoPath, index);
+
+      if (result.success) {
+        toast.success(`Stash popped: ${stash.message}`);
+
+        // Refresh git status, commit history, and stashes after pop
+        const statusList = await getStatus(repoPath);
+        const commitHistory = await getCommitHistory(repoPath);
+        const stashList = await listStashes(repoPath);
+        updateRepoState(repoPath, {
+          files: statusList,
+          commits: commitHistory,
+          stashes: stashList,
+        });
+      } else {
+        toast.error(result.message || "Failed to pop stash");
+      }
+    } catch (error) {
+      console.error("Error popping stash:", error);
+      toast.error(
+        `Failed to pop stash: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
+    }
+  };
+
+  const handleDeleteStash = async (index: number) => {
+    if (!repoPath || !currentState) return;
+
+    try {
+      const stash = currentState.stashes[index];
+      const result = await deleteStash(repoPath, index);
+
+      if (result.success) {
+        toast.success(`Stash deleted: ${stash.message}`);
+
+        // Refresh stashes after delete
+        const stashList = await listStashes(repoPath);
+        updateRepoState(repoPath, {
+          stashes: stashList,
+        });
+      } else {
+        toast.error(result.message || "Failed to delete stash");
+      }
+    } catch (error) {
+      console.error("Error deleting stash:", error);
+      toast.error(
+        `Failed to delete stash: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
+    }
+  };
+
+  // Helper function to format commit date
+  const formatCommitDate = (timestamp: number): string => {
+    const now = Date.now();
+    const diff = now - timestamp * 1000;
+    const seconds = Math.floor(diff / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+    const weeks = Math.floor(days / 7);
+    const months = Math.floor(days / 30);
+
+    if (seconds < 60) return "just now";
+    if (minutes < 60) return `${minutes} minute${minutes !== 1 ? "s" : ""} ago`;
+    if (hours < 24) return `${hours} hour${hours !== 1 ? "s" : ""} ago`;
+    if (days === 1) return "1 day ago";
+    if (days < 7) return `${days} days ago`;
+    if (weeks === 1) return "1 week ago";
+    if (weeks < 4) return `${weeks} weeks ago`;
+    if (months === 1) return "1 month ago";
+    return `${months} months ago`;
+  };
+
+  // Create branches with current branch marked
+  const branchesWithCurrent = currentState
+    ? currentState.branches.map((branch) => ({
+        ...branch,
+        current: branch.name === currentState.currentBranch,
+      }))
+    : [];
+
+  // Format commits for display
+  const formattedCommits = currentState
+    ? currentState.commits.map((commit) => ({
+        sha: commit.sha,
+        message: commit.message,
+        author: commit.author,
+        date: formatCommitDate(commit.timestamp),
+      }))
+    : [];
+
+  const handleSelectFile = (filePath: string) => {
+    if (repoPath) {
+      updateRepoState(repoPath, { selectedFile: filePath });
+    }
+  };
+
+  const handleFetch = async (username?: string, password?: string) => {
+    if (!repoPath) return;
+
+    try {
+      // Set fetching state
+      setFetchingRepos((prev) => ({ ...prev, [repoPath]: true }));
+
+      const result = await fetchFromRemote(repoPath, username, password, saveFetchCredentials);
+
+      if (result.success) {
+        toast.success("Successfully fetched from remote");
+
+        // Close auth dialog if open
+        setShowFetchAuthDialog(false);
+        setFetchAuthUsername("");
+        setFetchAuthPassword("");
+        setFetchAuthError(null);
+        setSaveFetchCredentials(true);
+        setShowFetchPassword(false);
+
+        // Refresh remote branches and commit history after fetch
+        const remoteBranchList = await listRemoteBranches(repoPath);
+        const commitHistory = await getCommitHistory(repoPath);
+        const branchList = await listBranches(repoPath);
+
+        updateRepoState(repoPath, {
+          remoteBranches: remoteBranchList,
+          commits: commitHistory,
+          branches: branchList,
+        });
+      } else if (result.needsAuth) {
+        // Show authentication dialog (first time - no error yet)
+        // Get hostname from remote URL for display
+        try {
+          const remoteUrlResult = await window.ipcRenderer.invoke("git:getRemoteUrl", repoPath);
+          if (remoteUrlResult.success) {
+            const url = new URL(remoteUrlResult.url);
+            // Clear credentials for security
+            setFetchAuthUsername("");
+            setFetchAuthPassword("");
+            setFetchAuthError(null); // Clear any previous errors
+            setShowFetchPassword(false);
+            setShowFetchAuthDialog(true);
+          }
+        } catch {
+          // Clear credentials for security
+          setFetchAuthUsername("");
+          setFetchAuthPassword("");
+          setFetchAuthError(null); // Clear any previous errors
+          setShowFetchPassword(false);
+          setShowFetchAuthDialog(true);
+        }
+      } else {
+        // If the auth dialog is open, only show error in dialog (not toast)
+        // Otherwise show toast for other types of errors
+        if (showFetchAuthDialog) {
+          setFetchAuthError(result.error || null);
+        } else {
+          toast.error(result.error || "Failed to fetch from remote");
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching from remote:", error);
+      toast.error(
+        `Failed to fetch from remote: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
+    } finally {
+      // Clear fetching state
+      setFetchingRepos((prev) => ({ ...prev, [repoPath]: false }));
+    }
+  };
+
+  const handleConfirmFetchAuth = async () => {
+    if (!fetchAuthUsername.trim() || !fetchAuthPassword.trim()) {
+      setFetchAuthError("Please enter both username and password");
+      return;
+    }
+
+    await handleFetch(fetchAuthUsername, fetchAuthPassword);
+  };
+
+  const handleCancelFetchAuth = () => {
+    setShowFetchAuthDialog(false);
+    setFetchAuthUsername("");
+    setFetchAuthPassword("");
+    setFetchAuthError(null);
+    setSaveFetchCredentials(true);
+    setShowFetchPassword(false);
+  };
+
+  const handlePush = async (username?: string, password?: string) => {
+    if (!repoPath) return;
+
+    try {
+      // Set pushing state
+      setPushingRepos((prev) => ({ ...prev, [repoPath]: true }));
+
+      const result = await pushToRemote(repoPath, username, password, savePushCredentials);
+
+      if (result.success) {
+        toast.success("Successfully pushed to remote");
+
+        // Close auth dialog if open
+        setShowPushAuthDialog(false);
+        setPushAuthUsername("");
+        setPushAuthPassword("");
+        setPushAuthError(null);
+        setSavePushCredentials(true);
+        setShowPushPassword(false);
+
+        // Refresh remote branches and commit history after push
+        const remoteBranchList = await listRemoteBranches(repoPath);
+        const commitHistory = await getCommitHistory(repoPath);
+
+        updateRepoState(repoPath, {
+          remoteBranches: remoteBranchList,
+          commits: commitHistory,
+        });
+      } else if (result.needsAuth) {
+        // Show authentication dialog (first time - no error yet)
+        // Get hostname from remote URL for display
+        try {
+          const remoteUrlResult = await window.ipcRenderer.invoke("git:getRemoteUrl", repoPath);
+          if (remoteUrlResult.success) {
+            const url = new URL(remoteUrlResult.url);
+            // Clear credentials for security
+            setPushAuthUsername("");
+            setPushAuthPassword("");
+            setPushAuthError(null); // Clear any previous errors
+            setShowPushPassword(false);
+            setShowPushAuthDialog(true);
+          }
+        } catch {
+          // Clear credentials for security
+          setPushAuthUsername("");
+          setPushAuthPassword("");
+          setPushAuthError(null); // Clear any previous errors
+          setShowPushPassword(false);
+          setShowPushAuthDialog(true);
+        }
+      } else {
+        // If the auth dialog is open, only show error in dialog (not toast)
+        // Otherwise show toast for other types of errors
+        if (showPushAuthDialog) {
+          setPushAuthError(result.error || null);
+        } else {
+          toast.error(result.error || "Failed to push to remote");
+        }
+      }
+    } catch (error) {
+      console.error("Error pushing to remote:", error);
+      toast.error(
+        `Failed to push to remote: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
+    } finally {
+      // Clear pushing state
+      setPushingRepos((prev) => ({ ...prev, [repoPath]: false }));
+    }
+  };
+
+  const handleConfirmPushAuth = async () => {
+    if (!pushAuthUsername.trim() || !pushAuthPassword.trim()) {
+      setPushAuthError("Please enter both username and password");
+      return;
+    }
+
+    await handlePush(pushAuthUsername, pushAuthPassword);
+  };
+
+  const handleCancelPushAuth = () => {
+    setShowPushAuthDialog(false);
+    setPushAuthUsername("");
+    setPushAuthPassword("");
+    setPushAuthError(null);
+    setSavePushCredentials(true);
+    setShowPushPassword(false);
+  };
+
+  const handlePull = async (username?: string, password?: string) => {
+    if (!repoPath) return;
+
+    try {
+      // Set pulling state
+      setPullingRepos((prev) => ({ ...prev, [repoPath]: true }));
+
+      const result = await pullFromRemote(repoPath, username, password, savePullCredentials);
+
+      if (result.success) {
+        toast.success("Successfully pulled from remote");
+
+        // Close auth dialog if open
+        setShowPullAuthDialog(false);
+        setPullAuthUsername("");
+        setPullAuthPassword("");
+        setPullAuthError(null);
+        setSavePullCredentials(true);
+        setShowPullPassword(false);
+
+        // Refresh all repo data after pull
+        const remoteBranchList = await listRemoteBranches(repoPath);
+        const commitHistory = await getCommitHistory(repoPath);
+        const branchList = await listBranches(repoPath);
+        const statusResult = await getStatus(repoPath);
+
+        updateRepoState(repoPath, {
+          remoteBranches: remoteBranchList,
+          commits: commitHistory,
+          branches: branchList,
+          files: statusResult,
+        });
+      } else if (result.needsAuth) {
+        // Show authentication dialog (first time - no error yet)
+        // Get hostname from remote URL for display
+        try {
+          const remoteUrlResult = await window.ipcRenderer.invoke("git:getRemoteUrl", repoPath);
+          if (remoteUrlResult.success) {
+            const url = new URL(remoteUrlResult.url);
+            // Clear credentials for security
+            setPullAuthUsername("");
+            setPullAuthPassword("");
+            setPullAuthError(null); // Clear any previous errors
+            setShowPullPassword(false);
+            setShowPullAuthDialog(true);
+          }
+        } catch {
+          // Clear credentials for security
+          setPullAuthUsername("");
+          setPullAuthPassword("");
+          setPullAuthError(null); // Clear any previous errors
+          setShowPullPassword(false);
+          setShowPullAuthDialog(true);
+        }
+      } else {
+        // If the auth dialog is open, only show error in dialog (not toast)
+        // Otherwise show toast for other types of errors
+        if (showPullAuthDialog) {
+          setPullAuthError(result.error || null);
+        } else {
+          toast.error(result.error || "Failed to pull from remote");
+        }
+      }
+    } catch (error) {
+      console.error("Error pulling from remote:", error);
+      toast.error(
+        `Failed to pull from remote: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
+    } finally {
+      // Clear pulling state
+      setPullingRepos((prev) => ({ ...prev, [repoPath]: false }));
+    }
+  };
+
+  const handleConfirmPullAuth = async () => {
+    if (!pullAuthUsername.trim() || !pullAuthPassword.trim()) {
+      setPullAuthError("Please enter both username and password");
+      return;
+    }
+
+    await handlePull(pullAuthUsername, pullAuthPassword);
+  };
+
+  const handleCancelPullAuth = () => {
+    setShowPullAuthDialog(false);
+    setPullAuthUsername("");
+    setPullAuthPassword("");
+    setPullAuthError(null);
+    setSavePullCredentials(true);
+    setShowPullPassword(false);
+  };
+
+  // If showing Git setup, only show that
+  if (showGitSetup) {
+    return (
+      <div className="flex h-screen flex-col bg-background">
+        <GitSetupDialog
+          open={showGitSetup}
+          onComplete={handleGitSetupComplete}
+        />
+      </div>
+    );
+  }
+
+  // If selecting repo, show repo selector
+  if (isSelectingRepo) {
+    return (
+      <div className="relative h-screen w-full">
+        {isCloning && (
+          <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[9999] flex items-center justify-center">
+            <div className="flex flex-col items-center gap-3">
+              <div className="h-8 w-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+              <p className="text-sm text-muted-foreground">
+                Cloning repository...
+              </p>
+            </div>
+          </div>
+        )}
+        <RepoSelector
+          onSelectRepo={handleOpenRepo}
+          onCancel={tabs.length > 0 ? () => setIsSelectingRepo(false) : undefined}
+          onCloningChange={setIsCloning}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex h-screen flex-col bg-background">
+      {/* Tabs Header */}
+      <RepoTabs
+        tabs={tabs}
+        activeTabId={activeTabId}
+        onSelectTab={setActiveTabId}
+        onCloseTab={handleCloseTab}
+        onReorderTabs={handleReorderTabs}
+        onOpenNewRepo={() => setIsSelectingRepo(true)}
+        onStash={handleStash}
+        onFetch={handleFetch}
+        onPull={handlePull}
+        onPush={handlePush}
+        isLoading={isLoading}
+        isFetching={isFetching}
+        isPulling={isPulling}
+        isPushing={isPushing}
+      />
+
+      {/* Main Content */}
+      {currentState && repoPath ? (
+        <div className="flex flex-1 overflow-hidden relative">
+          {/* Loading Overlay */}
+          {loadingRepos[repoPath] && (
+            <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
+              <div className="flex flex-col items-center gap-3">
+                <div className="h-8 w-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+                <p className="text-sm text-muted-foreground">
+                  Loading repository data...
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Left Sidebar - Accordion */}
+          <div className={cn("w-64", isLoading && "pointer-events-none")}>
+            <SidebarAccordion
+              branches={branchesWithCurrent}
+              remoteBranches={(currentState.remoteBranches || []).map((b) => ({
+                ...b,
+                current: b.current ?? false,
+              }))}
+              commits={formattedCommits}
+              stashes={currentState.stashes}
+              selectedCommit={selectedCommit}
+              onSelectBranch={handleSelectBranch}
+              onSelectCommit={setSelectedCommit}
+              onCreateBranch={handleCreateBranch}
+              onDeleteBranch={handleDeleteBranch}
+              onPopStash={handlePopStash}
+              onDeleteStash={handleDeleteStash}
+            />
+          </div>
+
+          {/* Center - Diff Viewer */}
+          <div
+            className={cn(
+              "flex flex-1 flex-col overflow-hidden border-r border-border",
+              isLoading && "pointer-events-none"
+            )}
+          >
+            <DiffViewer
+              filePath={currentState.selectedFile}
+              lines={currentState.diffLines}
+              isLoading={loadingDiff}
+              wordWrap={wordWrap}
+              onWordWrapChange={setWordWrap}
+              isStaged={
+                currentState.selectedFile
+                  ? currentState.files.find(
+                      (f) => f.path === currentState.selectedFile
+                    )?.staged ?? false
+                  : false
+              }
+              onStageLine={handleStageLine}
+              onUnstageLine={handleUnstageLine}
+            />
+          </div>
+
+          {/* Right - Changes */}
+          <div
+            className={cn(
+              "flex w-96 flex-col",
+              isLoading && "pointer-events-none"
+            )}
+          >
+            <div className="flex-1 min-h-0">
+              <FileStatus
+                files={currentState.files}
+                onToggleStage={handleToggleStage}
+                onSelectFile={handleSelectFile}
+                selectedFile={currentState.selectedFile}
+                onStageAll={handleStageAll}
+                onUnstageAll={handleUnstageAll}
+              />
+            </div>
+            <CommitPanel
+              stagedFilesCount={
+                currentState.files.filter((f) => f.staged).length
+              }
+              onCommit={handleCommit}
+            />
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-1 items-center justify-center">
+          <p className="text-muted-foreground">No repository selected</p>
+        </div>
+      )}
+
+      {/* Fetch Authentication Dialog */}
+      <Dialog
+        open={showFetchAuthDialog}
+        onOpenChange={(open) => {
+          if (!isFetching) {
+            setShowFetchAuthDialog(open);
+          }
+        }}
+      >
+        <DialogContent>
+          {isFetching && (
+            <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center rounded-lg pointer-events-auto">
+              <div className="flex flex-col items-center gap-3">
+                <div className="h-8 w-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+                <p className="text-sm text-muted-foreground">
+                  Fetching from remote...
+                </p>
+              </div>
+            </div>
+          )}
+          <div className={isFetching ? "pointer-events-none" : ""}>
+            <DialogHeader>
+              <DialogTitle>Authentication Required</DialogTitle>
+              <DialogDescription>
+                Please enter your credentials to fetch from the remote repository.
+              </DialogDescription>
+            </DialogHeader>
+
+            {fetchAuthError && (
+              <div className="mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+                <p className="text-sm text-destructive">{fetchAuthError}</p>
+              </div>
+            )}
+
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="fetch-auth-username">Username</Label>
+                <Input
+                  id="fetch-auth-username"
+                  value={fetchAuthUsername}
+                  onChange={(e) => {
+                    setFetchAuthUsername(e.target.value);
+                    if (fetchAuthError) setFetchAuthError(null);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !isFetching) {
+                      handleConfirmFetchAuth();
+                    } else if (e.key === "Escape" && !isFetching) {
+                      handleCancelFetchAuth();
+                    }
+                  }}
+                  autoFocus
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="fetch-auth-password">Password / Token</Label>
+                <div className="relative">
+                  <Input
+                    id="fetch-auth-password"
+                    type={showFetchPassword ? "text" : "password"}
+                    value={fetchAuthPassword}
+                    onChange={(e) => {
+                      setFetchAuthPassword(e.target.value);
+                      if (fetchAuthError) setFetchAuthError(null);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !isFetching) {
+                        handleConfirmFetchAuth();
+                      } else if (e.key === "Escape" && !isFetching) {
+                        handleCancelFetchAuth();
+                      }
+                    }}
+                    className="pr-10"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                    onClick={() => setShowFetchPassword(!showFetchPassword)}
+                    tabIndex={-1}
+                  >
+                    {showFetchPassword ? (
+                      <EyeOff className="h-4 w-4 text-muted-foreground" />
+                    ) : (
+                      <Eye className="h-4 w-4 text-muted-foreground" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="save-fetch-credentials"
+                  checked={saveFetchCredentials}
+                  onCheckedChange={(checked) =>
+                    setSaveFetchCredentials(checked as boolean)
+                  }
+                />
+                <label
+                  htmlFor="save-fetch-credentials"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                >
+                  Save my credentials on this device
+                </label>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={handleCancelFetchAuth}
+                disabled={isFetching}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleConfirmFetchAuth}
+                disabled={
+                  isFetching || !fetchAuthUsername.trim() || !fetchAuthPassword.trim()
+                }
+              >
+                {isFetching ? "Authenticating..." : "Sign In"}
+              </Button>
+            </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Push Authentication Dialog */}
+      <Dialog
+        open={showPushAuthDialog}
+        onOpenChange={(open) => {
+          if (!isPushing) {
+            setShowPushAuthDialog(open);
+          }
+        }}
+      >
+        <DialogContent>
+          {isPushing && (
+            <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center rounded-lg pointer-events-auto">
+              <div className="flex flex-col items-center gap-3">
+                <div className="h-8 w-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+                <p className="text-sm text-muted-foreground">
+                  Pushing to remote...
+                </p>
+              </div>
+            </div>
+          )}
+          <div className={isPushing ? "pointer-events-none" : ""}>
+            <DialogHeader>
+              <DialogTitle>Authentication Required</DialogTitle>
+              <DialogDescription>
+                Please enter your credentials to push to the remote repository.
+              </DialogDescription>
+            </DialogHeader>
+
+            {pushAuthError && (
+              <div className="mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+                <p className="text-sm text-destructive">{pushAuthError}</p>
+              </div>
+            )}
+
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="push-auth-username">Username</Label>
+                <Input
+                  id="push-auth-username"
+                  value={pushAuthUsername}
+                  onChange={(e) => {
+                    setPushAuthUsername(e.target.value);
+                    if (pushAuthError) setPushAuthError(null);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !isPushing) {
+                      handleConfirmPushAuth();
+                    } else if (e.key === "Escape" && !isPushing) {
+                      handleCancelPushAuth();
+                    }
+                  }}
+                  placeholder="Enter your username"
+                  autoFocus
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="push-auth-password">Password / Token</Label>
+                <div className="relative">
+                  <Input
+                    id="push-auth-password"
+                    type={showPushPassword ? "text" : "password"}
+                    value={pushAuthPassword}
+                    onChange={(e) => {
+                      setPushAuthPassword(e.target.value);
+                      if (pushAuthError) setPushAuthError(null);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !isPushing) {
+                        handleConfirmPushAuth();
+                      } else if (e.key === "Escape" && !isPushing) {
+                        handleCancelPushAuth();
+                      }
+                    }}
+                    placeholder="Enter your password or personal access token"
+                    className="pr-10"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                    onClick={() => setShowPushPassword(!showPushPassword)}
+                    tabIndex={-1}
+                  >
+                    {showPushPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="save-push-credentials"
+                  checked={savePushCredentials}
+                  onCheckedChange={(checked) =>
+                    setSavePushCredentials(checked as boolean)
+                  }
+                />
+                <label
+                  htmlFor="save-push-credentials"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                >
+                  Save my credentials on this device
+                </label>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={handleCancelPushAuth}
+                disabled={isPushing}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleConfirmPushAuth}
+                disabled={
+                  isPushing || !pushAuthUsername.trim() || !pushAuthPassword.trim()
+                }
+              >
+                {isPushing ? "Authenticating..." : "Sign In"}
+              </Button>
+            </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Pull Authentication Dialog */}
+      <Dialog
+        open={showPullAuthDialog}
+        onOpenChange={(open) => {
+          if (!isPulling) {
+            setShowPullAuthDialog(open);
+          }
+        }}
+      >
+        <DialogContent>
+          {isPulling && (
+            <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center rounded-lg pointer-events-auto">
+              <div className="flex flex-col items-center gap-3">
+                <div className="h-8 w-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+                <p className="text-sm text-muted-foreground">
+                  Pulling from remote...
+                </p>
+              </div>
+            </div>
+          )}
+          <div className={isPulling ? "pointer-events-none" : ""}>
+            <DialogHeader>
+              <DialogTitle>Authentication Required</DialogTitle>
+              <DialogDescription>
+                Please enter your credentials to pull from the remote repository.
+              </DialogDescription>
+            </DialogHeader>
+
+            {pullAuthError && (
+              <div className="mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+                <p className="text-sm text-destructive">{pullAuthError}</p>
+              </div>
+            )}
+
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="pull-auth-username">Username</Label>
+                <Input
+                  id="pull-auth-username"
+                  value={pullAuthUsername}
+                  onChange={(e) => {
+                    setPullAuthUsername(e.target.value);
+                    if (pullAuthError) setPullAuthError(null);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !isPulling) {
+                      handleConfirmPullAuth();
+                    } else if (e.key === "Escape" && !isPulling) {
+                      handleCancelPullAuth();
+                    }
+                  }}
+                  placeholder="Enter your username"
+                  autoFocus
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="pull-auth-password">Password / Token</Label>
+                <div className="relative">
+                  <Input
+                    id="pull-auth-password"
+                    type={showPullPassword ? "text" : "password"}
+                    value={pullAuthPassword}
+                    onChange={(e) => {
+                      setPullAuthPassword(e.target.value);
+                      if (pullAuthError) setPullAuthError(null);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !isPulling) {
+                        handleConfirmPullAuth();
+                      } else if (e.key === "Escape" && !isPulling) {
+                        handleCancelPullAuth();
+                      }
+                    }}
+                    placeholder="Enter your password or personal access token"
+                    className="pr-10"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                    onClick={() => setShowPullPassword(!showPullPassword)}
+                    tabIndex={-1}
+                  >
+                    {showPullPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="save-pull-credentials"
+                  checked={savePullCredentials}
+                  onCheckedChange={(checked) =>
+                    setSavePullCredentials(checked as boolean)
+                  }
+                />
+                <label
+                  htmlFor="save-pull-credentials"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                >
+                  Save my credentials on this device
+                </label>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={handleCancelPullAuth}
+                disabled={isPulling}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleConfirmPullAuth}
+                disabled={
+                  isPulling || !pullAuthUsername.trim() || !pullAuthPassword.trim()
+                }
+              >
+                {isPulling ? "Authenticating..." : "Sign In"}
+              </Button>
+            </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
+export default Index;
