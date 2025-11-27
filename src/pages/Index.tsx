@@ -6,7 +6,7 @@ import { DiffViewer } from "@/components/git/DiffViewer";
 import { CommitPanel } from "@/components/git/CommitPanel";
 import { RepoTabs, type RepoTab } from "@/components/git/RepoTabs";
 import { GitSetupDialog } from "@/components/git/GitSetupDialog";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/toaster";
 import { cn } from "@/lib/utils";
 import {
   Dialog,

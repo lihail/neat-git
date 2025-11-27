@@ -2,7 +2,7 @@ import { FolderOpen, X, GitBranch, FolderPlus, Eye, EyeOff } from "lucide-react"
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/toaster";
 import {
   Dialog,
   DialogContent,
