@@ -2,61 +2,47 @@
 
 A modern, beautiful Git client built with Electron, React, and TypeScript.
 
-## Features
+## Installation & Usage
 
-- Clean and intuitive user interface
-- Multi-repository support with tabs
-- Easy branch management
-- Visual diff viewer
-- File staging and committing
-- Real-time repository status updates
-- Drag-and-drop tab reordering
+Download the latest release for your operating system from the [releases page](https://github.com/lihail/neat-git/releases).
 
-## Getting Started
+**Available versions:**
+- **Mac (Apple Silicon)**: Download the file ending in `-arm64.dmg` for M1/M2/M3/M4 Macs
+- **Mac (Intel)**: Download the other `.dmg` file for Intel-based Macs
 
-### Prerequisites
+After downloading, open the `.dmg` file and drag NeatGit to your Applications folder.
 
-- Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## Local Development
 
-### Installation
+### Requirements
+
+- Git
+- Node.js
+
+### Getting Started
 
 ```sh
-# Clone the repository
-git clone <YOUR_GIT_URL>
-
-# Navigate to the project directory
+git clone https://github.com/lihail/neat-git.git
 cd neat-git
-
-# Install dependencies
 npm install
-
-# Start the development server
 npm start
 ```
 
-## Running as a Desktop App (Electron)
+Running `npm start` will open the app in Electron with hot reload enabled, allowing you to see changes instantly as you develop.
 
-This project can also be run as a desktop application using Electron.
+### Creating a Release
 
-**Development Mode:**
-```sh
-# Run the app in Electron development mode (with hot reload)
-npm run electron:dev
-```
+To build the app for distribution:
 
-**Build for Production:**
 ```sh
 # Build for your current platform
 npm run electron:build
 
 # Build for specific platforms
-npm run electron:build:win    # Windows
-npm run electron:build:mac     # macOS
-npm run electron:build:linux   # Linux
+npm run electron:build:mac     # macOS (both Intel and ARM64)
+npm run electron:build:win     # Windows
 ```
 
-The built applications will be in the `release` directory.
+The built applications will be available in the `release` directory.
 
-## License
-
-MIT
+**Note:** Building for a specific platform typically requires running the build on that platform (e.g., build macOS apps on a Mac, Windows apps on Windows).

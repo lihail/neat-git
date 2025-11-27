@@ -2,6 +2,15 @@
   "name": "neat-git",
   "private": true,
   "version": "0.1.0",
+  "author": "lihail https://github.com/lihail",
+  "homepage": "https://github.com/lihail/neat-git",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lihail/neat-git.git"
+  },
+  "bugs": {
+    "url": "https://github.com/lihail/neat-git/issues"
+  },
   "type": "module",
   "main": "dist-electron/main.js",
   "scripts": {
@@ -16,7 +25,6 @@
     "electron:build": "npm run electron:build:ts && cross-env ELECTRON=true npm run build && electron-builder",
     "electron:build:win": "npm run electron:build:ts && cross-env ELECTRON=true npm run build && electron-builder --win",
     "electron:build:mac": "npm run electron:build:ts && cross-env ELECTRON=true npm run build && electron-builder --mac",
-    "electron:build:linux": "npm run electron:build:ts && cross-env ELECTRON=true npm run build && electron-builder --linux",
     "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {
@@ -130,13 +138,6 @@
       ],
       "icon": "public/favicon.png",
       "identity": null
-    },
-    "linux": {
-      "target": [
-        "AppImage",
-        "deb"
-      ],
-      "icon": "public/favicon.png"
     },
     "nsis": {
       "oneClick": false,
