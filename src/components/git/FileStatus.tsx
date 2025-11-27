@@ -1,4 +1,4 @@
-import { FileText, FilePlus, FileX, FileEdit, ChevronsDown, ChevronsUp } from "lucide-react";
+import { FileText, FilePlus, FileX, FileEdit } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";

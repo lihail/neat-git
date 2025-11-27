@@ -5,11 +5,6 @@ import {
   Trash2,
   Archive,
   Upload,
-  Download,
-  Copy,
-  Edit,
-  ArrowDown,
-  ArrowUp,
   Loader2,
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -19,12 +14,6 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuTrigger,
-} from "@/components/ui/context-menu";
 import {
   Tooltip,
   TooltipContent,
@@ -45,7 +34,7 @@ import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
+import { BranchList } from "./BranchList";
 
 interface Branch {
   name: string;
@@ -78,7 +67,11 @@ interface SidebarAccordionProps {
   onSelectCommit: (sha: string) => void;
   onCreateBranch?: (branchName: string) => void;
   onDeleteBranch?: (branchName: string) => void;
-  onRenameBranch?: (oldName: string, newName: string, alsoRenameRemote: boolean) => void;
+  onRenameBranch?: (
+    oldName: string,
+    newName: string,
+    alsoRenameRemote: boolean
+  ) => void;
   onPullBranch?: (branchName: string) => void;
   onPopStash?: (index: number) => void;
   onDeleteStash?: (index: number) => void;
@@ -103,15 +96,15 @@ export const SidebarAccordion = ({
 }: SidebarAccordionProps) => {
   const [isCreatingBranch, setIsCreatingBranch] = useState(false);
   const [newBranchName, setNewBranchName] = useState("");
-  const [hoveredBranch, setHoveredBranch] = useState<string | null>(null);
-  const [deletingBranch, setDeletingBranch] = useState<string | null>(null);
   const [branchNameError, setBranchNameError] = useState<string | null>(null);
   const [hoveredStash, setHoveredStash] = useState<number | null>(null);
   const [deletingStash, setDeletingStash] = useState<number | null>(null);
   const [renamingBranch, setRenamingBranch] = useState<string | null>(null);
   const [renameBranchNewName, setRenameBranchNewName] = useState("");
   const [renameAlsoRemote, setRenameAlsoRemote] = useState(false);
-  const [renameBranchNameError, setRenameBranchNameError] = useState<string | null>(null);
+  const [renameBranchNameError, setRenameBranchNameError] = useState<
+    string | null
+  >(null);
   const [wasRenaming, setWasRenaming] = useState(false);
 
   // Close dialog after rename operation completes
@@ -261,178 +254,17 @@ export const SidebarAccordion = ({
                 )}
               </div>
             )}
-            <ScrollArea className="h-64">
-              <div className="p-2 space-y-1">
-                {branches.map((branch) => (
-                  <ContextMenu key={branch.name}>
-                    <ContextMenuTrigger asChild>
-                      <div
-                        onMouseEnter={() => setHoveredBranch(branch.name)}
-                        onMouseLeave={() => setHoveredBranch(null)}
-                        className={cn(
-                          "w-full rounded-md px-3 py-2 text-sm transition-colors relative overflow-hidden",
-                          branch.current && "bg-secondary text-primary",
-                          !branch.current &&
-                            deletingBranch !== branch.name &&
-                            "hover:bg-secondary cursor-pointer"
-                        )}
-                        onDoubleClick={() =>
-                          deletingBranch !== branch.name &&
-                          onSelectBranch(branch.name)
-                        }
-                      >
-                        {deletingBranch === branch.name ? (
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="text-xs text-muted-foreground">
-                              Delete {branch.name}?
-                            </span>
-                            <div className="flex items-center gap-1">
-                              <Button
-                                size="sm"
-                                variant="destructive"
-                                className="h-6 px-2 text-xs"
-                                onClick={() => {
-                                  if (onDeleteBranch) {
-                                    onDeleteBranch(branch.name);
-                                  }
-                                  setDeletingBranch(null);
-                                }}
-                              >
-                                Delete
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-6 px-2 text-xs"
-                                onClick={() => setDeletingBranch(null)}
-                              >
-                                Cancel
-                              </Button>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-2 w-full max-w-full">
-                            <div className="flex-1 min-w-0 overflow-hidden">
-                              <div className="truncate font-mono text-sm">
-                                {branch.name}
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2 flex-shrink-0">
-                              {branch.behind !== undefined && branch.behind > 0 && (
-                                <div className="flex items-center gap-0 text-xs text-muted-foreground">
-                                  <span>{branch.behind}</span>
-                                  <ArrowDown className="h-3 w-3" />
-                                </div>
-                              )}
-                              {branch.ahead !== undefined && branch.ahead > 0 && (
-                                <div className="flex items-center gap-0 text-xs text-muted-foreground">
-                                  <span>{branch.ahead}</span>
-                                  <ArrowUp className="h-3 w-3" />
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </ContextMenuTrigger>
-                    <ContextMenuContent className="w-48">
-                      {/* Pull option - disabled if branch has no upstream or has unpushed commits */}
-                      {!branch.hasUpstream ? (
-                        <TooltipProvider>
-                          <Tooltip delayDuration={0}>
-                            <TooltipTrigger asChild>
-                              <div className="relative flex select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none text-muted-foreground opacity-50">
-                                <span className="flex-1">Pull</span>
-                                <Download className="h-4 w-4" />
-                              </div>
-                            </TooltipTrigger>
-                            <TooltipContent side="right">
-                              <p>Cannot pull: branch is not tracking a remote branch</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      ) : branch.ahead !== undefined && branch.ahead > 0 && !branch.current ? (
-                        <TooltipProvider>
-                          <Tooltip delayDuration={0}>
-                            <TooltipTrigger asChild>
-                              <div className="relative flex select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none text-muted-foreground opacity-50">
-                                <span className="flex-1">Pull</span>
-                                <Download className="h-4 w-4" />
-                              </div>
-                            </TooltipTrigger>
-                            <TooltipContent side="right">
-                              <p>Cannot pull: branch has unpushed commits.</p>
-                              <p>Switch to this branch first and push them.</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      ) : (
-                        <ContextMenuItem
-                          className="hover:bg-secondary focus:bg-secondary focus:text-foreground"
-                          onSelect={() => {
-                            if (onPullBranch) {
-                              onPullBranch(branch.name);
-                            }
-                          }}
-                        >
-                          <span className="flex-1">Pull</span>
-                          <Download className="h-4 w-4" />
-                        </ContextMenuItem>
-                      )}
-                      <ContextMenuItem
-                        className="hover:bg-secondary focus:bg-secondary focus:text-foreground"
-                        onSelect={() => {
-                          navigator.clipboard.writeText(branch.name);
-                          toast.success(`Copied "${branch.name}" to clipboard`);
-                        }}
-                      >
-                        <span className="flex-1">Copy Branch Name</span>
-                        <Copy className="h-4 w-4" />
-                      </ContextMenuItem>
-                      <ContextMenuItem 
-                        className="hover:bg-secondary focus:bg-secondary focus:text-foreground"
-                        onSelect={() => {
-                          setRenamingBranch(branch.name);
-                          setRenameBranchNewName(branch.name);
-                          setRenameAlsoRemote(false);
-                        }}
-                      >
-                        <span className="flex-1">Rename</span>
-                        <Edit className="h-4 w-4" />
-                      </ContextMenuItem>
-                      {branch.current ? (
-                        <TooltipProvider>
-                          <Tooltip delayDuration={0}>
-                            <TooltipTrigger asChild>
-                              <div className="relative flex select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none text-muted-foreground opacity-50">
-                                <span className="flex-1">Delete</span>
-                                <Trash2 className="h-4 w-4" />
-                              </div>
-                            </TooltipTrigger>
-                            <TooltipContent side="right">
-                              <p>Cannot delete current branch.</p>
-                              <p>Switch to a different branch first</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      ) : (
-                        <ContextMenuItem
-                          className="text-destructive hover:bg-secondary focus:bg-secondary focus:text-destructive"
-                          onSelect={() => {
-                            if (onDeleteBranch) {
-                              setDeletingBranch(branch.name);
-                            }
-                          }}
-                        >
-                          <span className="flex-1">Delete</span>
-                          <Trash2 className="h-4 w-4" />
-                        </ContextMenuItem>
-                      )}
-                    </ContextMenuContent>
-                  </ContextMenu>
-                ))}
-              </div>
-            </ScrollArea>
+            <BranchList
+              branches={branches}
+              onSelectBranch={onSelectBranch}
+              onDeleteBranch={onDeleteBranch}
+              onPullBranch={onPullBranch}
+              onRenameClick={(branchName) => {
+                setRenamingBranch(branchName);
+                setRenameBranchNewName(branchName);
+                setRenameAlsoRemote(false);
+              }}
+            />
           </AccordionContent>
         </AccordionItem>
 
@@ -650,14 +482,17 @@ export const SidebarAccordion = ({
       </Accordion>
 
       {/* Rename Branch Dialog */}
-      <Dialog open={renamingBranch !== null} onOpenChange={(open) => {
-        if (!open && !isRenaming) {
-          setRenamingBranch(null);
-          setRenameBranchNewName("");
-          setRenameAlsoRemote(false);
-          setRenameBranchNameError(null);
-        }
-      }}>
+      <Dialog
+        open={renamingBranch !== null}
+        onOpenChange={(open) => {
+          if (!open && !isRenaming) {
+            setRenamingBranch(null);
+            setRenameBranchNewName("");
+            setRenameAlsoRemote(false);
+            setRenameBranchNameError(null);
+          }
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Rename Branch</DialogTitle>
@@ -692,9 +527,9 @@ export const SidebarAccordion = ({
               )}
             </div>
             {(() => {
-              const branchHasUpstream = branches.find(
-                (b) => b.name === renamingBranch
-              )?.hasUpstream ?? false;
+              const branchHasUpstream =
+                branches.find((b) => b.name === renamingBranch)?.hasUpstream ??
+                false;
               return (
                 <div className="flex items-center space-x-2">
                   <TooltipProvider>
@@ -748,7 +583,7 @@ export const SidebarAccordion = ({
               onClick={() => {
                 const trimmedName = renameBranchNewName.trim();
                 const error = validateBranchName(trimmedName);
-                
+
                 if (error) {
                   setRenameBranchNameError(error);
                   return;
@@ -759,7 +594,11 @@ export const SidebarAccordion = ({
                   // Don't close dialog here - useEffect will close it after operation completes
                 }
               }}
-              disabled={!renameBranchNewName.trim() || renameBranchNewName === renamingBranch || isRenaming}
+              disabled={
+                !renameBranchNewName.trim() ||
+                renameBranchNewName === renamingBranch ||
+                isRenaming
+              }
             >
               {isRenaming && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {isRenaming ? "Renaming..." : "Rename"}
