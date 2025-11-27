@@ -31,6 +31,7 @@ interface RepoTabsProps {
   isFetching?: boolean;
   isPulling?: boolean;
   isPushing?: boolean;
+  isAnyRemoteOperationActive?: boolean;
 }
 
 export const RepoTabs = ({
@@ -48,6 +49,7 @@ export const RepoTabs = ({
   isFetching = false,
   isPulling = false,
   isPushing = false,
+  isAnyRemoteOperationActive = false,
 }: RepoTabsProps) => {
   const [draggedTabId, setDraggedTabId] = useState<string | null>(null);
   const [dragOverTabId, setDragOverTabId] = useState<string | null>(null);
@@ -136,11 +138,11 @@ export const RepoTabs = ({
                           : "bg-transparent text-muted-foreground hover:bg-muted/50",
                         draggedTabId === tab.id && "opacity-50",
                         dragOverTabId === tab.id && "bg-muted",
-                        isLoading
+                        (isLoading || isAnyRemoteOperationActive)
                           ? "cursor-not-allowed opacity-50"
                           : "cursor-pointer"
                       )}
-                      onClick={() => !isLoading && onSelectTab(tab.id)}
+                      onClick={() => !isLoading && !isAnyRemoteOperationActive && onSelectTab(tab.id)}
                     >
                       <span
                         className={cn(

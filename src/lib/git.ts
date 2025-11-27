@@ -1,6 +1,9 @@
 export interface Branch {
   name: string;
   current?: boolean;
+  behind?: number;
+  ahead?: number;
+  hasUpstream?: boolean;
 }
 
 export interface FileStatus {
@@ -202,6 +205,23 @@ export async function deleteBranch(repoPath: string, branchName: string): Promis
     await window.ipcRenderer.invoke('git:deleteBranch', repoPath, branchName);
   } catch (error) {
     console.error('Error deleting branch:', error);
+    throw error;
+  }
+}
+
+/**
+ * Rename a branch
+ */
+export async function renameBranch(repoPath: string, oldName: string, newName: string, alsoRenameRemote: boolean): Promise<void> {
+  if (typeof window === 'undefined' || !window.electronAPI) {
+    console.warn('Electron API not available');
+    return;
+  }
+
+  try {
+    await window.ipcRenderer.invoke('git:renameBranch', repoPath, oldName, newName, alsoRenameRemote);
+  } catch (error) {
+    console.error('Error renaming branch:', error);
     throw error;
   }
 }
@@ -476,6 +496,42 @@ export async function pullFromRemote(
     return result;
   } catch (error) {
     console.error('Error pulling from remote:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+      needsAuth: false,
+    };
+  }
+}
+
+/**
+ * Pull a specific branch without checking it out
+ * This fetches the branch and updates the local ref without affecting the working directory
+ */
+export async function pullBranch(
+  repoPath: string,
+  branchName: string,
+  username?: string,
+  password?: string,
+  saveCredentials: boolean = true
+): Promise<{ success: boolean; error?: string; needsAuth?: boolean }> {
+  if (typeof window === 'undefined' || !window.electronAPI) {
+    console.warn('Electron API not available');
+    return { success: false, error: 'Electron API not available' };
+  }
+
+  try {
+    // Ensure all parameters are serializable primitives
+    const safeRepoPath = String(repoPath);
+    const safeBranchName = String(branchName);
+    const safeUsername = username !== undefined ? String(username) : null;
+    const safePassword = password !== undefined ? String(password) : null;
+    const safeSaveCredentials = Boolean(saveCredentials);
+    
+    const result = await window.ipcRenderer.invoke('git:pullBranch', safeRepoPath, safeBranchName, safeUsername, safePassword, safeSaveCredentials);
+    return result;
+  } catch (error) {
+    console.error('Error pulling branch:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : String(error),

@@ -34,6 +34,7 @@ import {
   createBranch,
   checkoutBranch,
   deleteBranch,
+  renameBranch,
   getCommitHistory,
   commit,
   stash,
@@ -44,6 +45,7 @@ import {
   unstageLines,
   fetchFromRemote,
   pullFromRemote,
+  pullBranch,
   pushToRemote,
   type Branch,
   type FileStatus as GitFileStatus,
@@ -120,6 +122,7 @@ const Index = () => {
   const [fetchingRepos, setFetchingRepos] = useState<Record<string, boolean>>({});
   const [pullingRepos, setPullingRepos] = useState<Record<string, boolean>>({});
   const [pushingRepos, setPushingRepos] = useState<Record<string, boolean>>({});
+  const [renamingRepos, setRenamingRepos] = useState<Record<string, boolean>>({});
   
   // Fetch authentication state
   const [showFetchAuthDialog, setShowFetchAuthDialog] = useState(false);
@@ -152,6 +155,9 @@ const Index = () => {
     }
     return false;
   });
+
+  // Auto-fetch interval (5 minutes)
+  const [fetchIntervalId, setFetchIntervalId] = useState<NodeJS.Timeout | null>(null);
   const [showGitSetup, setShowGitSetup] = useState(false);
 
   // Check for Git setup on mount
@@ -200,6 +206,92 @@ const Index = () => {
     localStorage.setItem(WORD_WRAP_STORAGE_KEY, wordWrap.toString());
   }, [wordWrap]);
 
+  // Auto-fetch interval management
+  useEffect(() => {
+    // Clear any existing interval
+    if (fetchIntervalId) {
+      clearInterval(fetchIntervalId);
+      setFetchIntervalId(null);
+    }
+
+    // Calculate current repo path
+    const activeTab = tabs.find((tab) => tab.id === activeTabId);
+    const currentRepoPath = activeTab?.path || null;
+
+    // Only set up interval if we have an active repo
+    if (currentRepoPath) {
+      // Trigger immediate fetch when switching tabs
+      const doFetch = async () => {
+        // Skip if any git operation is already in progress for this repo
+        if (
+          loadingRepos[currentRepoPath] ||
+          fetchingRepos[currentRepoPath] ||
+          pullingRepos[currentRepoPath] ||
+          pushingRepos[currentRepoPath]
+        ) {
+          return;
+        }
+
+        // Check if repo has a remote configured
+        try {
+          const remoteUrlResult = await window.ipcRenderer.invoke("git:getRemoteUrl", currentRepoPath);
+          if (!remoteUrlResult.success) {
+            // No remote configured, skip auto-fetch
+            return;
+          }
+        } catch (error) {
+          // Failed to check remote, skip auto-fetch
+          console.error('Failed to check remote URL:', error);
+          return;
+        }
+
+        try {
+          // Set fetching state (same as manual fetch)
+          setFetchingRepos((prev) => ({ ...prev, [currentRepoPath]: true }));
+
+          const result = await fetchFromRemote(currentRepoPath);
+          
+          if (result.success) {
+            // Refresh repo data after fetch
+            const remoteBranchList = await listRemoteBranches(currentRepoPath);
+            const commitHistory = await getCommitHistory(currentRepoPath);
+            const branchList = await listBranches(currentRepoPath);
+
+            updateRepoState(currentRepoPath, {
+              remoteBranches: remoteBranchList,
+              commits: commitHistory,
+              branches: branchList,
+            });
+          }
+          // Note: We don't show auth dialogs or error toasts for auto-fetch
+        } catch (error) {
+          // Silent fail for auto-fetch
+          console.error('Auto-fetch error:', error);
+        } finally {
+          // Clear fetching state
+          setFetchingRepos((prev) => ({ ...prev, [currentRepoPath]: false }));
+        }
+      };
+
+      // Trigger immediate fetch
+      doFetch();
+
+      // Set up interval to fetch every 5 minutes
+      const intervalId = setInterval(() => {
+        doFetch();
+      }, 300_000);
+
+      setFetchIntervalId(intervalId);
+    }
+
+    // Cleanup interval on unmount or when active tab changes
+    return () => {
+      if (fetchIntervalId) {
+        clearInterval(fetchIntervalId);
+      }
+    };
+  }, [activeTabId, tabs]);
+
   // Get current repo path and state
   const activeTab = tabs.find((tab) => tab.id === activeTabId);
   const repoPath = activeTab?.path || null;
@@ -208,6 +300,13 @@ const Index = () => {
   const isFetching = repoPath ? fetchingRepos[repoPath] || false : false;
   const isPulling = repoPath ? pullingRepos[repoPath] || false : false;
   const isPushing = repoPath ? pushingRepos[repoPath] || false : false;
+  const isRenaming = repoPath ? renamingRepos[repoPath] || false : false;
+
+  // Check if ANY repo has a remote operation in progress (to disable tab switching)
+  const isAnyRemoteOperationActive = 
+    Object.values(fetchingRepos).some(Boolean) ||
+    Object.values(pullingRepos).some(Boolean) ||
+    Object.values(pushingRepos).some(Boolean);
 
   // Helper to update state for a specific repo
   const updateRepoState = (path: string, updates: Partial<RepoState>) => {
@@ -542,12 +641,14 @@ const Index = () => {
           }: ${message}`
         );
 
-        // Refresh git status and commit history after commit
+        // Refresh git status, commit history, and branches after commit
         const statusList = await getStatus(repoPath);
         const commitHistory = await getCommitHistory(repoPath);
+        const branchList = await listBranches(repoPath);
         updateRepoState(repoPath, {
           files: statusList,
           commits: commitHistory,
+          branches: branchList,
           selectedFile: null, // Clear the diff viewer after commit
         });
       }
@@ -573,13 +674,15 @@ const Index = () => {
       await checkoutBranch(repoPath, branch);
       toast.info(`Switched to branch: ${branch}`);
 
-      // Refresh git status and commit history after branch switch
+      // Refresh git status, commit history, and branches after branch switch
       const statusList = await getStatus(repoPath);
       const commitHistory = await getCommitHistory(repoPath);
+      const branchList = await listBranches(repoPath);
       updateRepoState(repoPath, {
         currentBranch: branch,
         files: statusList,
         commits: commitHistory,
+        branches: branchList,
       });
     } catch (error) {
       console.error("Error switching branch:", error);
@@ -639,6 +742,50 @@ const Index = () => {
           error instanceof Error ? error.message : "Unknown error"
         }`
       );
+    }
+  };
+
+  const handleRenameBranch = async (oldName: string, newName: string, alsoRenameRemote: boolean) => {
+    if (!repoPath || !currentState) return;
+
+    try {
+      // Set renaming state
+      setRenamingRepos((prev) => ({ ...prev, [repoPath]: true }));
+
+      await renameBranch(repoPath, oldName, newName, alsoRenameRemote);
+      toast.success(`Branch renamed from "${oldName}" to "${newName}"${alsoRenameRemote ? ' (including remote)' : ''}`);
+
+      // Check if we renamed the current branch
+      const wasCurrentBranch = oldName === currentState.currentBranch;
+
+      // Refresh branches
+      const branchList = await listBranches(repoPath);
+      const remoteBranchList = await listRemoteBranches(repoPath);
+      
+      // If we renamed the current branch, update currentBranch state
+      if (wasCurrentBranch) {
+        const current = await getCurrentBranch(repoPath);
+        updateRepoState(repoPath, { 
+          branches: branchList,
+          remoteBranches: remoteBranchList,
+          currentBranch: current,
+        });
+      } else {
+        updateRepoState(repoPath, { 
+          branches: branchList,
+          remoteBranches: remoteBranchList,
+        });
+      }
+    } catch (error) {
+      console.error("Error renaming branch:", error);
+      toast.error(
+        `Failed to rename branch: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
+    } finally {
+      // Clear renaming state
+      setRenamingRepos((prev) => ({ ...prev, [repoPath]: false }));
     }
   };
 
@@ -922,13 +1069,15 @@ const Index = () => {
         setSavePushCredentials(true);
         setShowPushPassword(false);
 
-        // Refresh remote branches and commit history after push
+        // Refresh remote branches, local branches, and commit history after push
         const remoteBranchList = await listRemoteBranches(repoPath);
         const commitHistory = await getCommitHistory(repoPath);
+        const branchList = await listBranches(repoPath);
 
         updateRepoState(repoPath, {
           remoteBranches: remoteBranchList,
           commits: commitHistory,
+          branches: branchList,
         });
       } else if (result.needsAuth) {
         // Show authentication dialog (first time - no error yet)
@@ -1086,6 +1235,71 @@ const Index = () => {
     setShowPullPassword(false);
   };
 
+  const handlePullBranch = async (branchName: string) => {
+    if (!repoPath) return;
+
+    // Get the branch object to check if it has unpushed commits
+    const state = repoStates[repoPath];
+    if (!state) return;
+
+    const branch = state.branches.find(b => b.name === branchName);
+    if (!branch) {
+      toast.error(`Branch "${branchName}" not found`);
+      return;
+    }
+
+    // Check if branch has unpushed commits (ahead > 0)
+    // This should already be handled by the UI, but double-check here
+    if (branch.ahead !== undefined && branch.ahead > 0 && !branch.current) {
+      toast.error("Cannot pull: branch has unpushed commits. Switch to this branch first and push them.");
+      return;
+    }
+
+    // If this is the current branch, use the regular pull mechanism
+    if (branch.current) {
+      await handlePull();
+      return;
+    }
+
+    try {
+      // Set pulling state
+      setPullingRepos((prev) => ({ ...prev, [repoPath]: true }));
+
+      const result = await pullBranch(repoPath, branchName, undefined, undefined, true);
+
+      if (result.success) {
+        toast.success(`Successfully pulled branch "${branchName}"`);
+
+        // Refresh branch list and commits to show updated state
+        const branchList = await listBranches(repoPath);
+        const remoteBranchList = await listRemoteBranches(repoPath);
+        const commitHistory = await getCommitHistory(repoPath);
+
+        updateRepoState(repoPath, {
+          branches: branchList,
+          remoteBranches: remoteBranchList,
+          commits: commitHistory,
+        });
+      } else if (result.needsAuth) {
+        // For now, show a message that auth is needed
+        // In the future, we could show an auth dialog specifically for this operation
+        toast.error("Authentication required. Please configure your credentials.");
+      } else {
+        toast.error(result.error || `Failed to pull branch "${branchName}"`);
+      }
+    } catch (error) {
+      console.error("Error pulling branch:", error);
+      toast.error(
+        `Failed to pull branch: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
+    } finally {
+      // Clear pulling state
+      setPullingRepos((prev) => ({ ...prev, [repoPath]: false }));
+    }
+  };
+
   // If showing Git setup, only show that
   if (showGitSetup) {
     return (
@@ -1139,6 +1353,7 @@ const Index = () => {
         isFetching={isFetching}
         isPulling={isPulling}
         isPushing={isPushing}
+        isAnyRemoteOperationActive={isAnyRemoteOperationActive}
       />
 
       {/* Main Content */}
@@ -1171,8 +1386,11 @@ const Index = () => {
               onSelectCommit={setSelectedCommit}
               onCreateBranch={handleCreateBranch}
               onDeleteBranch={handleDeleteBranch}
+              onRenameBranch={handleRenameBranch}
+              onPullBranch={handlePullBranch}
               onPopStash={handlePopStash}
               onDeleteStash={handleDeleteStash}
+              isRenaming={isRenaming}
             />
           </div>
 

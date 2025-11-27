@@ -270,10 +270,97 @@ ipcMain.handle("git:listBranches", async (_, repoPath: string) => {
       }
     }
 
-    const branches = branchNames.map((name) => ({
-      name,
-      current: name === (currentBranch || "main"),
-    }));
+    const branches = await Promise.all(
+      branchNames.map(async (name) => {
+        let behind = 0;
+        let ahead = 0;
+        let hasUpstream = false;
+
+        try {
+          // Check if branch has an upstream tracking branch using git for-each-ref
+          try {
+            const result = execSync(
+              `git -C "${repoPath}" for-each-ref --format='%(upstream:short)' "refs/heads/${name}"`,
+              {
+                encoding: "utf8",
+                stdio: ["pipe", "pipe", "pipe"],
+              }
+            );
+            // If the result is not empty, the branch has an upstream
+            hasUpstream = result.trim().length > 0;
+          } catch (upstreamError) {
+            // Error checking upstream, assume no upstream
+            hasUpstream = false;
+          }
+
+          // Try to get the tracking branch info
+          const localOid = await git.resolveRef({
+            fs,
+            dir: repoPath,
+            ref: name,
+          });
+
+          // Try to resolve the remote tracking branch
+          const remoteBranchName = `refs/remotes/origin/${name}`;
+          try {
+            const remoteOid = await git.resolveRef({
+              fs,
+              dir: repoPath,
+              ref: remoteBranchName,
+            });
+
+            // If local and remote are the same, no need to calculate
+            if (localOid === remoteOid) {
+              behind = 0;
+              ahead = 0;
+            } else {
+              // Find merge base (common ancestor)
+              const mergeBase = await git.findMergeBase({
+                fs,
+                dir: repoPath,
+                oids: [localOid, remoteOid],
+              });
+
+              // Calculate ahead: commits from merge base to local
+              if (mergeBase.length > 0 && mergeBase[0] !== localOid) {
+                const aheadCommits = await git.log({
+                  fs,
+                  dir: repoPath,
+                  ref: name,
+                });
+                // Count commits until we hit the merge base
+                ahead = aheadCommits.findIndex((c) => c.oid === mergeBase[0]);
+                if (ahead === -1) ahead = aheadCommits.length;
+              }
+
+              // Calculate behind: commits from merge base to remote
+              if (mergeBase.length > 0 && mergeBase[0] !== remoteOid) {
+                const behindCommits = await git.log({
+                  fs,
+                  dir: repoPath,
+                  ref: remoteBranchName,
+                });
+                // Count commits until we hit the merge base
+                behind = behindCommits.findIndex((c) => c.oid === mergeBase[0]);
+                if (behind === -1) behind = behindCommits.length;
+              }
+            }
+          } catch (remoteError) {
+            // Remote branch doesn't exist, which is fine
+          }
+        } catch (error) {
+          // Branch might not have any commits yet, which is fine
+        }
+
+        return {
+          name,
+          current: name === (currentBranch || "main"),
+          behind,
+          ahead,
+          hasUpstream,
+        };
+      })
+    );
     return branches;
   } catch (error) {
     console.error("Error listing branches:", error);
@@ -566,6 +653,107 @@ ipcMain.handle(
       return { success: true };
     } catch (error) {
       console.error("Error deleting branch:", error);
+      throw error;
+    }
+  }
+);
+
+// Rename a branch
+ipcMain.handle(
+  "git:renameBranch",
+  async (
+    _,
+    repoPath: string,
+    oldName: string,
+    newName: string,
+    alsoRenameRemote: boolean
+  ) => {
+    try {
+      // Get the upstream tracking branch before renaming
+      let upstreamBranch: string | null = null;
+      try {
+        const result = execSync(
+          `git -C "${repoPath}" for-each-ref --format='%(upstream:short)' "refs/heads/${oldName}"`,
+          {
+            encoding: "utf8",
+            stdio: ["pipe", "pipe", "pipe"],
+          }
+        );
+        const trimmed = result.trim();
+        if (trimmed.length > 0) {
+          upstreamBranch = trimmed;
+        }
+      } catch (error) {
+        // No upstream configured, which is fine
+      }
+
+      // Rename local branch
+      await git.renameBranch({
+        fs,
+        dir: repoPath,
+        oldref: oldName,
+        ref: newName,
+      });
+
+      // If also renaming remote, push new branch and delete old one using git CLI
+      if (alsoRenameRemote && upstreamBranch) {
+        try {
+          // Extract the actual remote branch name from upstream (e.g., "origin/feature-a" -> "feature-a")
+          const remoteBranchName = upstreamBranch.includes('/') 
+            ? upstreamBranch.split('/').slice(1).join('/') 
+            : upstreamBranch;
+
+          // Extract remote name (e.g., "origin")
+          const remoteName = upstreamBranch.includes('/')
+            ? upstreamBranch.split('/')[0]
+            : 'origin';
+
+          // Push the new branch to remote with upstream tracking
+          await execAsync(`git push -u ${remoteName} ${newName}`, {
+            cwd: repoPath,
+            encoding: "utf8",
+          });
+
+          // Delete the old branch from remote using the actual remote branch name
+          try {
+            await execAsync(`git push ${remoteName} --delete ${remoteBranchName}`, {
+              cwd: repoPath,
+              encoding: "utf8",
+            });
+          } catch (deleteError: any) {
+            // Check if the error is due to trying to delete the default branch
+            const errorMessage = deleteError.message || String(deleteError);
+            if (
+              errorMessage.includes("refusing to delete the current branch")
+            ) {
+              throw new Error(
+                `Local branch renamed to "${newName}" and pushed to remote, but could not delete old branch "${remoteBranchName}" because it is the default branch on the remote. Please change the default branch on GitHub/GitLab first, then delete "${remoteBranchName}" manually.`
+              );
+            }
+            throw deleteError;
+          }
+        } catch (remoteError) {
+          console.error("Error renaming branch on remote:", remoteError);
+          throw remoteError;
+        }
+      } else if (upstreamBranch && !alsoRenameRemote) {
+        // Not renaming on remote, just restore the existing upstream tracking
+        try {
+          execSync(
+            `git -C "${repoPath}" branch --set-upstream-to="${upstreamBranch}" "${newName}"`,
+            {
+              stdio: ["pipe", "pipe", "pipe"],
+            }
+          );
+        } catch (error) {
+          console.error("Error restoring upstream tracking:", error);
+          // Don't fail the whole operation if this fails
+        }
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error("Error renaming branch:", error);
       throw error;
     }
   }
@@ -2453,6 +2641,238 @@ ipcMain.handle(
           cleanError = cleanError.charAt(0).toUpperCase() + cleanError.slice(1);
         } else {
           cleanError = errorMessage || "Failed to pull from remote.";
+        }
+      }
+
+      // Always return a plain serializable object
+      return {
+        success: false,
+        error: String(cleanError),
+        needsAuth: Boolean(isAuthError),
+      };
+    }
+  }
+);
+
+// Pull a specific branch without checking it out
+// This is used to update a non-active branch
+ipcMain.handle(
+  "git:pullBranch",
+  async (
+    _,
+    repoPath: string,
+    branchName: string,
+    username?: string | null,
+    password?: string | null,
+    saveCredentials: boolean = true
+  ) => {
+    try {
+      let originalRemoteUrl: string | null = null;
+
+      // Verify the repo path exists
+      if (!fs.existsSync(repoPath)) {
+        return {
+          success: false,
+          error: "Repository path does not exist.",
+          needsAuth: false,
+        };
+      }
+
+      const gitPath = path.join(repoPath, ".git");
+      if (!fs.existsSync(gitPath)) {
+        return {
+          success: false,
+          error: "Not a valid Git repository.",
+          needsAuth: false,
+        };
+      }
+
+      // Get remote URL to check if it's HTTPS
+      let remoteUrl = "";
+      try {
+        const { stdout } = await execAsync("git remote get-url origin", {
+          cwd: repoPath,
+          encoding: "utf8",
+        });
+        remoteUrl = stdout.trim();
+        originalRemoteUrl = remoteUrl;
+      } catch (error) {
+        // No remote configured
+        return {
+          success: false,
+          error: "No remote repository configured.",
+          needsAuth: false,
+        };
+      }
+
+      const isHttpsUrl =
+        remoteUrl.startsWith("https://") || remoteUrl.startsWith("http://");
+
+      // Build git command with credentials if provided
+      let gitCommand = "git";
+      // Use fetch with refspec to update the local branch without checking it out
+      // This is equivalent to: git fetch origin branch:branch
+      const fetchCommand = `fetch origin ${branchName}:${branchName}`;
+
+      // Check if credentials are provided (not null, undefined, or empty)
+      if (username && password && isHttpsUrl) {
+        // For HTTPS URLs with credentials, temporarily set the remote URL with embedded credentials
+        try {
+          const urlObj = new URL(remoteUrl);
+          urlObj.username = encodeURIComponent(username);
+          urlObj.password = encodeURIComponent(password);
+          const authenticatedUrl = urlObj.toString();
+
+          // Use -c credential.helper to manage credential storage
+          if (!saveCredentials) {
+            gitCommand = `git -c "credential.helper="`;
+          }
+
+          // Temporarily update the remote URL, fetch, then restore it
+          await execAsync(`git remote set-url origin "${authenticatedUrl}"`, {
+            cwd: repoPath,
+            encoding: "utf8",
+          });
+
+          try {
+            await execAsync(`${gitCommand} ${fetchCommand}`, {
+              cwd: repoPath,
+              encoding: "utf8",
+            });
+          } catch (fetchError: any) {
+            // Restore original URL before re-throwing
+            if (originalRemoteUrl) {
+              try {
+                await execAsync(
+                  `git remote set-url origin "${originalRemoteUrl}"`,
+                  {
+                    cwd: repoPath,
+                    encoding: "utf8",
+                  }
+                );
+              } catch (restoreError) {
+                console.error(
+                  "Failed to restore original remote URL:",
+                  restoreError
+                );
+              }
+            }
+            throw fetchError;
+          }
+
+          // Restore original URL after successful fetch
+          if (originalRemoteUrl) {
+            try {
+              await execAsync(
+                `git remote set-url origin "${originalRemoteUrl}"`,
+                {
+                  cwd: repoPath,
+                  encoding: "utf8",
+                }
+              );
+            } catch (restoreError) {
+              console.error(
+                "Failed to restore original remote URL:",
+                restoreError
+              );
+            }
+          }
+        } catch (error: any) {
+          // If URL parsing or remote setting fails, return a clean error
+          const errorMessage = error.stderr || error.message || String(error);
+          const lowerError = errorMessage.toLowerCase();
+
+          // Check if this is an authentication error
+          if (
+            lowerError.includes("authentication failed") ||
+            lowerError.includes("invalid username") ||
+            lowerError.includes("invalid credentials") ||
+            lowerError.includes("remote: invalid") ||
+            lowerError.includes("401") ||
+            lowerError.includes("403")
+          ) {
+            return {
+              success: false,
+              error: "Invalid username, password, or token",
+              needsAuth: false,
+            };
+          }
+
+          return {
+            success: false,
+            error: `Failed to configure authentication: ${errorMessage}`,
+            needsAuth: false,
+          };
+        }
+      } else {
+        // No credentials or SSH URL - fetch normally
+        if (!saveCredentials && isHttpsUrl) {
+          gitCommand = `git -c "credential.helper="`;
+        }
+
+        await execAsync(`${gitCommand} ${fetchCommand}`, {
+          cwd: repoPath,
+          encoding: "utf8",
+        });
+      }
+
+      return { success: true };
+    } catch (error: any) {
+      console.error("Error pulling branch:", error);
+
+      // Ensure we always return a serializable object
+      const errorMessage = String(error.stderr || error.message || error);
+      const lowerError = errorMessage.toLowerCase();
+
+      let cleanError: string;
+      let isAuthError = false;
+
+      // Check for specific error types
+      if (
+        lowerError.includes("no remote") ||
+        lowerError.includes("does not appear to be a git repository")
+      ) {
+        cleanError = "No remote repository configured.";
+      } else if (
+        lowerError.includes("could not resolve host") ||
+        lowerError.includes("unable to access")
+      ) {
+        cleanError = "Network error. Please check your internet connection.";
+      } else if (
+        lowerError.includes("authentication failed") ||
+        lowerError.includes("401") ||
+        lowerError.includes("403") ||
+        lowerError.includes("could not read username") ||
+        lowerError.includes("could not read password") ||
+        lowerError.includes("authentication required")
+      ) {
+        cleanError =
+          "Authentication required. Please provide your credentials to access this repository.";
+        isAuthError = true;
+      } else if (lowerError.includes("permission denied")) {
+        cleanError = "Permission denied. Please check your access rights.";
+      } else if (
+        lowerError.includes("rejected") ||
+        lowerError.includes("non-fast-forward")
+      ) {
+        cleanError =
+          "Cannot pull: branch has diverged. Switch to this branch and resolve conflicts manually.";
+      } else if (
+        lowerError.includes("refusing to fetch") ||
+        lowerError.includes("refusing to update")
+      ) {
+        cleanError = "Cannot update branch. It may have diverged from remote.";
+      } else {
+        // Extract the actual error message
+        const lines = errorMessage.split("\n");
+        const fatalLine = lines.find(
+          (line: string) => line.includes("fatal:") || line.includes("error:")
+        );
+        if (fatalLine) {
+          cleanError = fatalLine.replace(/^.*?(fatal:|error:)\s*/i, "");
+          cleanError = cleanError.charAt(0).toUpperCase() + cleanError.slice(1);
+        } else {
+          cleanError = errorMessage || "Failed to pull branch.";
         }
       }
 
