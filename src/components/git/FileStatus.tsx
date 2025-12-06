@@ -6,28 +6,31 @@ import { cn } from "@/lib/utils";
 interface FileChange {
   path: string;
   status: "added" | "deleted" | "modified";
-  staged: boolean;
+  hasStaged: boolean;
+  hasUnstaged: boolean;
 }
 
 interface FileStatusProps {
   files: FileChange[];
-  onToggleStage: (path: string) => void;
-  onSelectFile: (path: string) => void;
+  onToggleStage: (path: string, shouldStage: boolean) => void;
+  onSelectFile: (path: string, isStaged: boolean) => void;
   selectedFile?: string;
+  selectedFileIsStaged?: boolean;
   onStageAll?: () => void;
   onUnstageAll?: () => void;
 }
 
-export const FileStatus = ({ 
-  files, 
-  onToggleStage, 
-  onSelectFile, 
+export const FileStatus = ({
+  files,
+  onToggleStage,
+  onSelectFile,
   selectedFile,
+  selectedFileIsStaged,
   onStageAll,
-  onUnstageAll 
+  onUnstageAll,
 }: FileStatusProps) => {
-  const stagedFiles = files.filter((f) => f.staged);
-  const unstagedFiles = files.filter((f) => !f.staged);
+  const stagedFiles = files.filter((f) => f.hasStaged);
+  const unstagedFiles = files.filter((f) => f.hasUnstaged);
 
   const getStatusIcon = (status: FileChange["status"]) => {
     switch (status) {
@@ -40,15 +43,15 @@ export const FileStatus = ({
     }
   };
 
-  const renderFileList = (fileList: FileChange[]) => (
+  const renderFileList = (fileList: FileChange[], isStaged: boolean) => (
     <div className="space-y-1">
       {fileList.map((file) => (
         <div
-          key={file.path}
-          onClick={() => onSelectFile(file.path)}
+          key={`${file.path}-${isStaged ? "staged" : "unstaged"}`}
+          onClick={() => onSelectFile(file.path, isStaged)}
           className={cn(
             "flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm transition-colors hover:bg-secondary group cursor-pointer",
-            selectedFile === file.path && "bg-secondary"
+            selectedFile === file.path && selectedFileIsStaged === isStaged && "bg-secondary"
           )}
         >
           <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -58,7 +61,7 @@ export const FileStatus = ({
           <Button
             onClick={(e) => {
               e.stopPropagation();
-              onToggleStage(file.path);
+              onToggleStage(file.path, !isStaged);
             }}
             variant="ghost"
             size="sm"
@@ -66,7 +69,7 @@ export const FileStatus = ({
               "h-7 px-2 text-xs transition-all opacity-0 group-hover:opacity-100 flex-shrink-0"
             )}
           >
-            {file.staged ? "Unstage" : "Stage"}
+            {isStaged ? "Unstage" : "Stage"}
           </Button>
         </div>
       ))}
@@ -81,7 +84,7 @@ export const FileStatus = ({
           Changed Files
         </h2>
       </div>
-      
+
       {files.length === 0 ? (
         <div className="flex flex-1 items-center justify-center p-8 text-center text-sm text-muted-foreground">
           No changes detected
@@ -109,7 +112,7 @@ export const FileStatus = ({
             <ScrollArea className="flex-1">
               <div className="p-2">
                 {unstagedFiles.length > 0 ? (
-                  renderFileList(unstagedFiles)
+                  renderFileList(unstagedFiles, false)
                 ) : (
                   <div className="p-4 text-center text-xs text-muted-foreground">
                     No unstaged changes
@@ -140,7 +143,7 @@ export const FileStatus = ({
             <ScrollArea className="flex-1">
               <div className="p-2">
                 {stagedFiles.length > 0 ? (
-                  renderFileList(stagedFiles)
+                  renderFileList(stagedFiles, true)
                 ) : (
                   <div className="p-4 text-center text-xs text-muted-foreground">
                     No staged changes

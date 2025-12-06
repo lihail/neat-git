@@ -1,10 +1,20 @@
 import { useState } from "react";
-import { ArrowDown, ArrowUp, Copy, Download, Edit, Trash2 } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  Copy,
+  Download,
+  Edit,
+  Trash2,
+  Laptop,
+  Cloud,
+} from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
+  ContextMenuSeparator,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import {
@@ -23,6 +33,7 @@ interface Branch {
   behind?: number;
   ahead?: number;
   hasUpstream?: boolean;
+  upstream?: string;
 }
 
 interface BranchListProps {
@@ -91,6 +102,11 @@ export const BranchList = ({
                   </div>
                 ) : (
                   <div className="flex items-center gap-2 w-full max-w-full">
+                    {branch.hasUpstream ? (
+                      <Cloud className="h-3.5 w-3.5 text-primary flex-shrink-0" />
+                    ) : (
+                      <Laptop className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                    )}
                     <div className="flex-1 min-w-0 overflow-hidden">
                       <div className="truncate font-mono text-sm">
                         {branch.name}
@@ -114,13 +130,24 @@ export const BranchList = ({
                 )}
               </div>
             </ContextMenuTrigger>
-            <ContextMenuContent className="w-48">
+            <ContextMenuContent className="max-w-64">
+              {branch.hasUpstream && branch.upstream && (
+                <>
+                  <div className="px-2 py-1.5 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-2">
+                      <span>Remote branch:</span>
+                      <span className="font-mono">{branch.upstream}</span>
+                    </div>
+                  </div>
+                  <ContextMenuSeparator />
+                </>
+              )}
               {/* Pull option - disabled if branch has no upstream or has unpushed commits */}
               {!branch.hasUpstream ? (
                 <TooltipProvider>
                   <Tooltip delayDuration={0}>
                     <TooltipTrigger asChild>
-                      <div className="relative flex select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none text-muted-foreground opacity-50">
+                      <div className="relative flex select-none items-center gap-3 rounded-sm px-2 py-1.5 text-sm outline-none text-muted-foreground opacity-50">
                         <span className="flex-1">Pull</span>
                         <Download className="h-4 w-4" />
                       </div>
@@ -136,7 +163,7 @@ export const BranchList = ({
                 <TooltipProvider>
                   <Tooltip delayDuration={0}>
                     <TooltipTrigger asChild>
-                      <div className="relative flex select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none text-muted-foreground opacity-50">
+                      <div className="relative flex select-none items-center gap-3 rounded-sm px-2 py-1.5 text-sm outline-none text-muted-foreground opacity-50">
                         <span className="flex-1">Pull</span>
                         <Download className="h-4 w-4" />
                       </div>
@@ -149,7 +176,7 @@ export const BranchList = ({
                 </TooltipProvider>
               ) : (
                 <ContextMenuItem
-                  className="hover:bg-secondary focus:bg-secondary focus:text-foreground"
+                  className="gap-3 hover:bg-secondary focus:bg-secondary focus:text-foreground"
                   onSelect={() => {
                     if (onPullBranch) {
                       onPullBranch(branch.name);
@@ -161,7 +188,7 @@ export const BranchList = ({
                 </ContextMenuItem>
               )}
               <ContextMenuItem
-                className="hover:bg-secondary focus:bg-secondary focus:text-foreground"
+                className="gap-3 hover:bg-secondary focus:bg-secondary focus:text-foreground"
                 onSelect={() => {
                   navigator.clipboard.writeText(branch.name);
                   toast.success(`Copied "${branch.name}" to clipboard`);
@@ -170,8 +197,22 @@ export const BranchList = ({
                 <span className="flex-1">Copy Branch Name</span>
                 <Copy className="h-4 w-4" />
               </ContextMenuItem>
+              {branch.upstream && (
+                <ContextMenuItem
+                  className="gap-3 hover:bg-secondary focus:bg-secondary focus:text-foreground"
+                  onSelect={() => {
+                    if (branch.upstream) {
+                      navigator.clipboard.writeText(branch.upstream);
+                      toast.success(`Copied "${branch.upstream}" to clipboard`);
+                    }
+                  }}
+                >
+                  <span className="flex-1">Copy Remote Branch Name</span>
+                  <Copy className="h-4 w-4" />
+                </ContextMenuItem>
+              )}
               <ContextMenuItem
-                className="hover:bg-secondary focus:bg-secondary focus:text-foreground"
+                className="gap-3 hover:bg-secondary focus:bg-secondary focus:text-foreground"
                 onSelect={() => {
                   if (onRenameClick) {
                     onRenameClick(branch.name);
@@ -185,7 +226,7 @@ export const BranchList = ({
                 <TooltipProvider>
                   <Tooltip delayDuration={0}>
                     <TooltipTrigger asChild>
-                      <div className="relative flex select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none text-muted-foreground opacity-50">
+                      <div className="relative flex select-none items-center gap-3 rounded-sm px-2 py-1.5 text-sm outline-none text-muted-foreground opacity-50">
                         <span className="flex-1">Delete</span>
                         <Trash2 className="h-4 w-4" />
                       </div>
@@ -198,7 +239,7 @@ export const BranchList = ({
                 </TooltipProvider>
               ) : (
                 <ContextMenuItem
-                  className="text-destructive hover:bg-secondary focus:bg-secondary focus:text-destructive"
+                  className="gap-3 text-destructive hover:bg-secondary focus:bg-secondary focus:text-destructive"
                   onSelect={() => {
                     if (onDeleteBranch) {
                       setDeletingBranch(branch.name);

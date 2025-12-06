@@ -1,5 +1,13 @@
 import { Fragment, useState } from "react";
-import { X, Plus, Download, Upload, RefreshCw, Archive } from "lucide-react";
+import {
+  X,
+  Plus,
+  Download,
+  Upload,
+  RefreshCw,
+  Archive,
+  GitBranchPlus,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
@@ -9,6 +17,16 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export interface RepoTab {
   id: string;
@@ -23,6 +41,7 @@ interface RepoTabsProps {
   onCloseTab: (tabId: string) => void;
   onReorderTabs: (newTabs: RepoTab[]) => void;
   onOpenNewRepo: () => void;
+  onCreateBranch?: (branchName: string) => void;
   onStash?: () => void;
   onFetch?: () => void;
   onPull?: () => void;
@@ -41,6 +60,7 @@ export const RepoTabs = ({
   onCloseTab,
   onReorderTabs,
   onOpenNewRepo,
+  onCreateBranch,
   onStash,
   onFetch,
   onPull,
@@ -53,6 +73,72 @@ export const RepoTabs = ({
 }: RepoTabsProps) => {
   const [draggedTabId, setDraggedTabId] = useState<string | null>(null);
   const [dragOverTabId, setDragOverTabId] = useState<string | null>(null);
+  const [isCreatingBranch, setIsCreatingBranch] = useState(false);
+  const [newBranchName, setNewBranchName] = useState("");
+  const [branchNameError, setBranchNameError] = useState<string | null>(null);
+
+  const validateBranchName = (name: string): string | null => {
+    if (!name.trim()) {
+      return "Branch name cannot be empty";
+    }
+
+    // Git branch naming rules
+    if (name.startsWith(".")) {
+      return "Branch name cannot start with a dot";
+    }
+    if (name.endsWith("/")) {
+      return "Branch name cannot end with a slash";
+    }
+    if (name.endsWith(".lock")) {
+      return "Branch name cannot end with .lock";
+    }
+    if (name.includes("..")) {
+      return "Branch name cannot contain consecutive dots";
+    }
+    if (name.includes("//")) {
+      return "Branch name cannot contain consecutive slashes";
+    }
+    if (name.includes("@{")) {
+      return "Branch name cannot contain @{";
+    }
+    if (/[\s~^:?*\[\]\\]/.test(name)) {
+      return "Branch name cannot contain spaces or special characters (~^:?*[]\\)";
+    }
+    if (name.startsWith("/")) {
+      return "Branch name cannot start with a slash";
+    }
+
+    return null;
+  };
+
+  const handleCreateBranch = () => {
+    const trimmedName = newBranchName.trim();
+    const error = validateBranchName(trimmedName);
+
+    if (error) {
+      setBranchNameError(error);
+      return;
+    }
+
+    if (onCreateBranch) {
+      onCreateBranch(trimmedName);
+      setNewBranchName("");
+      setIsCreatingBranch(false);
+      setBranchNameError(null);
+    }
+  };
+
+  const handleBranchNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setNewBranchName(value);
+    // Validate in real-time if there was a previous error
+    if (branchNameError && value.trim()) {
+      const error = validateBranchName(value);
+      setBranchNameError(error);
+    } else if (!value.trim()) {
+      setBranchNameError(null);
+    }
+  };
 
   const handleDragStart = (
     e: React.DragEvent<HTMLDivElement>,
@@ -138,11 +224,15 @@ export const RepoTabs = ({
                           : "bg-transparent text-muted-foreground hover:bg-muted/50",
                         draggedTabId === tab.id && "opacity-50",
                         dragOverTabId === tab.id && "bg-muted",
-                        (isLoading || isAnyRemoteOperationActive)
+                        isLoading || isAnyRemoteOperationActive
                           ? "cursor-not-allowed opacity-50"
                           : "cursor-pointer"
                       )}
-                      onClick={() => !isLoading && !isAnyRemoteOperationActive && onSelectTab(tab.id)}
+                      onClick={() =>
+                        !isLoading &&
+                        !isAnyRemoteOperationActive &&
+                        onSelectTab(tab.id)
+                      }
                     >
                       <span
                         className={cn(
@@ -211,7 +301,9 @@ export const RepoTabs = ({
             onClick={onFetch}
             disabled={isLoading || isFetching || isPulling || isPushing}
           >
-            <RefreshCw className={cn("h-4 w-4", isFetching && "animate-spin")} />
+            <RefreshCw
+              className={cn("h-4 w-4", isFetching && "animate-spin")}
+            />
             <span className="text-[10px]">Fetch</span>
           </Button>
 
@@ -221,7 +313,9 @@ export const RepoTabs = ({
             onClick={onPull}
             disabled={isLoading || isFetching || isPulling || isPushing}
           >
-            <Download className={cn("h-4 w-4", isPulling && "animate-bounce")} />
+            <Download
+              className={cn("h-4 w-4", isPulling && "animate-bounce")}
+            />
             <span className="text-[10px]">Pull</span>
           </Button>
 
@@ -244,8 +338,89 @@ export const RepoTabs = ({
             <Archive className="h-4 w-4" />
             <span className="text-[10px]">Stash</span>
           </Button>
+
+          <Button
+            variant="ghost"
+            className="flex flex-col items-center gap-1 h-auto py-1 w-16 text-foreground"
+            onClick={() => setIsCreatingBranch(true)}
+            disabled={isLoading}
+          >
+            <GitBranchPlus className="h-4 w-4" />
+            <span className="text-[10px]">Branch</span>
+          </Button>
         </div>
       </TooltipProvider>
+
+      {/* New Branch Dialog */}
+      <Dialog
+        open={isCreatingBranch}
+        onOpenChange={(open) => {
+          setIsCreatingBranch(open);
+          if (!open) {
+            setNewBranchName("");
+            setBranchNameError(null);
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New Branch</DialogTitle>
+            <DialogDescription>
+              Create a new branch from the current commit
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="branch-name">Branch Name</Label>
+              <Input
+                id="branch-name"
+                autoFocus
+                placeholder="feature/my-new-feature"
+                value={newBranchName}
+                onChange={handleBranchNameChange}
+                onKeyDown={(e) => {
+                  if (
+                    e.key === "Enter" &&
+                    !branchNameError &&
+                    newBranchName.trim()
+                  ) {
+                    handleCreateBranch();
+                  } else if (e.key === "Escape") {
+                    setIsCreatingBranch(false);
+                    setNewBranchName("");
+                    setBranchNameError(null);
+                  }
+                }}
+                className={cn(
+                  branchNameError &&
+                    "border-destructive focus-visible:ring-destructive"
+                )}
+              />
+              {branchNameError && (
+                <p className="text-sm text-destructive">{branchNameError}</p>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsCreatingBranch(false);
+                setNewBranchName("");
+                setBranchNameError(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleCreateBranch}
+              disabled={!newBranchName.trim() || branchNameError !== null}
+            >
+              Create Branch
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
