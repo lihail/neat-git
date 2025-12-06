@@ -4,18 +4,22 @@ export interface Branch {
   behind?: number;
   ahead?: number;
   hasUpstream?: boolean;
+  upstream?: string;  // actual upstream branch name (e.g., "origin/main")
 }
 
 export interface FileStatus {
   path: string;
   status: "modified" | "added" | "deleted";
-  staged: boolean;
+  hasStaged: boolean; // Has staged changes
+  hasUnstaged: boolean; // Has unstaged changes
 }
 
 export interface DiffLine {
   type: "add" | "delete" | "context";
   content: string;
   lineNumber: number;
+  hunkIndex?: number;
+  hunkHeader?: string;
 }
 
 export interface Commit {
@@ -142,15 +146,17 @@ export async function listRemoteBranches(repoPath: string): Promise<Branch[]> {
 
 /**
  * Get diff for a file
+ * @param staged - If true, shows staged changes (HEAD vs staging area). If false, shows unstaged changes (staging area vs working directory)
+ * @param contextLines - Number of context lines to show around changes (999999 for full file, 3 for hunks)
  */
-export async function getDiff(repoPath: string, filepath: string): Promise<DiffLine[]> {
+export async function getDiff(repoPath: string, filepath: string, staged: boolean = false, contextLines: number = 999999): Promise<DiffLine[]> {
   if (typeof window === 'undefined' || !window.electronAPI) {
     console.warn('Electron API not available');
     return [];
   }
 
   try {
-    const diff = await window.ipcRenderer.invoke('git:diff', repoPath, filepath);
+    const diff = await window.ipcRenderer.invoke('git:diff', repoPath, filepath, staged, contextLines);
     return diff || [];
   } catch (error) {
     console.error('Error getting diff:', error);

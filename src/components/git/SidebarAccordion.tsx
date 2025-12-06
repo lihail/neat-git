@@ -6,6 +6,7 @@ import {
   Archive,
   Upload,
   Loader2,
+  Cloud,
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -42,6 +43,7 @@ interface Branch {
   behind?: number;
   ahead?: number;
   hasUpstream?: boolean;
+  upstream?: string;
 }
 
 interface Commit {
@@ -94,9 +96,6 @@ export const SidebarAccordion = ({
   onDeleteStash,
   isRenaming = false,
 }: SidebarAccordionProps) => {
-  const [isCreatingBranch, setIsCreatingBranch] = useState(false);
-  const [newBranchName, setNewBranchName] = useState("");
-  const [branchNameError, setBranchNameError] = useState<string | null>(null);
   const [hoveredStash, setHoveredStash] = useState<number | null>(null);
   const [deletingStash, setDeletingStash] = useState<number | null>(null);
   const [renamingBranch, setRenamingBranch] = useState<string | null>(null);
@@ -119,75 +118,29 @@ export const SidebarAccordion = ({
     setWasRenaming(isRenaming);
   }, [isRenaming, wasRenaming, renamingBranch]);
 
-  const validateBranchName = (name: string): string | null => {
-    if (!name.trim()) {
-      return "Branch name cannot be empty";
-    }
+  const categorizeBranches = () => {
+    const remoteOnly: Branch[] = [];
+    const trackedRemotes = new Set<string>();
 
-    // Git branch naming rules
-    if (name.startsWith(".")) {
-      return "Branch name cannot start with a dot";
-    }
-    if (name.endsWith("/")) {
-      return "Branch name cannot end with a slash";
-    }
-    if (name.endsWith(".lock")) {
-      return "Branch name cannot end with .lock";
-    }
-    if (name.includes("..")) {
-      return "Branch name cannot contain consecutive dots";
-    }
-    if (name.includes("//")) {
-      return "Branch name cannot contain consecutive slashes";
-    }
-    if (name.includes("@{")) {
-      return "Branch name cannot contain @{";
-    }
-    if (/[\s~^:?*\[\]\\]/.test(name)) {
-      return "Branch name cannot contain spaces or special characters (~^:?*[]\\)";
-    }
-    if (name.startsWith("/")) {
-      return "Branch name cannot start with a slash";
-    }
+    // Collect all tracked remote names
+    branches.forEach((branch) => {
+      if (branch.upstream) {
+        trackedRemotes.add(branch.upstream);
+      }
+    });
 
-    return null;
+    // Process remote-only branches
+    remoteBranches.forEach((branch) => {
+      if (!trackedRemotes.has(branch.name)) {
+        remoteOnly.push(branch);
+      }
+    });
+
+    return { allLocal: branches, remoteOnly };
   };
 
-  const handleCreateBranch = () => {
-    const trimmedName = newBranchName.trim();
-    const error = validateBranchName(trimmedName);
+  const categorizedBranches = categorizeBranches();
 
-    if (error) {
-      setBranchNameError(error);
-      return;
-    }
-
-    if (onCreateBranch) {
-      onCreateBranch(trimmedName);
-      setNewBranchName("");
-      setIsCreatingBranch(false);
-      setBranchNameError(null);
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      handleCreateBranch();
-    } else if (e.key === "Escape") {
-      setNewBranchName("");
-      setIsCreatingBranch(false);
-      setBranchNameError(null);
-    }
-  };
-
-  const handleBranchNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setNewBranchName(value);
-    // Clear error when user starts typing
-    if (branchNameError) {
-      setBranchNameError(null);
-    }
-  };
   const defaultOpenSections = ["local-branches"];
   if (remoteBranches.length > 0) defaultOpenSections.push("remote-branches");
   if (stashes.length > 0) defaultOpenSections.push("stashed-changes");
@@ -213,49 +166,8 @@ export const SidebarAccordion = ({
             </div>
           </AccordionTrigger>
           <AccordionContent className="pb-0">
-            {onCreateBranch && (
-              <div className="px-4 py-2">
-                {isCreatingBranch ? (
-                  <div className="space-y-1">
-                    <Input
-                      autoFocus
-                      placeholder="Branch name..."
-                      value={newBranchName}
-                      onChange={handleBranchNameChange}
-                      onKeyDown={handleKeyDown}
-                      onBlur={() => {
-                        if (!newBranchName.trim()) {
-                          setIsCreatingBranch(false);
-                          setBranchNameError(null);
-                        }
-                      }}
-                      className={cn(
-                        "h-8 text-xs",
-                        branchNameError &&
-                          "border-destructive focus-visible:ring-destructive"
-                      )}
-                    />
-                    {branchNameError && (
-                      <p className="text-xs text-destructive">
-                        {branchNameError}
-                      </p>
-                    )}
-                  </div>
-                ) : (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="w-full justify-start gap-2"
-                    onClick={() => setIsCreatingBranch(true)}
-                  >
-                    <Plus className="h-4 w-4" />
-                    New Branch
-                  </Button>
-                )}
-              </div>
-            )}
             <BranchList
-              branches={branches}
+              branches={categorizedBranches.allLocal}
               onSelectBranch={onSelectBranch}
               onDeleteBranch={onDeleteBranch}
               onPullBranch={onPullBranch}
@@ -268,7 +180,6 @@ export const SidebarAccordion = ({
           </AccordionContent>
         </AccordionItem>
 
-        {/* Remote Branches */}
         <AccordionItem
           value="remote-branches"
           className="border-b border-border"
@@ -281,14 +192,14 @@ export const SidebarAccordion = ({
             disabled={remoteBranches.length === 0}
           >
             <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-              <GitBranch className="h-4 w-4 text-primary" />
+              <Cloud className="h-4 w-4 text-primary flex-shrink-0" />
               Remote Branches
             </div>
           </AccordionTrigger>
           <AccordionContent className="pb-0">
             <ScrollArea className="h-64">
               <div className="p-2 space-y-1">
-                {remoteBranches.map((branch) => (
+                {categorizedBranches.remoteOnly.map((branch) => (
                   <button
                     key={branch.name}
                     onDoubleClick={() => onSelectBranch(branch.name)}

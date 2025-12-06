@@ -1,4 +1,11 @@
-import { FolderOpen, X, GitBranch, FolderPlus, Eye, EyeOff } from "lucide-react";
+import {
+  FolderOpen,
+  X,
+  GitBranch,
+  FolderPlus,
+  Eye,
+  EyeOff,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useState } from "react";
@@ -136,7 +143,9 @@ export const RepoSelector = ({
     }
   };
 
-  const extractCredentialsFromUrl = (url: string): { username: string; password: string } | null => {
+  const extractCredentialsFromUrl = (
+    url: string
+  ): { username: string; password: string } | null => {
     try {
       if (url.startsWith("http://") || url.startsWith("https://")) {
         const urlObj = new URL(url);
@@ -248,11 +257,11 @@ export const RepoSelector = ({
 
     try {
       const finalPath = getFullClonePath();
-      
+
       // If no credentials provided, check if URL has embedded credentials
       let effectiveUsername = username;
       let effectivePassword = password;
-      
+
       if (!isAuthRetry) {
         const embeddedCreds = extractCredentialsFromUrl(cloneUrl);
         if (embeddedCreds) {
@@ -260,7 +269,7 @@ export const RepoSelector = ({
           effectivePassword = embeddedCreds.password;
         }
       }
-      
+
       const result = await window.ipcRenderer.invoke(
         "git:clone",
         cloneUrl,
@@ -305,18 +314,18 @@ export const RepoSelector = ({
           const host = extractHostFromUrl(cloneUrl);
           setAuthHost(host);
           setAuthError(null); // Clear any previous errors
-          
+
           // Clear credentials for security
           setAuthUsername("");
           setAuthPassword("");
-          
+
           // Pre-fill with embedded credentials if they exist in the URL
           const embeddedCreds = extractCredentialsFromUrl(cloneUrl);
           if (embeddedCreds) {
             setAuthUsername(embeddedCreds.username);
             setAuthPassword(embeddedCreds.password);
           }
-          
+
           setShowAuthDialog(true);
           setShowCloneDialog(false);
         }
@@ -570,11 +579,9 @@ export const RepoSelector = ({
       }
     } catch (error) {
       console.error("Error creating repository:", error);
-      toast.error(
-        `Failed to create repository: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
-      );
+      toast.error("Failed to create repository", {
+        description: error instanceof Error ? error.message : "Unknown error",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -979,8 +986,8 @@ export const RepoSelector = ({
       </Dialog>
 
       {/* SSH Setup Dialog */}
-      <Dialog 
-        open={showSshDialog} 
+      <Dialog
+        open={showSshDialog}
         onOpenChange={(open) => {
           if (!sshIsGenerating) {
             setShowSshDialog(open);

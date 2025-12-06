@@ -3,6 +3,7 @@ import { RepoSelector } from "@/components/git/RepoSelector";
 import { SidebarAccordion } from "@/components/git/SidebarAccordion";
 import { FileStatus } from "@/components/git/FileStatus";
 import { DiffViewer } from "@/components/git/DiffViewer";
+import { type DiffViewerMode } from "@/components/git/DiffViewerModeToggle";
 import { CommitPanel } from "@/components/git/CommitPanel";
 import { RepoTabs, type RepoTab } from "@/components/git/RepoTabs";
 import { GitSetupDialog } from "@/components/git/GitSetupDialog";
@@ -28,8 +29,6 @@ import {
   getStatus,
   stageFile,
   unstageFile,
-  stageAll,
-  unstageAll,
   getDiff,
   createBranch,
   checkoutBranch,
@@ -54,22 +53,10 @@ import {
   type Stash,
 } from "@/lib/git";
 
-// Demo data
-const demoBranches = [
-  { name: "main" },
-  { name: "develop" },
-  { name: "feature/new-ui" },
-  { name: "feature/api-integration" },
-  { name: "feature/user-dashboard" },
-  { name: "bugfix/login-error" },
-  { name: "hotfix/security-patch" },
-  { name: "feature/search-functionality" },
-  { name: "refactor/component-structure" },
-];
-
 const TABS_STORAGE_KEY = "neatgit_tabs";
 const ACTIVE_TAB_STORAGE_KEY = "neatgit_active_tab";
 const WORD_WRAP_STORAGE_KEY = "neatgit_word_wrap";
+const DIFF_VIEWER_MODE_STORAGE_KEY = "neatgit_diff_viewer_mode";
 const GIT_SETUP_COMPLETE_KEY = "neatgit_git_setup_complete";
 
 // State for each repo tab
@@ -81,6 +68,7 @@ interface RepoState {
   stashes: Stash[];
   files: GitFileStatus[];
   selectedFile?: string;
+  selectedFileIsStaged?: boolean; // Track if viewing staged or unstaged diff
   diffLines: DiffLine[];
 }
 
@@ -90,7 +78,21 @@ const getRepoNameFromPath = (path: string): string => {
   return parts[parts.length - 1] || path;
 };
 
-const Index = () => {
+// Helper function to convert view mode to context lines
+const getContextLinesForMode = (mode: DiffViewerMode): number => {
+  switch (mode) {
+    case "full":
+      return 999999; // Show entire file
+    case "hunks":
+      return 3; // Show 3 lines of context around changes
+    case "split":
+      return 999999; // Split view also shows full file
+    default:
+      return 999999;
+  }
+};
+
+export const Index = () => {
   // Load saved tabs from localStorage on mount
   const [tabs, setTabs] = useState<RepoTab[]>(() => {
     if (typeof window !== "undefined") {
@@ -119,11 +121,15 @@ const Index = () => {
   const [loadingRepos, setLoadingRepos] = useState<Record<string, boolean>>({});
   const [loadingDiff, setLoadingDiff] = useState(false);
   const [isCloning, setIsCloning] = useState(false);
-  const [fetchingRepos, setFetchingRepos] = useState<Record<string, boolean>>({});
+  const [fetchingRepos, setFetchingRepos] = useState<Record<string, boolean>>(
+    {}
+  );
   const [pullingRepos, setPullingRepos] = useState<Record<string, boolean>>({});
   const [pushingRepos, setPushingRepos] = useState<Record<string, boolean>>({});
-  const [renamingRepos, setRenamingRepos] = useState<Record<string, boolean>>({});
-  
+  const [renamingRepos, setRenamingRepos] = useState<Record<string, boolean>>(
+    {}
+  );
+
   // Fetch authentication state
   const [showFetchAuthDialog, setShowFetchAuthDialog] = useState(false);
   const [fetchAuthUsername, setFetchAuthUsername] = useState("");
@@ -131,7 +137,7 @@ const Index = () => {
   const [fetchAuthError, setFetchAuthError] = useState<string | null>(null);
   const [saveFetchCredentials, setSaveFetchCredentials] = useState(true);
   const [showFetchPassword, setShowFetchPassword] = useState(false);
-  
+
   // Pull authentication state
   const [showPullAuthDialog, setShowPullAuthDialog] = useState(false);
   const [pullAuthUsername, setPullAuthUsername] = useState("");
@@ -139,7 +145,7 @@ const Index = () => {
   const [pullAuthError, setPullAuthError] = useState<string | null>(null);
   const [savePullCredentials, setSavePullCredentials] = useState(true);
   const [showPullPassword, setShowPullPassword] = useState(false);
-  
+
   // Push authentication state
   const [showPushAuthDialog, setShowPushAuthDialog] = useState(false);
   const [pushAuthUsername, setPushAuthUsername] = useState("");
@@ -147,7 +153,7 @@ const Index = () => {
   const [pushAuthError, setPushAuthError] = useState<string | null>(null);
   const [savePushCredentials, setSavePushCredentials] = useState(true);
   const [showPushPassword, setShowPushPassword] = useState(false);
-  
+
   const [wordWrap, setWordWrap] = useState<boolean>(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem(WORD_WRAP_STORAGE_KEY);
@@ -156,8 +162,20 @@ const Index = () => {
     return false;
   });
 
+  const [diffViewerMode, setDiffViewerMode] = useState<DiffViewerMode>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem(DIFF_VIEWER_MODE_STORAGE_KEY);
+      if (saved === "full" || saved === "hunks" || saved === "split") {
+        return saved;
+      }
+    }
+    return "full";
+  });
+
   // Auto-fetch interval (5 minutes)
-  const [fetchIntervalId, setFetchIntervalId] = useState<NodeJS.Timeout | null>(null);
+  const [fetchIntervalId, setFetchIntervalId] = useState<NodeJS.Timeout | null>(
+    null
+  );
   const [showGitSetup, setShowGitSetup] = useState(false);
 
   // Check for Git setup on mount
@@ -206,6 +224,16 @@ const Index = () => {
     localStorage.setItem(WORD_WRAP_STORAGE_KEY, wordWrap.toString());
   }, [wordWrap]);
 
+  // Save diff viewer mode setting to localStorage
+  useEffect(() => {
+    localStorage.setItem(DIFF_VIEWER_MODE_STORAGE_KEY, diffViewerMode);
+  }, [diffViewerMode]);
+
+  // Clear toasts when switching tabs
+  useEffect(() => {
+    toast.dismiss();
+  }, [activeTabId]);
+
   // Auto-fetch interval management
   useEffect(() => {
     // Clear any existing interval
@@ -234,14 +262,17 @@ const Index = () => {
 
         // Check if repo has a remote configured
         try {
-          const remoteUrlResult = await window.ipcRenderer.invoke("git:getRemoteUrl", currentRepoPath);
+          const remoteUrlResult = await window.ipcRenderer.invoke(
+            "git:getRemoteUrl",
+            currentRepoPath
+          );
           if (!remoteUrlResult.success) {
             // No remote configured, skip auto-fetch
             return;
           }
         } catch (error) {
           // Failed to check remote, skip auto-fetch
-          console.error('Failed to check remote URL:', error);
+          console.error("Failed to check remote URL:", error);
           return;
         }
 
@@ -250,7 +281,7 @@ const Index = () => {
           setFetchingRepos((prev) => ({ ...prev, [currentRepoPath]: true }));
 
           const result = await fetchFromRemote(currentRepoPath);
-          
+
           if (result.success) {
             // Refresh repo data after fetch
             const remoteBranchList = await listRemoteBranches(currentRepoPath);
@@ -266,7 +297,7 @@ const Index = () => {
           // Note: We don't show auth dialogs or error toasts for auto-fetch
         } catch (error) {
           // Silent fail for auto-fetch
-          console.error('Auto-fetch error:', error);
+          console.error("Auto-fetch error:", error);
         } finally {
           // Clear fetching state
           setFetchingRepos((prev) => ({ ...prev, [currentRepoPath]: false }));
@@ -303,7 +334,7 @@ const Index = () => {
   const isRenaming = repoPath ? renamingRepos[repoPath] || false : false;
 
   // Check if ANY repo has a remote operation in progress (to disable tab switching)
-  const isAnyRemoteOperationActive = 
+  const isAnyRemoteOperationActive =
     Object.values(fetchingRepos).some(Boolean) ||
     Object.values(pullingRepos).some(Boolean) ||
     Object.values(pushingRepos).some(Boolean);
@@ -353,11 +384,10 @@ const Index = () => {
           });
         } catch (error) {
           console.error("Error loading Git data:", error);
-          toast.error(
-            `Failed to load Git repository data: ${
-              error instanceof Error ? error.message : "Unknown error"
-            }`
-          );
+          toast.error("Failed to load Git repository data", {
+            description:
+              error instanceof Error ? error.message : "Unknown error",
+          });
         } finally {
           // Clear loading state
           setLoadingRepos((prev) => ({ ...prev, [repoPath]: false }));
@@ -367,21 +397,27 @@ const Index = () => {
     }
   }, [repoPath]);
 
-  // Load diff when selected file changes
+  // Load diff when selected file changes or view mode changes
+  // Note: We intentionally don't include selectedFileIsStaged in dependencies
+  // to avoid reloading when programmatically updating the section after staging
   useEffect(() => {
     if (repoPath && currentState?.selectedFile) {
       const loadDiff = async () => {
         setLoadingDiff(true);
         try {
-          const diff = await getDiff(repoPath, currentState.selectedFile!);
+          const diff = await getDiff(
+            repoPath,
+            currentState.selectedFile!,
+            currentState.selectedFileIsStaged ?? false,
+            getContextLinesForMode(diffViewerMode)
+          );
           updateRepoState(repoPath, { diffLines: diff });
         } catch (error) {
           console.error("Error loading diff:", error);
-          toast.error(
-            `Failed to load diff: ${
-              error instanceof Error ? error.message : "Unknown error"
-            }`
-          );
+          toast.error("Failed to load diff", {
+            description:
+              error instanceof Error ? error.message : "Unknown error",
+          });
           updateRepoState(repoPath, { diffLines: [] });
         } finally {
           setLoadingDiff(false);
@@ -392,7 +428,7 @@ const Index = () => {
       updateRepoState(repoPath, { diffLines: [] });
       setLoadingDiff(false);
     }
-  }, [repoPath, currentState?.selectedFile]);
+  }, [repoPath, currentState?.selectedFile, diffViewerMode]);
 
   // Refresh git data when window regains focus
   useEffect(() => {
@@ -406,17 +442,49 @@ const Index = () => {
         const current = await getCurrentBranch(repoPath);
         const stashList = await listStashes(repoPath);
 
+        // Check if selected file still exists and adjust section if needed
+        let newSelectedFileIsStaged = currentState?.selectedFileIsStaged;
+        if (currentState?.selectedFile) {
+          const selectedFileStatus = statusList.find(
+            (f) => f.path === currentState.selectedFile
+          );
+          if (selectedFileStatus) {
+            // If viewing unstaged but file no longer has unstaged changes, switch to staged
+            if (
+              currentState.selectedFileIsStaged === false &&
+              !selectedFileStatus.hasUnstaged &&
+              selectedFileStatus.hasStaged
+            ) {
+              newSelectedFileIsStaged = true;
+            }
+            // If viewing staged but file no longer has staged changes, switch to unstaged
+            else if (
+              currentState.selectedFileIsStaged === true &&
+              !selectedFileStatus.hasStaged &&
+              selectedFileStatus.hasUnstaged
+            ) {
+              newSelectedFileIsStaged = false;
+            }
+          }
+        }
+
         updateRepoState(repoPath, {
           files: statusList,
           commits: commitHistory,
           branches: branchList,
           currentBranch: current,
           stashes: stashList,
+          selectedFileIsStaged: newSelectedFileIsStaged,
         });
 
         // Reload diff if a file is selected
         if (currentState?.selectedFile) {
-          const diff = await getDiff(repoPath, currentState.selectedFile);
+          const diff = await getDiff(
+            repoPath,
+            currentState.selectedFile,
+            newSelectedFileIsStaged ?? false,
+            getContextLinesForMode(diffViewerMode)
+          );
           updateRepoState(repoPath, { diffLines: diff });
         }
       } catch (error) {
@@ -483,31 +551,62 @@ const Index = () => {
     setTabs(newTabs);
   };
 
-  const handleToggleStage = async (path: string) => {
+  const handleToggleStage = async (path: string, shouldStage: boolean) => {
     if (!repoPath || !currentState) return;
 
-    const file = currentState.files.find((f) => f.path === path);
-    if (!file) return;
-
     try {
-      if (file.staged) {
-        // Unstage the file
-        await unstageFile(repoPath, path);
-      } else {
+      // Check if file was in both sections before staging/unstaging
+      const fileBeforeAction = currentState.files.find((f) => f.path === path);
+      const wasInBothSections =
+        fileBeforeAction?.hasStaged && fileBeforeAction?.hasUnstaged;
+
+      if (shouldStage) {
         // Stage the file
         await stageFile(repoPath, path);
+      } else {
+        // Unstage the file
+        await unstageFile(repoPath, path);
       }
 
       // Refresh the git status
       const statusList = await getStatus(repoPath);
-      updateRepoState(repoPath, { files: statusList });
+
+      // If this is the selected file, update which section it's shown in
+      if (currentState.selectedFile === path) {
+        // Only reload diff if file was in both sections (meaning changes shifted)
+        if (wasInBothSections) {
+          setLoadingDiff(true);
+          try {
+            const diff = await getDiff(
+              repoPath,
+              path,
+              shouldStage,
+              getContextLinesForMode(diffViewerMode)
+            );
+            updateRepoState(repoPath, {
+              files: statusList,
+              selectedFileIsStaged: shouldStage,
+              diffLines: diff,
+            });
+          } catch (error) {
+            console.error("Error loading diff:", error);
+          } finally {
+            setLoadingDiff(false);
+          }
+        } else {
+          updateRepoState(repoPath, {
+            files: statusList,
+            selectedFileIsStaged: shouldStage,
+          });
+        }
+      } else {
+        updateRepoState(repoPath, { files: statusList });
+      }
     } catch (error) {
       console.error("Error toggling stage:", error);
-      toast.error(
-        `Failed to ${file.staged ? "unstage" : "stage"} file: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
-      );
+      toast.error(`Failed to ${shouldStage ? "stage" : "unstage"} file`, {
+        description: error instanceof Error ? error.message : "Unknown error",
+      });
     }
   };
 
@@ -531,11 +630,9 @@ const Index = () => {
       });
     } catch (error) {
       console.error("Error staging line:", error);
-      toast.error(
-        `Failed to stage: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
-      );
+      toast.error("Failed to stage", {
+        description: error instanceof Error ? error.message : "Unknown error",
+      });
     } finally {
       setLoadingDiff(false);
     }
@@ -561,11 +658,9 @@ const Index = () => {
       });
     } catch (error) {
       console.error("Error unstaging line:", error);
-      toast.error(
-        `Failed to unstage: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
-      );
+      toast.error("Failed to unstage", {
+        description: error instanceof Error ? error.message : "Unknown error",
+      });
     } finally {
       setLoadingDiff(false);
     }
@@ -575,8 +670,16 @@ const Index = () => {
     if (!repoPath || !currentState) return;
 
     try {
+      // Check if selected file was in both sections before staging
+      const selectedFileBeforeAction = currentState.selectedFile
+        ? currentState.files.find((f) => f.path === currentState.selectedFile)
+        : null;
+      const wasInBothSections =
+        selectedFileBeforeAction?.hasStaged &&
+        selectedFileBeforeAction?.hasUnstaged;
+
       // Get all unstaged files
-      const unstagedFiles = currentState.files.filter((f) => !f.staged);
+      const unstagedFiles = currentState.files.filter((f) => f.hasUnstaged);
 
       // Stage each file individually to properly handle deleted files
       for (const file of unstagedFiles) {
@@ -585,14 +688,46 @@ const Index = () => {
 
       // Refresh the git status
       const statusList = await getStatus(repoPath);
-      updateRepoState(repoPath, { files: statusList });
+
+      // If the selected file was in unstaged section, move selection to staged section
+      if (
+        currentState.selectedFile &&
+        currentState.selectedFileIsStaged === false
+      ) {
+        // Only reload diff if file was in both sections
+        if (wasInBothSections) {
+          setLoadingDiff(true);
+          try {
+            const diff = await getDiff(
+              repoPath,
+              currentState.selectedFile,
+              true,
+              getContextLinesForMode(diffViewerMode)
+            );
+            updateRepoState(repoPath, {
+              files: statusList,
+              selectedFileIsStaged: true,
+              diffLines: diff,
+            });
+          } catch (error) {
+            console.error("Error loading diff:", error);
+          } finally {
+            setLoadingDiff(false);
+          }
+        } else {
+          updateRepoState(repoPath, {
+            files: statusList,
+            selectedFileIsStaged: true,
+          });
+        }
+      } else {
+        updateRepoState(repoPath, { files: statusList });
+      }
     } catch (error) {
       console.error("Error staging all files:", error);
-      toast.error(
-        `Failed to stage all files: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
-      );
+      toast.error("Failed to stage all files", {
+        description: error instanceof Error ? error.message : "Unknown error",
+      });
     }
   };
 
@@ -600,8 +735,16 @@ const Index = () => {
     if (!repoPath || !currentState) return;
 
     try {
+      // Check if selected file was in both sections before unstaging
+      const selectedFileBeforeAction = currentState.selectedFile
+        ? currentState.files.find((f) => f.path === currentState.selectedFile)
+        : null;
+      const wasInBothSections =
+        selectedFileBeforeAction?.hasStaged &&
+        selectedFileBeforeAction?.hasUnstaged;
+
       // Get all staged files
-      const stagedFiles = currentState.files.filter((f) => f.staged);
+      const stagedFiles = currentState.files.filter((f) => f.hasStaged);
 
       // Unstage each file individually
       for (const file of stagedFiles) {
@@ -610,21 +753,53 @@ const Index = () => {
 
       // Refresh the git status
       const statusList = await getStatus(repoPath);
-      updateRepoState(repoPath, { files: statusList });
+
+      // If the selected file was in staged section, move selection to unstaged section
+      if (
+        currentState.selectedFile &&
+        currentState.selectedFileIsStaged === true
+      ) {
+        // Only reload diff if file was in both sections
+        if (wasInBothSections) {
+          setLoadingDiff(true);
+          try {
+            const diff = await getDiff(
+              repoPath,
+              currentState.selectedFile,
+              false,
+              getContextLinesForMode(diffViewerMode)
+            );
+            updateRepoState(repoPath, {
+              files: statusList,
+              selectedFileIsStaged: false,
+              diffLines: diff,
+            });
+          } catch (error) {
+            console.error("Error loading diff:", error);
+          } finally {
+            setLoadingDiff(false);
+          }
+        } else {
+          updateRepoState(repoPath, {
+            files: statusList,
+            selectedFileIsStaged: false,
+          });
+        }
+      } else {
+        updateRepoState(repoPath, { files: statusList });
+      }
     } catch (error) {
       console.error("Error unstaging all files:", error);
-      toast.error(
-        `Failed to unstage all files: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
-      );
+      toast.error("Failed to unstage all files", {
+        description: error instanceof Error ? error.message : "Unknown error",
+      });
     }
   };
 
   const handleCommit = async (message: string, description?: string) => {
     if (!repoPath || !currentState) return;
 
-    const stagedCount = currentState.files.filter((f) => f.staged).length;
+    const stagedCount = currentState.files.filter((f) => f.hasStaged).length;
 
     if (stagedCount === 0) {
       toast.error("No files staged for commit");
@@ -654,11 +829,9 @@ const Index = () => {
       }
     } catch (error) {
       console.error("Error committing:", error);
-      toast.error(
-        `Failed to commit: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
-      );
+      toast.error("Failed to commit", {
+        description: error instanceof Error ? error.message : "Unknown error",
+      });
     }
   };
 
@@ -686,11 +859,94 @@ const Index = () => {
       });
     } catch (error) {
       console.error("Error switching branch:", error);
-      toast.error(
-        `Failed to switch branch: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
-      );
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+
+      // Check if error is about uncommitted changes
+      if (
+        errorMessage.includes(
+          "Your local changes to the following files would be overwritten"
+        ) ||
+        errorMessage.includes("Please commit your changes or stash them")
+      ) {
+        toast.error("Cannot switch branches", {
+          description: "You have uncommitted changes. Stash them to continue?",
+          style: { minWidth: "500px" },
+          action: {
+            label: "Stash & Switch",
+            onClick: async () => {
+              try {
+                // Create a stash with timestamp
+                const now = new Date();
+                const hours = now.getHours().toString().padStart(2, "0");
+                const minutes = now.getMinutes().toString().padStart(2, "0");
+                const months = [
+                  "Jan",
+                  "Feb",
+                  "Mar",
+                  "Apr",
+                  "May",
+                  "Jun",
+                  "Jul",
+                  "Aug",
+                  "Sep",
+                  "Oct",
+                  "Nov",
+                  "Dec",
+                ];
+                const month = months[now.getMonth()];
+                const day = now.getDate();
+                const stashMessage = `Stash at ${month}. ${day}, ${hours}:${minutes}`;
+
+                const stashResult = await stash(repoPath, stashMessage);
+
+                if (stashResult.success) {
+                  toast.success(`Changes stashed: ${stashMessage}`);
+
+                  // Retry the branch switch
+                  await checkoutBranch(repoPath, branch);
+                  toast.info(`Switched to branch: ${branch}`);
+
+                  // Refresh git status, commit history, branches, and stashes
+                  const statusList = await getStatus(repoPath);
+                  const commitHistory = await getCommitHistory(repoPath);
+                  const branchList = await listBranches(repoPath);
+                  const stashList = await listStashes(repoPath);
+                  updateRepoState(repoPath, {
+                    currentBranch: branch,
+                    files: statusList,
+                    commits: commitHistory,
+                    branches: branchList,
+                    stashes: stashList,
+                  });
+                } else {
+                  toast.error("Failed to stash changes", {
+                    description: stashResult.message,
+                  });
+                }
+              } catch (stashError) {
+                console.error("Error stashing and switching:", stashError);
+                toast.error("Failed to stash and switch", {
+                  description:
+                    stashError instanceof Error
+                      ? stashError.message
+                      : "Unknown error",
+                });
+              }
+            },
+          },
+          cancel: {
+            label: "Cancel",
+            onClick: () => {},
+          },
+          duration: Infinity,
+        });
+      } else {
+        // For other errors, show the standard error toast
+        toast.error("Failed to switch branch", {
+          description: errorMessage,
+        });
+      }
     }
   };
 
@@ -717,11 +973,9 @@ const Index = () => {
       });
     } catch (error) {
       console.error("Error creating branch:", error);
-      toast.error(
-        `Failed to create branch: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
-      );
+      toast.error("Failed to create branch", {
+        description: error instanceof Error ? error.message : "Unknown error",
+      });
     }
   };
 
@@ -737,15 +991,17 @@ const Index = () => {
       updateRepoState(repoPath, { branches: branchList });
     } catch (error) {
       console.error("Error deleting branch:", error);
-      toast.error(
-        `Failed to delete branch: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
-      );
+      toast.error("Failed to delete branch", {
+        description: error instanceof Error ? error.message : "Unknown error",
+      });
     }
   };
 
-  const handleRenameBranch = async (oldName: string, newName: string, alsoRenameRemote: boolean) => {
+  const handleRenameBranch = async (
+    oldName: string,
+    newName: string,
+    alsoRenameRemote: boolean
+  ) => {
     if (!repoPath || !currentState) return;
 
     try {
@@ -753,7 +1009,11 @@ const Index = () => {
       setRenamingRepos((prev) => ({ ...prev, [repoPath]: true }));
 
       await renameBranch(repoPath, oldName, newName, alsoRenameRemote);
-      toast.success(`Branch renamed from "${oldName}" to "${newName}"${alsoRenameRemote ? ' (including remote)' : ''}`);
+      toast.success(
+        `Branch renamed from "${oldName}" to "${newName}"${
+          alsoRenameRemote ? " (including remote)" : ""
+        }`
+      );
 
       // Check if we renamed the current branch
       const wasCurrentBranch = oldName === currentState.currentBranch;
@@ -761,28 +1021,26 @@ const Index = () => {
       // Refresh branches
       const branchList = await listBranches(repoPath);
       const remoteBranchList = await listRemoteBranches(repoPath);
-      
+
       // If we renamed the current branch, update currentBranch state
       if (wasCurrentBranch) {
         const current = await getCurrentBranch(repoPath);
-        updateRepoState(repoPath, { 
+        updateRepoState(repoPath, {
           branches: branchList,
           remoteBranches: remoteBranchList,
           currentBranch: current,
         });
       } else {
-        updateRepoState(repoPath, { 
+        updateRepoState(repoPath, {
           branches: branchList,
           remoteBranches: remoteBranchList,
         });
       }
     } catch (error) {
       console.error("Error renaming branch:", error);
-      toast.error(
-        `Failed to rename branch: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
-      );
+      toast.error("Failed to rename branch", {
+        description: error instanceof Error ? error.message : "Unknown error",
+      });
     } finally {
       // Clear renaming state
       setRenamingRepos((prev) => ({ ...prev, [repoPath]: false }));
@@ -843,11 +1101,9 @@ const Index = () => {
       }
     } catch (error) {
       console.error("Error stashing changes:", error);
-      toast.error(
-        `Failed to stash changes: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
-      );
+      toast.error("Failed to stash changes", {
+        description: error instanceof Error ? error.message : "Unknown error",
+      });
     }
   };
 
@@ -875,11 +1131,9 @@ const Index = () => {
       }
     } catch (error) {
       console.error("Error popping stash:", error);
-      toast.error(
-        `Failed to pop stash: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
-      );
+      toast.error("Failed to pop stash", {
+        description: error instanceof Error ? error.message : "Unknown error",
+      });
     }
   };
 
@@ -903,11 +1157,9 @@ const Index = () => {
       }
     } catch (error) {
       console.error("Error deleting stash:", error);
-      toast.error(
-        `Failed to delete stash: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
-      );
+      toast.error("Failed to delete stash", {
+        description: error instanceof Error ? error.message : "Unknown error",
+      });
     }
   };
 
@@ -951,9 +1203,39 @@ const Index = () => {
       }))
     : [];
 
-  const handleSelectFile = (filePath: string) => {
-    if (repoPath) {
-      updateRepoState(repoPath, { selectedFile: filePath });
+  const handleSelectFile = async (filePath: string, isStaged: boolean) => {
+    if (!repoPath || !currentState) return;
+
+    // Check if we're selecting the same file in a different section
+    const isSameFileNewSection =
+      currentState.selectedFile === filePath &&
+      currentState.selectedFileIsStaged !== isStaged;
+
+    // Update selection state
+    updateRepoState(repoPath, {
+      selectedFile: filePath,
+      selectedFileIsStaged: isStaged,
+    });
+
+    // If same file but different section, manually reload the diff
+    if (isSameFileNewSection) {
+      setLoadingDiff(true);
+      try {
+        const diff = await getDiff(
+          repoPath,
+          filePath,
+          isStaged,
+          getContextLinesForMode(diffViewerMode)
+        );
+        updateRepoState(repoPath, { diffLines: diff });
+      } catch (error) {
+        console.error("Error loading diff:", error);
+        toast.error("Failed to load diff", {
+          description: error instanceof Error ? error.message : "Unknown error",
+        });
+      } finally {
+        setLoadingDiff(false);
+      }
     }
   };
 
@@ -964,7 +1246,12 @@ const Index = () => {
       // Set fetching state
       setFetchingRepos((prev) => ({ ...prev, [repoPath]: true }));
 
-      const result = await fetchFromRemote(repoPath, username, password, saveFetchCredentials);
+      const result = await fetchFromRemote(
+        repoPath,
+        username,
+        password,
+        saveFetchCredentials
+      );
 
       if (result.success) {
         toast.success("Successfully fetched from remote");
@@ -991,7 +1278,10 @@ const Index = () => {
         // Show authentication dialog (first time - no error yet)
         // Get hostname from remote URL for display
         try {
-          const remoteUrlResult = await window.ipcRenderer.invoke("git:getRemoteUrl", repoPath);
+          const remoteUrlResult = await window.ipcRenderer.invoke(
+            "git:getRemoteUrl",
+            repoPath
+          );
           if (remoteUrlResult.success) {
             const url = new URL(remoteUrlResult.url);
             // Clear credentials for security
@@ -1020,11 +1310,9 @@ const Index = () => {
       }
     } catch (error) {
       console.error("Error fetching from remote:", error);
-      toast.error(
-        `Failed to fetch from remote: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
-      );
+      toast.error("Failed to fetch from remote", {
+        description: error instanceof Error ? error.message : "Unknown error",
+      });
     } finally {
       // Clear fetching state
       setFetchingRepos((prev) => ({ ...prev, [repoPath]: false }));
@@ -1056,7 +1344,12 @@ const Index = () => {
       // Set pushing state
       setPushingRepos((prev) => ({ ...prev, [repoPath]: true }));
 
-      const result = await pushToRemote(repoPath, username, password, savePushCredentials);
+      const result = await pushToRemote(
+        repoPath,
+        username,
+        password,
+        savePushCredentials
+      );
 
       if (result.success) {
         toast.success("Successfully pushed to remote");
@@ -1083,7 +1376,10 @@ const Index = () => {
         // Show authentication dialog (first time - no error yet)
         // Get hostname from remote URL for display
         try {
-          const remoteUrlResult = await window.ipcRenderer.invoke("git:getRemoteUrl", repoPath);
+          const remoteUrlResult = await window.ipcRenderer.invoke(
+            "git:getRemoteUrl",
+            repoPath
+          );
           if (remoteUrlResult.success) {
             const url = new URL(remoteUrlResult.url);
             // Clear credentials for security
@@ -1112,11 +1408,9 @@ const Index = () => {
       }
     } catch (error) {
       console.error("Error pushing to remote:", error);
-      toast.error(
-        `Failed to push to remote: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
-      );
+      toast.error("Failed to push to remote", {
+        description: error instanceof Error ? error.message : "Unknown error",
+      });
     } finally {
       // Clear pushing state
       setPushingRepos((prev) => ({ ...prev, [repoPath]: false }));
@@ -1148,7 +1442,12 @@ const Index = () => {
       // Set pulling state
       setPullingRepos((prev) => ({ ...prev, [repoPath]: true }));
 
-      const result = await pullFromRemote(repoPath, username, password, savePullCredentials);
+      const result = await pullFromRemote(
+        repoPath,
+        username,
+        password,
+        savePullCredentials
+      );
 
       if (result.success) {
         toast.success("Successfully pulled from remote");
@@ -1177,7 +1476,10 @@ const Index = () => {
         // Show authentication dialog (first time - no error yet)
         // Get hostname from remote URL for display
         try {
-          const remoteUrlResult = await window.ipcRenderer.invoke("git:getRemoteUrl", repoPath);
+          const remoteUrlResult = await window.ipcRenderer.invoke(
+            "git:getRemoteUrl",
+            repoPath
+          );
           if (remoteUrlResult.success) {
             const url = new URL(remoteUrlResult.url);
             // Clear credentials for security
@@ -1206,11 +1508,9 @@ const Index = () => {
       }
     } catch (error) {
       console.error("Error pulling from remote:", error);
-      toast.error(
-        `Failed to pull from remote: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
-      );
+      toast.error("Failed to pull from remote", {
+        description: error instanceof Error ? error.message : "Unknown error",
+      });
     } finally {
       // Clear pulling state
       setPullingRepos((prev) => ({ ...prev, [repoPath]: false }));
@@ -1242,7 +1542,7 @@ const Index = () => {
     const state = repoStates[repoPath];
     if (!state) return;
 
-    const branch = state.branches.find(b => b.name === branchName);
+    const branch = state.branches.find((b) => b.name === branchName);
     if (!branch) {
       toast.error(`Branch "${branchName}" not found`);
       return;
@@ -1251,7 +1551,9 @@ const Index = () => {
     // Check if branch has unpushed commits (ahead > 0)
     // This should already be handled by the UI, but double-check here
     if (branch.ahead !== undefined && branch.ahead > 0 && !branch.current) {
-      toast.error("Cannot pull: branch has unpushed commits. Switch to this branch first and push them.");
+      toast.error(
+        "Cannot pull: branch has unpushed commits. Switch to this branch first and push them"
+      );
       return;
     }
 
@@ -1265,7 +1567,13 @@ const Index = () => {
       // Set pulling state
       setPullingRepos((prev) => ({ ...prev, [repoPath]: true }));
 
-      const result = await pullBranch(repoPath, branchName, undefined, undefined, true);
+      const result = await pullBranch(
+        repoPath,
+        branchName,
+        undefined,
+        undefined,
+        true
+      );
 
       if (result.success) {
         toast.success(`Successfully pulled branch "${branchName}"`);
@@ -1283,17 +1591,17 @@ const Index = () => {
       } else if (result.needsAuth) {
         // For now, show a message that auth is needed
         // In the future, we could show an auth dialog specifically for this operation
-        toast.error("Authentication required. Please configure your credentials.");
+        toast.error(
+          "Authentication required. Please configure your credentials."
+        );
       } else {
         toast.error(result.error || `Failed to pull branch "${branchName}"`);
       }
     } catch (error) {
       console.error("Error pulling branch:", error);
-      toast.error(
-        `Failed to pull branch: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
-      );
+      toast.error("Failed to pull branch", {
+        description: error instanceof Error ? error.message : "Unknown error",
+      });
     } finally {
       // Clear pulling state
       setPullingRepos((prev) => ({ ...prev, [repoPath]: false }));
@@ -1328,7 +1636,9 @@ const Index = () => {
         )}
         <RepoSelector
           onSelectRepo={handleOpenRepo}
-          onCancel={tabs.length > 0 ? () => setIsSelectingRepo(false) : undefined}
+          onCancel={
+            tabs.length > 0 ? () => setIsSelectingRepo(false) : undefined
+          }
           onCloningChange={setIsCloning}
         />
       </div>
@@ -1345,6 +1655,7 @@ const Index = () => {
         onCloseTab={handleCloseTab}
         onReorderTabs={handleReorderTabs}
         onOpenNewRepo={() => setIsSelectingRepo(true)}
+        onCreateBranch={handleCreateBranch}
         onStash={handleStash}
         onFetch={handleFetch}
         onPull={handlePull}
@@ -1404,18 +1715,25 @@ const Index = () => {
             <DiffViewer
               filePath={currentState.selectedFile}
               lines={currentState.diffLines}
-              isLoading={loadingDiff}
-              wordWrap={wordWrap}
-              onWordWrapChange={setWordWrap}
-              isStaged={
+              fileStatus={
                 currentState.selectedFile
                   ? currentState.files.find(
                       (f) => f.path === currentState.selectedFile
-                    )?.staged ?? false
-                  : false
+                    )?.status
+                  : undefined
               }
-              onStageLine={handleStageLine}
-              onUnstageLine={handleUnstageLine}
+              isLoading={loadingDiff}
+              wordWrap={wordWrap}
+              onWordWrapChange={setWordWrap}
+              viewMode={diffViewerMode}
+              onViewModeChange={setDiffViewerMode}
+              onViewModeChangeStart={() => {
+                setLoadingDiff(true);
+                // Clear diff lines to ensure loader is visible
+                if (repoPath) {
+                  updateRepoState(repoPath, { diffLines: [] });
+                }
+              }}
             />
           </div>
 
@@ -1432,13 +1750,14 @@ const Index = () => {
                 onToggleStage={handleToggleStage}
                 onSelectFile={handleSelectFile}
                 selectedFile={currentState.selectedFile}
+                selectedFileIsStaged={currentState.selectedFileIsStaged}
                 onStageAll={handleStageAll}
                 onUnstageAll={handleUnstageAll}
               />
             </div>
             <CommitPanel
               stagedFilesCount={
-                currentState.files.filter((f) => f.staged).length
+                currentState.files.filter((f) => f.hasStaged).length
               }
               onCommit={handleCommit}
             />
@@ -1474,7 +1793,8 @@ const Index = () => {
             <DialogHeader>
               <DialogTitle>Authentication Required</DialogTitle>
               <DialogDescription>
-                Please enter your credentials to fetch from the remote repository.
+                Please enter your credentials to fetch from the remote
+                repository.
               </DialogDescription>
             </DialogHeader>
 
@@ -1570,7 +1890,9 @@ const Index = () => {
               <Button
                 onClick={handleConfirmFetchAuth}
                 disabled={
-                  isFetching || !fetchAuthUsername.trim() || !fetchAuthPassword.trim()
+                  isFetching ||
+                  !fetchAuthUsername.trim() ||
+                  !fetchAuthPassword.trim()
                 }
               >
                 {isFetching ? "Authenticating..." : "Sign In"}
@@ -1702,7 +2024,9 @@ const Index = () => {
               <Button
                 onClick={handleConfirmPushAuth}
                 disabled={
-                  isPushing || !pushAuthUsername.trim() || !pushAuthPassword.trim()
+                  isPushing ||
+                  !pushAuthUsername.trim() ||
+                  !pushAuthPassword.trim()
                 }
               >
                 {isPushing ? "Authenticating..." : "Sign In"}
@@ -1736,7 +2060,8 @@ const Index = () => {
             <DialogHeader>
               <DialogTitle>Authentication Required</DialogTitle>
               <DialogDescription>
-                Please enter your credentials to pull from the remote repository.
+                Please enter your credentials to pull from the remote
+                repository.
               </DialogDescription>
             </DialogHeader>
 
@@ -1834,7 +2159,9 @@ const Index = () => {
               <Button
                 onClick={handleConfirmPullAuth}
                 disabled={
-                  isPulling || !pullAuthUsername.trim() || !pullAuthPassword.trim()
+                  isPulling ||
+                  !pullAuthUsername.trim() ||
+                  !pullAuthPassword.trim()
                 }
               >
                 {isPulling ? "Authenticating..." : "Sign In"}
@@ -1846,5 +2173,3 @@ const Index = () => {
     </div>
   );
 };
-
-export default Index;

@@ -1,48 +1,179 @@
-import { WrapText, Plus, Minus } from "lucide-react";
+import { WrapText } from "lucide-react";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { cn, detectLanguageFromPath } from "@/lib/utils";
+import { useMemo } from "react";
+import { HighlightedContent } from "./HighlightedContent";
+import {
+  DiffViewerModeToggle,
+  type DiffViewerMode,
+} from "./DiffViewerModeToggle";
+import { DiffSplitView } from "./DiffSplitView";
 
 interface DiffLine {
   type: "add" | "delete" | "context";
   content: string;
   lineNumber?: number;
+  hunkIndex?: number;
+  hunkHeader?: string;
 }
 
 interface DiffViewerProps {
   filePath?: string;
   lines: DiffLine[];
+  fileStatus?: "modified" | "added" | "deleted";
   isLoading?: boolean;
   wordWrap?: boolean;
   onWordWrapChange?: (value: boolean) => void;
-  isStaged?: boolean;
-  onStageLine?: (lineIndex: number) => void;
-  onUnstageLine?: (lineIndex: number) => void;
+  viewMode?: DiffViewerMode;
+  onViewModeChange?: (value: DiffViewerMode) => void;
+  onViewModeChangeStart?: () => void;
 }
 
 export const DiffViewer = ({
   filePath,
   lines,
+  fileStatus,
   isLoading = false,
   wordWrap = false,
   onWordWrapChange,
-  isStaged = false,
-  onStageLine,
-  onUnstageLine,
+  viewMode = "full",
+  onViewModeChange,
+  onViewModeChangeStart,
 }: DiffViewerProps) => {
-  const [hoveredLine, setHoveredLine] = useState<number | null>(null);
+  const language = useMemo(() => {
+    return filePath ? detectLanguageFromPath(filePath) : "text";
+  }, [filePath]);
 
-  const handleLineAction = (lineIndex: number) => {
-    const line = lines[lineIndex];
-    if (line.type === "context") return;
-
-    if (isStaged && onUnstageLine) {
-      onUnstageLine(lineIndex);
-    } else if (!isStaged && onStageLine) {
-      onStageLine(lineIndex);
+  // For new and deleted files, always show in full mode regardless of user's selected mode
+  const effectiveViewMode = useMemo(() => {
+    if (fileStatus === "added" || fileStatus === "deleted") {
+      return "full";
     }
-  };
+    return viewMode;
+  }, [fileStatus, viewMode]);
+
+  // Group lines by hunks for hunks view
+  const groupedByHunks = useMemo(() => {
+    if (effectiveViewMode !== "hunks" || lines.length === 0) return null;
+
+    const hunks: Array<{
+      index: number;
+      header: string;
+      lines: DiffLine[];
+      startLine: number;
+      endLine: number;
+    }> = [];
+
+    lines.forEach((line) => {
+      const hunkIndex = line.hunkIndex ?? 0;
+      if (!hunks[hunkIndex]) {
+        hunks[hunkIndex] = {
+          index: hunkIndex,
+          header: line.hunkHeader || "",
+          lines: [],
+          startLine: line.lineNumber || 0,
+          endLine: line.lineNumber || 0,
+        };
+      }
+      hunks[hunkIndex].lines.push(line);
+      if (line.lineNumber) {
+        hunks[hunkIndex].endLine = Math.max(
+          hunks[hunkIndex].endLine,
+          line.lineNumber
+        );
+      }
+    });
+
+    return hunks.filter((h) => h); // Remove any undefined entries
+  }, [lines, effectiveViewMode]);
+
+  // Prepare split view data - convert unified diff to side-by-side
+  const splitViewData = useMemo(() => {
+    if (effectiveViewMode !== "split" || lines.length === 0) return null;
+
+    interface SplitLine {
+      leftLine?: {
+        content: string;
+        lineNumber?: number;
+        type: "delete" | "context";
+      };
+      rightLine?: {
+        content: string;
+        lineNumber?: number;
+        type: "add" | "context";
+      };
+    }
+
+    const splitLines: SplitLine[] = [];
+    let leftLineNumber = 0;
+    let rightLineNumber = 0;
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+
+      if (line.type === "context") {
+        // Context appears on both sides
+        leftLineNumber++;
+        rightLineNumber++;
+        splitLines.push({
+          leftLine: {
+            content: line.content,
+            lineNumber: leftLineNumber,
+            type: "context",
+          },
+          rightLine: {
+            content: line.content,
+            lineNumber: rightLineNumber,
+            type: "context",
+          },
+        });
+      } else if (line.type === "delete") {
+        // Deleted line appears only on left
+        leftLineNumber++;
+        // Check if next line is an add (modified line)
+        const nextLine = lines[i + 1];
+        if (nextLine && nextLine.type === "add") {
+          // Modified line - show on both sides
+          rightLineNumber++;
+          splitLines.push({
+            leftLine: {
+              content: line.content,
+              lineNumber: leftLineNumber,
+              type: "delete",
+            },
+            rightLine: {
+              content: nextLine.content,
+              lineNumber: rightLineNumber,
+              type: "add",
+            },
+          });
+          i++; // Skip the next add line since we processed it
+        } else {
+          // Pure deletion - only on left side
+          splitLines.push({
+            leftLine: {
+              content: line.content,
+              lineNumber: leftLineNumber,
+              type: "delete",
+            },
+          });
+        }
+      } else if (line.type === "add") {
+        // Added line appears only on right (if not part of a modification)
+        rightLineNumber++;
+        splitLines.push({
+          rightLine: {
+            content: line.content,
+            lineNumber: rightLineNumber,
+            type: "add",
+          },
+        });
+      }
+    }
+
+    return splitLines;
+  }, [lines, effectiveViewMode]);
 
   if (!filePath) {
     return (
@@ -54,7 +185,6 @@ export const DiffViewer = ({
     );
   }
 
-  // Check if file is empty (no lines or all lines have empty content)
   const isEmpty =
     lines.length === 0 || lines.every((line) => line.content.trim() === "");
 
@@ -77,18 +207,27 @@ export const DiffViewer = ({
         >
           {filePath}
         </p>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => onWordWrapChange?.(!wordWrap)}
-          className={cn(
-            "h-7 gap-2 text-xs flex-shrink-0",
-            wordWrap && "bg-accent"
-          )}
-        >
-          <WrapText className="h-4 w-4" />
-          Word Wrap
-        </Button>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <DiffViewerModeToggle
+            value={viewMode}
+            onChange={(value) => {
+              onViewModeChangeStart?.();
+              onViewModeChange?.(value);
+            }}
+          />
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onWordWrapChange?.(!wordWrap)}
+            className={cn(
+              "h-7 gap-2 text-xs text-foreground",
+              wordWrap && "bg-accent text-accent-foreground"
+            )}
+          >
+            <WrapText className="h-4 w-4" />
+            Word Wrap
+          </Button>
+        </div>
       </div>
       <ScrollArea className="flex-1 bg-code-bg">
         {isEmpty ? (
@@ -97,6 +236,114 @@ export const DiffViewer = ({
               File is empty or has no content
             </p>
           </div>
+        ) : effectiveViewMode === "hunks" && groupedByHunks ? (
+          /* Hunks view */
+          <div className="font-mono text-xs">
+            {groupedByHunks.map((hunk, hunkIdx) => (
+              <div key={hunk.index}>
+                {/* Hunk separator */}
+                {hunkIdx > 0 && (
+                  <div className="bg-muted/30 border-y border-border px-4 py-2 text-xs text-muted-foreground flex items-center gap-2">
+                    <div className="flex-1 h-px bg-border"></div>
+                    <span>
+                      Lines {hunk.startLine}-{hunk.endLine}
+                    </span>
+                    <div className="flex-1 h-px bg-border"></div>
+                  </div>
+                )}
+
+                {/* Hunk lines */}
+                {wordWrap ? (
+                  <div className="w-full">
+                    {hunk.lines.map((line, lineIdx) => (
+                      <div
+                        key={`${hunk.index}-${lineIdx}`}
+                        className={cn(
+                          "flex border-l-2 pl-4 pr-4 min-h-[22px] leading-[22px]",
+                          line.type === "add" &&
+                            "border-git-add bg-git-add/10 text-git-add",
+                          line.type === "delete" &&
+                            "border-git-delete bg-git-delete/10 text-git-delete",
+                          line.type === "context" &&
+                            "border-transparent text-foreground"
+                        )}
+                      >
+                        <span className="mr-4 inline-block w-8 select-none text-right text-muted-foreground flex-shrink-0 self-start leading-[22px]">
+                          {line.lineNumber}
+                        </span>
+                        <span className="mr-2 inline-block w-4 select-none flex-shrink-0 self-start leading-[22px]">
+                          {line.type === "add" && "+"}
+                          {line.type === "delete" && "-"}
+                        </span>
+                        <span className="select-text whitespace-pre-wrap flex-1 min-w-0 leading-[22px]">
+                          <HighlightedContent
+                            content={line.content}
+                            language={language}
+                            wordWrap={wordWrap}
+                          />
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex">
+                    <div className="flex-shrink-0 sticky left-0 bg-code-bg z-10">
+                      {hunk.lines.map((line, lineIdx) => (
+                        <div
+                          key={`${hunk.index}-ln-${lineIdx}`}
+                          className={cn(
+                            "flex items-center border-l-2 pl-4 h-[22px] leading-[22px]",
+                            line.type === "add" &&
+                              "border-git-add bg-git-add/10 text-git-add",
+                            line.type === "delete" &&
+                              "border-git-delete bg-git-delete/10 text-git-delete",
+                            line.type === "context" &&
+                              "border-transparent text-foreground"
+                          )}
+                        >
+                          <span className="mr-4 inline-block w-8 select-none text-right text-muted-foreground">
+                            {line.lineNumber}
+                          </span>
+                          <span className="mr-2 inline-block w-4 select-none">
+                            {line.type === "add" && "+"}
+                            {line.type === "delete" && "-"}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex-1 select-text min-w-max">
+                      {hunk.lines.map((line, lineIdx) => (
+                        <div
+                          key={`${hunk.index}-content-${lineIdx}`}
+                          className={cn(
+                            "pr-4 h-[22px]",
+                            line.type === "add" && "bg-git-add/10 text-git-add",
+                            line.type === "delete" &&
+                              "bg-git-delete/10 text-git-delete",
+                            line.type === "context" && "text-foreground"
+                          )}
+                        >
+                          <div className="leading-[22px]">
+                            <HighlightedContent
+                              content={line.content}
+                              language={language}
+                              wordWrap={wordWrap}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : effectiveViewMode === "split" && splitViewData ? (
+          <DiffSplitView
+            splitViewData={splitViewData}
+            language={language}
+            wordWrap={wordWrap}
+          />
         ) : (
           <div className={cn("font-mono text-xs", !wordWrap && "flex")}>
             {!wordWrap ? (
@@ -106,54 +353,23 @@ export const DiffViewer = ({
                   {lines.map((line, index) => (
                     <div
                       key={index}
-                      onMouseEnter={() => setHoveredLine(index)}
-                      onMouseLeave={() => setHoveredLine(null)}
                       className={cn(
-                        "flex items-center border-l-2 pl-4 h-[22px] group",
+                        "flex items-center border-l-2 pl-4 h-[22px] leading-[22px]",
                         line.type === "add" &&
                           "border-git-add bg-git-add/10 text-git-add",
                         line.type === "delete" &&
                           "border-git-delete bg-git-delete/10 text-git-delete",
                         line.type === "context" &&
-                          "border-transparent text-foreground",
-                        line.type !== "context" &&
-                          (onStageLine || onUnstageLine) &&
-                          "cursor-pointer hover:bg-opacity-20"
+                          "border-transparent text-foreground"
                       )}
                     >
-                      <span className="mr-4 inline-block w-8 select-none text-right text-muted-foreground leading-[22px]">
+                      <span className="mr-4 inline-block w-8 select-none text-right text-muted-foreground">
                         {line.lineNumber}
                       </span>
-                      <span className="mr-2 inline-block w-4 select-none leading-[22px]">
+                      <span className="mr-2 inline-block w-4 select-none">
                         {line.type === "add" && "+"}
                         {line.type === "delete" && "-"}
                       </span>
-                      {line.type !== "context" &&
-                        (onStageLine || onUnstageLine) &&
-                        hoveredLine === index && (
-                          <button
-                            onClick={() => handleLineAction(index)}
-                            className={cn(
-                              "ml-2 px-2 py-0.5 rounded text-[10px] font-semibold leading-none transition-colors flex items-center gap-1",
-                              isStaged
-                                ? "bg-destructive/80 hover:bg-destructive text-destructive-foreground"
-                                : "bg-primary/80 hover:bg-primary text-primary-foreground"
-                            )}
-                            title={isStaged ? "Unstage line" : "Stage line"}
-                          >
-                            {isStaged ? (
-                              <>
-                                <Minus className="h-3 w-3" />
-                                <span>Unstage</span>
-                              </>
-                            ) : (
-                              <>
-                                <Plus className="h-3 w-3" />
-                                <span>Stage</span>
-                              </>
-                            )}
-                          </button>
-                        )}
                     </div>
                   ))}
                 </div>
@@ -163,22 +379,21 @@ export const DiffViewer = ({
                   {lines.map((line, index) => (
                     <div
                       key={index}
-                      onMouseEnter={() => setHoveredLine(index)}
-                      onMouseLeave={() => setHoveredLine(null)}
                       className={cn(
-                        "px-2 h-[22px] leading-[22px]",
+                        "pr-4 h-[22px]",
                         line.type === "add" && "bg-git-add/10 text-git-add",
                         line.type === "delete" &&
                           "bg-git-delete/10 text-git-delete",
-                        line.type === "context" && "text-foreground",
-                        line.type !== "context" &&
-                          (onStageLine || onUnstageLine) &&
-                          "cursor-pointer hover:bg-opacity-20"
+                        line.type === "context" && "text-foreground"
                       )}
                     >
-                      <span className="select-text whitespace-pre">
-                        {line.content}
-                      </span>
+                      <div className="leading-[22px]">
+                        <HighlightedContent
+                          content={line.content}
+                          language={language}
+                          wordWrap={wordWrap}
+                        />
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -189,46 +404,29 @@ export const DiffViewer = ({
                 {lines.map((line, index) => (
                   <div
                     key={index}
-                    onMouseEnter={() => setHoveredLine(index)}
-                    onMouseLeave={() => setHoveredLine(null)}
                     className={cn(
-                      "flex border-l-2 px-4 py-1 relative group",
+                      "flex border-l-2 pl-4 pr-4 min-h-[22px] leading-[22px]",
                       line.type === "add" &&
                         "border-git-add bg-git-add/10 text-git-add",
                       line.type === "delete" &&
                         "border-git-delete bg-git-delete/10 text-git-delete",
                       line.type === "context" &&
-                        "border-transparent text-foreground",
-                      line.type !== "context" &&
-                        (onStageLine || onUnstageLine) &&
-                        "cursor-pointer hover:bg-opacity-20"
+                        "border-transparent text-foreground"
                     )}
                   >
-                    <span className="mr-4 inline-block w-8 select-none text-right text-muted-foreground flex-shrink-0 self-start">
+                    <span className="mr-4 inline-block w-8 select-none text-right text-muted-foreground flex-shrink-0 self-start leading-[22px]">
                       {line.lineNumber}
                     </span>
-                    <span className="mr-2 inline-block w-4 select-none flex-shrink-0 self-start">
+                    <span className="mr-2 inline-block w-4 select-none flex-shrink-0 self-start leading-[22px]">
                       {line.type === "add" && "+"}
                       {line.type === "delete" && "-"}
                     </span>
-                    {line.type !== "context" &&
-                      (onStageLine || onUnstageLine) &&
-                      hoveredLine === index && (
-                        <button
-                          onClick={() => handleLineAction(index)}
-                          className={cn(
-                            "mr-2 px-2 py-0.5 rounded text-[10px] font-semibold leading-none transition-colors flex items-center gap-1 flex-shrink-0 self-start",
-                            isStaged
-                              ? "bg-destructive/80 hover:bg-destructive text-destructive-foreground"
-                              : "bg-primary/80 hover:bg-primary text-primary-foreground"
-                          )}
-                          title={isStaged ? "Unstage line" : "Stage line"}
-                        >
-                          <span>{isStaged ? "Unstage" : "Stage"}</span>
-                        </button>
-                      )}
-                    <span className="select-text whitespace-pre-wrap flex-1 min-w-0">
-                      {line.content}
+                    <span className="select-text whitespace-pre-wrap flex-1 min-w-0 leading-[22px]">
+                      <HighlightedContent
+                        content={line.content}
+                        language={language}
+                        wordWrap={wordWrap}
+                      />
                     </span>
                   </div>
                 ))}
@@ -236,7 +434,9 @@ export const DiffViewer = ({
             )}
           </div>
         )}
-        {!wordWrap && <ScrollBar orientation="horizontal" />}
+        {!wordWrap && effectiveViewMode !== "split" && (
+          <ScrollBar orientation="horizontal" />
+        )}
       </ScrollArea>
     </div>
   );

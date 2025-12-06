@@ -275,6 +275,7 @@ ipcMain.handle("git:listBranches", async (_, repoPath: string) => {
         let behind = 0;
         let ahead = 0;
         let hasUpstream = false;
+        let upstreamName: string | null = null;
 
         try {
           // Check if branch has an upstream tracking branch using git for-each-ref
@@ -287,7 +288,11 @@ ipcMain.handle("git:listBranches", async (_, repoPath: string) => {
               }
             );
             // If the result is not empty, the branch has an upstream
-            hasUpstream = result.trim().length > 0;
+            const trimmedResult = result.trim();
+            if (trimmedResult.length > 0) {
+              hasUpstream = true;
+              upstreamName = trimmedResult.replace(/^origin\//, "");
+            }
           } catch (upstreamError) {
             // Error checking upstream, assume no upstream
             hasUpstream = false;
@@ -358,6 +363,7 @@ ipcMain.handle("git:listBranches", async (_, repoPath: string) => {
           behind,
           ahead,
           hasUpstream,
+          upstream: upstreamName || undefined,
         };
       })
     );
@@ -435,46 +441,40 @@ ipcMain.handle("git:status", async (_, repoPath: string) => {
       .map(([filepath, head, workdir, stage]) => {
         // Determine status and staging
         let status: "modified" | "added" | "deleted";
-        let staged: boolean;
+        let hasStaged = false;
+        let hasUnstaged = false;
 
-        if (head === 0 && workdir === 2 && stage === 0) {
-          // New untracked file - treat as added (unstaged)
+        // Check if file has staged changes (stage differs from head)
+        // stage === 2 or 3: staged modifications/additions
+        // head === 1 && stage === 0: staged deletion
+        hasStaged = stage === 2 || stage === 3 || (head === 1 && stage === 0);
+
+        // Check if file has unstaged changes (workdir has changes and differs from stage)
+        // workdir === 2: file is modified or added in working directory
+        // workdir === 0: file is deleted in working directory
+        // Must also differ from stage to be considered unstaged changes
+        hasUnstaged = (workdir === 2 || workdir === 0) && workdir !== stage;
+
+        // Determine the file status based on what's in the working directory
+        if (head === 0 && (workdir === 2 || stage === 2)) {
+          // New file (either in workdir or staged)
           status = "added";
-          staged = false;
-        } else if (head === 0 && workdir === 2 && stage === 2) {
-          // New file, staged
-          status = "added";
-          staged = true;
-        } else if (head === 1 && workdir === 2 && stage === 1) {
-          // Modified, not staged
-          status = "modified";
-          staged = false;
-        } else if (head === 1 && workdir === 2 && stage === 2) {
-          // Modified, staged
-          status = "modified";
-          staged = true;
-        } else if (head === 1 && workdir === 0 && stage === 1) {
-          // Deleted, not staged
+        } else if (
+          workdir === 0 ||
+          (head === 1 && stage === 0 && workdir === 1)
+        ) {
+          // File deleted in workdir, or deletion staged but workdir caught up
           status = "deleted";
-          staged = false;
-        } else if (head === 1 && workdir === 0 && stage === 0) {
-          // Deleted, staged
-          status = "deleted";
-          staged = true;
-        } else if (head === 1 && workdir === 1 && stage === 2) {
-          // Modified, staged (different content in stage vs workdir)
-          status = "modified";
-          staged = true;
         } else {
-          // Default to modified for any other case
+          // File modified
           status = "modified";
-          staged = stage === 2;
         }
 
         return {
           path: filepath,
           status,
-          staged,
+          hasStaged,
+          hasUnstaged,
         };
       });
 
@@ -699,14 +699,14 @@ ipcMain.handle(
       if (alsoRenameRemote && upstreamBranch) {
         try {
           // Extract the actual remote branch name from upstream (e.g., "origin/feature-a" -> "feature-a")
-          const remoteBranchName = upstreamBranch.includes('/') 
-            ? upstreamBranch.split('/').slice(1).join('/') 
+          const remoteBranchName = upstreamBranch.includes("/")
+            ? upstreamBranch.split("/").slice(1).join("/")
             : upstreamBranch;
 
           // Extract remote name (e.g., "origin")
-          const remoteName = upstreamBranch.includes('/')
-            ? upstreamBranch.split('/')[0]
-            : 'origin';
+          const remoteName = upstreamBranch.includes("/")
+            ? upstreamBranch.split("/")[0]
+            : "origin";
 
           // Push the new branch to remote with upstream tracking
           await execAsync(`git push -u ${remoteName} ${newName}`, {
@@ -716,10 +716,13 @@ ipcMain.handle(
 
           // Delete the old branch from remote using the actual remote branch name
           try {
-            await execAsync(`git push ${remoteName} --delete ${remoteBranchName}`, {
-              cwd: repoPath,
-              encoding: "utf8",
-            });
+            await execAsync(
+              `git push ${remoteName} --delete ${remoteBranchName}`,
+              {
+                cwd: repoPath,
+                encoding: "utf8",
+              }
+            );
           } catch (deleteError: any) {
             // Check if the error is due to trying to delete the default branch
             const errorMessage = deleteError.message || String(deleteError);
@@ -759,7 +762,7 @@ ipcMain.handle(
   }
 );
 
-// Checkout an existing branch
+// Checkout an existing branch (local or remote)
 ipcMain.handle(
   "git:checkout",
   async (_, repoPath: string, branchName: string) => {
@@ -774,29 +777,79 @@ ipcMain.handle(
       }
 
       if (hasCommits) {
-        // Repository has commits - checkout normally
+        // Repository has commits - need to determine if this is local or remote branch
 
-        // First, update HEAD to point to the branch
-        const gitDir = path.join(repoPath, ".git");
-        const headPath = path.join(gitDir, "HEAD");
-        fs.writeFileSync(headPath, `ref: refs/heads/${branchName}\n`);
-
-        // Then checkout the files - wrap in try-catch since it might error but still work
+        // Check if local branch exists
+        let localBranchExists = false;
         try {
-          await git.checkout({
+          await git.resolveRef({
             fs,
             dir: repoPath,
-            ref: branchName,
-            remote: "", // Explicitly no remote to prevent looking for origin
+            ref: `refs/heads/${branchName}`,
           });
-        } catch (checkoutError) {
-          // Check if HEAD was updated successfully despite the error
-          const headContent = fs.readFileSync(headPath, "utf8");
-          if (headContent.includes(`refs/heads/${branchName}`)) {
-            // Checkout actually worked, ignore the error
+          localBranchExists = true;
+        } catch (error) {
+          localBranchExists = false;
+        }
+
+        if (localBranchExists) {
+          // Local branch exists - checkout using git CLI to ensure index is properly reset
+          try {
+            const { stdout, stderr } = await execAsync(
+              `git checkout "${branchName}"`,
+              {
+                cwd: repoPath,
+                encoding: "utf8",
+              }
+            );
+            console.log("Checked out branch:", stdout);
+          } catch (error) {
+            console.error("Error checking out branch:", error);
+            throw new Error(
+              `Failed to checkout branch: ${
+                error instanceof Error ? error.message : String(error)
+              }`
+            );
+          }
+        } else {
+          // Local branch doesn't exist - check if remote branch exists
+          let remoteBranchExists = false;
+          try {
+            await git.resolveRef({
+              fs,
+              dir: repoPath,
+              ref: `refs/remotes/origin/${branchName}`,
+            });
+            remoteBranchExists = true;
+          } catch (error) {
+            remoteBranchExists = false;
+          }
+
+          if (remoteBranchExists) {
+            // Remote branch exists - create local tracking branch and checkout
+            // Using git CLI for this as it's more reliable for setting up tracking
+            try {
+              const { stdout, stderr } = await execAsync(
+                `git checkout -b "${branchName}" "origin/${branchName}"`,
+                {
+                  cwd: repoPath,
+                  encoding: "utf8",
+                }
+              );
+              console.log("Created tracking branch:", stdout);
+            } catch (error) {
+              console.error("Error creating tracking branch:", error);
+              throw new Error(
+                `Failed to checkout remote branch: ${
+                  error instanceof Error ? error.message : String(error)
+                }`
+              );
+            }
           } else {
-            // Real error, re-throw
-            throw checkoutError;
+            // Neither local nor remote branch exists
+            throw new Error(
+              `Branch '${branchName}' not found (checked both local and remote)`
+            );
           }
         }
       } else {
@@ -920,102 +973,154 @@ ipcMain.handle("git:log", async (_, repoPath: string, limit: number = 50) => {
 });
 
 // Get diff for a file
-ipcMain.handle("git:diff", async (_, repoPath: string, filepath: string) => {
-  try {
-    const fullPath = path.join(repoPath, filepath);
-
-    // Read the current working directory version
-    let workdirContent = "";
-    if (fs.existsSync(fullPath)) {
-      workdirContent = fs.readFileSync(fullPath, "utf8");
-    }
-
-    // Try to read the HEAD version (committed version)
-    let headContent = "";
+ipcMain.handle(
+  "git:diff",
+  async (_, repoPath: string, filepath: string, staged: boolean = false, contextLines: number = 999999) => {
     try {
-      const headOid = await git.resolveRef({ fs, dir: repoPath, ref: "HEAD" });
-      const { blob } = await git.readBlob({
-        fs,
-        dir: repoPath,
-        oid: headOid,
-        filepath,
-      });
-      headContent = new TextDecoder().decode(blob);
-    } catch (error) {
-      // File doesn't exist in HEAD (new file)
-      headContent = "";
-    }
+      // Use git diff to get the actual diff
+      const diffCommand = staged
+        ? `git diff --cached -U${contextLines} -- "${filepath}"` // --cached for staged
+        : `git diff -U${contextLines} -- "${filepath}"`; // unstaged changes
 
-    // Generate a simple line-by-line diff
-    // Handle empty content correctly - empty string should give empty array, not [""]
-    const oldLines = headContent ? headContent.split("\n") : [];
-    const newLines = workdirContent ? workdirContent.split("\n") : [];
-
-    const diffLines: Array<{
-      type: "add" | "delete" | "context";
-      content: string;
-      lineNumber: number;
-    }> = [];
-
-    const maxLines = Math.max(oldLines.length, newLines.length);
-    let lineNumber = 0;
-
-    // Simple diff algorithm - can be improved with a proper diff library
-    for (let i = 0; i < maxLines; i++) {
-      const oldLine = oldLines[i];
-      const newLine = newLines[i];
-
-      if (oldLine === newLine) {
-        // Context line (unchanged)
-        if (oldLine !== undefined) {
-          lineNumber++;
-          diffLines.push({
-            type: "context",
-            content: oldLine,
-            lineNumber,
-          });
+      let diffOutput = "";
+      try {
+        diffOutput = execSync(diffCommand, {
+          cwd: repoPath,
+          encoding: "utf8",
+          maxBuffer: 10 * 1024 * 1024,
+        });
+      } catch (error: any) {
+        // Git diff exits with code 1 when there are differences, which is normal
+        if (error.stdout) {
+          diffOutput = error.stdout;
+        } else {
+          // No diff or error
+          return [];
         }
-      } else {
-        // Changed lines
-        if (oldLine !== undefined && newLine !== undefined) {
-          // Modified line - show as delete + add
-          lineNumber++;
-          diffLines.push({
-            type: "delete",
-            content: oldLine,
-            lineNumber,
-          });
-          diffLines.push({
-            type: "add",
-            content: newLine,
-            lineNumber,
-          });
-        } else if (oldLine !== undefined) {
-          // Deleted line
-          lineNumber++;
-          diffLines.push({
-            type: "delete",
-            content: oldLine,
-            lineNumber,
-          });
-        } else if (newLine !== undefined) {
+      }
+
+      // If no diff output, check if it's a new file
+      if (!diffOutput.trim()) {
+        // Check if file is new/untracked by checking if it exists in git
+        const fullPath = path.join(repoPath, filepath);
+        if (fs.existsSync(fullPath)) {
+          try {
+            // Try to get file from HEAD
+            const headOid = await git.resolveRef({ fs, dir: repoPath, ref: "HEAD" });
+            await git.readBlob({
+              fs,
+              dir: repoPath,
+              oid: headOid,
+              filepath,
+            });
+            // File exists in HEAD, so no changes
+            return [];
+          } catch {
+            // File doesn't exist in HEAD - it's a new file
+            // Show entire file as added
+            const content = fs.readFileSync(fullPath, "utf8");
+            const lines = content.split("\n");
+            return lines.map((line, index) => ({
+              type: "add" as const,
+              content: line,
+              lineNumber: index + 1,
+            }));
+          }
+        }
+        return [];
+      }
+
+      // Parse the unified diff format
+      const diffLines: Array<{
+        type: "add" | "delete" | "context";
+        content: string;
+        lineNumber: number;
+        hunkIndex?: number;
+        hunkHeader?: string;
+      }> = [];
+
+      const lines = diffOutput.split("\n");
+      let lineNumber = 0;
+      let inHunk = false;
+      let hunkIndex = -1;
+      let currentHunkHeader = "";
+
+      for (const line of lines) {
+        // Skip diff headers
+        if (
+          line.startsWith("diff --git") ||
+          line.startsWith("index ") ||
+          line.startsWith("---") ||
+          line.startsWith("+++")
+        ) {
+          continue;
+        }
+
+        // Parse hunk header (@@ -1,5 +1,6 @@)
+        if (line.startsWith("@@")) {
+          inHunk = true;
+          hunkIndex++;
+          currentHunkHeader = line;
+          // Extract starting line number from hunk header
+          const match = line.match(/@@\s*-\d+(?:,\d+)?\s+\+(\d+)/);
+          if (match) {
+            lineNumber = parseInt(match[1]) - 1; // Will be incremented for first line
+          }
+          continue;
+        }
+
+        if (!inHunk) continue;
+
+        // Parse diff lines
+        if (line.startsWith("+")) {
           // Added line
           lineNumber++;
           diffLines.push({
             type: "add",
-            content: newLine,
+            content: line.substring(1), // Remove the + prefix
             lineNumber,
+            hunkIndex,
+            hunkHeader: currentHunkHeader,
+          });
+        } else if (line.startsWith("-")) {
+          // Deleted line (don't increment line number for deletions)
+          diffLines.push({
+            type: "delete",
+            content: line.substring(1), // Remove the - prefix
+            lineNumber: lineNumber + 1, // Show at next line position
+            hunkIndex,
+            hunkHeader: currentHunkHeader,
+          });
+        } else if (line.startsWith(" ")) {
+          // Context line (unchanged)
+          lineNumber++;
+          diffLines.push({
+            type: "context",
+            content: line.substring(1), // Remove the space prefix
+            lineNumber,
+            hunkIndex,
+            hunkHeader: currentHunkHeader,
+          });
+        } else if (line === "") {
+          // Empty line in context
+          lineNumber++;
+          diffLines.push({
+            type: "context",
+            content: "",
+            lineNumber,
+            hunkIndex,
+            hunkHeader: currentHunkHeader,
           });
         }
       }
-    }
 
-    return diffLines;
-  } catch (error) {
-    console.error("Error getting diff:", error);
-    throw error;
+      return diffLines;
+    } catch (error) {
+      console.error("Error getting diff:", error);
+      throw error;
+    }
   }
-});
+);
 
 // List stashes
 ipcMain.handle("git:listStashes", async (_, repoPath: string) => {
