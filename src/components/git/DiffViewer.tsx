@@ -1,14 +1,15 @@
 import { WrapText } from "lucide-react";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { cn, detectLanguageFromPath } from "@/lib/utils";
 import { useMemo } from "react";
-import { HighlightedContent } from "./HighlightedContent";
 import {
   DiffViewerModeToggle,
   type DiffViewerMode,
 } from "./DiffViewerModeToggle";
 import { DiffSplitView } from "./DiffSplitView";
+import { DiffHunkView } from "./DiffHunkView";
+import { DiffFullView } from "./DiffFullView";
+import { DiffEmptyState } from "./DiffEmptyState";
 
 interface DiffLine {
   type: "add" | "delete" | "context";
@@ -129,38 +130,49 @@ export const DiffViewer = ({
           },
         });
       } else if (line.type === "delete") {
-        // Deleted line appears only on left
-        leftLineNumber++;
-        // Check if next line is an add (modified line)
-        const nextLine = lines[i + 1];
-        if (nextLine && nextLine.type === "add") {
-          // Modified line - show on both sides
-          rightLineNumber++;
+        // Collect all consecutive delete lines
+        const deleteLines: typeof lines = [];
+        let j = i;
+        while (j < lines.length && lines[j].type === "delete") {
+          deleteLines.push(lines[j]);
+          j++;
+        }
+
+        // Collect all consecutive add lines that follow
+        const addLines: typeof lines = [];
+        while (j < lines.length && lines[j].type === "add") {
+          addLines.push(lines[j]);
+          j++;
+        }
+
+        // Pair up deletes and adds side by side
+        const maxLines = Math.max(deleteLines.length, addLines.length);
+        for (let k = 0; k < maxLines; k++) {
+          const deleteLine = deleteLines[k];
+          const addLine = addLines[k];
+
           splitLines.push({
-            leftLine: {
-              content: line.content,
-              lineNumber: leftLineNumber,
-              type: "delete",
-            },
-            rightLine: {
-              content: nextLine.content,
-              lineNumber: rightLineNumber,
-              type: "add",
-            },
-          });
-          i++; // Skip the next add line since we processed it
-        } else {
-          // Pure deletion - only on left side
-          splitLines.push({
-            leftLine: {
-              content: line.content,
-              lineNumber: leftLineNumber,
-              type: "delete",
-            },
+            leftLine: deleteLine
+              ? {
+                  content: deleteLine.content,
+                  lineNumber: ++leftLineNumber,
+                  type: "delete",
+                }
+              : undefined,
+            rightLine: addLine
+              ? {
+                  content: addLine.content,
+                  lineNumber: ++rightLineNumber,
+                  type: "add",
+                }
+              : undefined,
           });
         }
+
+        // Move index forward (minus 1 because the loop will increment)
+        i = j - 1;
       } else if (line.type === "add") {
-        // Added line appears only on right (if not part of a modification)
+        // Standalone add line (not preceded by deletes)
         rightLineNumber++;
         splitLines.push({
           rightLine: {
@@ -229,215 +241,23 @@ export const DiffViewer = ({
           </Button>
         </div>
       </div>
-      <ScrollArea className="flex-1 bg-code-bg">
-        {isEmpty ? (
-          <div className="flex h-full w-full items-center justify-center p-8">
-            <p className="text-sm text-muted-foreground">
-              File is empty or has no content
-            </p>
-          </div>
-        ) : effectiveViewMode === "hunks" && groupedByHunks ? (
-          /* Hunks view */
-          <div className="font-mono text-xs">
-            {groupedByHunks.map((hunk, hunkIdx) => (
-              <div key={hunk.index}>
-                {/* Hunk separator */}
-                {hunkIdx > 0 && (
-                  <div className="bg-muted/30 border-y border-border px-4 py-2 text-xs text-muted-foreground flex items-center gap-2">
-                    <div className="flex-1 h-px bg-border"></div>
-                    <span>
-                      Lines {hunk.startLine}-{hunk.endLine}
-                    </span>
-                    <div className="flex-1 h-px bg-border"></div>
-                  </div>
-                )}
-
-                {/* Hunk lines */}
-                {wordWrap ? (
-                  <div className="w-full">
-                    {hunk.lines.map((line, lineIdx) => (
-                      <div
-                        key={`${hunk.index}-${lineIdx}`}
-                        className={cn(
-                          "flex border-l-2 pl-4 pr-4 min-h-[22px] leading-[22px]",
-                          line.type === "add" &&
-                            "border-git-add bg-git-add/10 text-git-add",
-                          line.type === "delete" &&
-                            "border-git-delete bg-git-delete/10 text-git-delete",
-                          line.type === "context" &&
-                            "border-transparent text-foreground"
-                        )}
-                      >
-                        <span className="mr-4 inline-block w-8 select-none text-right text-muted-foreground flex-shrink-0 self-start leading-[22px]">
-                          {line.lineNumber}
-                        </span>
-                        <span className="mr-2 inline-block w-4 select-none flex-shrink-0 self-start leading-[22px]">
-                          {line.type === "add" && "+"}
-                          {line.type === "delete" && "-"}
-                        </span>
-                        <span className="select-text whitespace-pre-wrap flex-1 min-w-0 leading-[22px]">
-                          <HighlightedContent
-                            content={line.content}
-                            language={language}
-                            wordWrap={wordWrap}
-                          />
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex">
-                    <div className="flex-shrink-0 sticky left-0 bg-code-bg z-10">
-                      {hunk.lines.map((line, lineIdx) => (
-                        <div
-                          key={`${hunk.index}-ln-${lineIdx}`}
-                          className={cn(
-                            "flex items-center border-l-2 pl-4 h-[22px] leading-[22px]",
-                            line.type === "add" &&
-                              "border-git-add bg-git-add/10 text-git-add",
-                            line.type === "delete" &&
-                              "border-git-delete bg-git-delete/10 text-git-delete",
-                            line.type === "context" &&
-                              "border-transparent text-foreground"
-                          )}
-                        >
-                          <span className="mr-4 inline-block w-8 select-none text-right text-muted-foreground">
-                            {line.lineNumber}
-                          </span>
-                          <span className="mr-2 inline-block w-4 select-none">
-                            {line.type === "add" && "+"}
-                            {line.type === "delete" && "-"}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="flex-1 select-text min-w-max">
-                      {hunk.lines.map((line, lineIdx) => (
-                        <div
-                          key={`${hunk.index}-content-${lineIdx}`}
-                          className={cn(
-                            "pr-4 h-[22px]",
-                            line.type === "add" && "bg-git-add/10 text-git-add",
-                            line.type === "delete" &&
-                              "bg-git-delete/10 text-git-delete",
-                            line.type === "context" && "text-foreground"
-                          )}
-                        >
-                          <div className="leading-[22px]">
-                            <HighlightedContent
-                              content={line.content}
-                              language={language}
-                              wordWrap={wordWrap}
-                            />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        ) : effectiveViewMode === "split" && splitViewData ? (
-          <DiffSplitView
-            splitViewData={splitViewData}
-            language={language}
-            wordWrap={wordWrap}
-          />
-        ) : (
-          <div className={cn("font-mono text-xs", !wordWrap && "flex")}>
-            {!wordWrap ? (
-              <>
-                {/* Fixed line numbers and +/- indicators (no word wrap) */}
-                <div className="flex-shrink-0 sticky left-0 bg-code-bg z-10">
-                  {lines.map((line, index) => (
-                    <div
-                      key={index}
-                      className={cn(
-                        "flex items-center border-l-2 pl-4 h-[22px] leading-[22px]",
-                        line.type === "add" &&
-                          "border-git-add bg-git-add/10 text-git-add",
-                        line.type === "delete" &&
-                          "border-git-delete bg-git-delete/10 text-git-delete",
-                        line.type === "context" &&
-                          "border-transparent text-foreground"
-                      )}
-                    >
-                      <span className="mr-4 inline-block w-8 select-none text-right text-muted-foreground">
-                        {line.lineNumber}
-                      </span>
-                      <span className="mr-2 inline-block w-4 select-none">
-                        {line.type === "add" && "+"}
-                        {line.type === "delete" && "-"}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Scrollable content (no word wrap) */}
-                <div className="flex-1 select-text min-w-max">
-                  {lines.map((line, index) => (
-                    <div
-                      key={index}
-                      className={cn(
-                        "pr-4 h-[22px]",
-                        line.type === "add" && "bg-git-add/10 text-git-add",
-                        line.type === "delete" &&
-                          "bg-git-delete/10 text-git-delete",
-                        line.type === "context" && "text-foreground"
-                      )}
-                    >
-                      <div className="leading-[22px]">
-                        <HighlightedContent
-                          content={line.content}
-                          language={language}
-                          wordWrap={wordWrap}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </>
-            ) : (
-              /* Combined rows (with word wrap) */
-              <div className="w-full">
-                {lines.map((line, index) => (
-                  <div
-                    key={index}
-                    className={cn(
-                      "flex border-l-2 pl-4 pr-4 min-h-[22px] leading-[22px]",
-                      line.type === "add" &&
-                        "border-git-add bg-git-add/10 text-git-add",
-                      line.type === "delete" &&
-                        "border-git-delete bg-git-delete/10 text-git-delete",
-                      line.type === "context" &&
-                        "border-transparent text-foreground"
-                    )}
-                  >
-                    <span className="mr-4 inline-block w-8 select-none text-right text-muted-foreground flex-shrink-0 self-start leading-[22px]">
-                      {line.lineNumber}
-                    </span>
-                    <span className="mr-2 inline-block w-4 select-none flex-shrink-0 self-start leading-[22px]">
-                      {line.type === "add" && "+"}
-                      {line.type === "delete" && "-"}
-                    </span>
-                    <span className="select-text whitespace-pre-wrap flex-1 min-w-0 leading-[22px]">
-                      <HighlightedContent
-                        content={line.content}
-                        language={language}
-                        wordWrap={wordWrap}
-                      />
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-        {!wordWrap && effectiveViewMode !== "split" && (
-          <ScrollBar orientation="horizontal" />
-        )}
-      </ScrollArea>
+      {isEmpty ? (
+        <DiffEmptyState />
+      ) : effectiveViewMode === "hunks" && groupedByHunks ? (
+        <DiffHunkView
+          groupedByHunks={groupedByHunks}
+          language={language}
+          wordWrap={wordWrap}
+        />
+      ) : effectiveViewMode === "split" && splitViewData ? (
+        <DiffSplitView
+          splitViewData={splitViewData}
+          language={language}
+          wordWrap={wordWrap}
+        />
+      ) : (
+        <DiffFullView lines={lines} language={language} wordWrap={wordWrap} />
+      )}
     </div>
   );
 };

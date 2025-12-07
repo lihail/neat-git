@@ -8,7 +8,10 @@ interface CommitPanelProps {
   onCommit: (message: string, description?: string) => void;
 }
 
-export const CommitPanel = ({ stagedFilesCount, onCommit }: CommitPanelProps) => {
+export const CommitPanel = ({
+  stagedFilesCount,
+  onCommit,
+}: CommitPanelProps) => {
   const [message, setMessage] = useState("");
 
   const handleCommit = () => {
@@ -34,7 +37,7 @@ export const CommitPanel = ({ stagedFilesCount, onCommit }: CommitPanelProps) =>
         className="w-full gap-2"
       >
         <GitCommit className="h-4 w-4" />
-        Commit {stagedFilesCount > 0 && `(${stagedFilesCount})`}
+        Commit
       </Button>
     </div>
   );
