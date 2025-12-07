@@ -52,12 +52,21 @@ import {
   type Commit,
   type Stash,
 } from "@/lib/git";
-
-const TABS_STORAGE_KEY = "neatgit_tabs";
-const ACTIVE_TAB_STORAGE_KEY = "neatgit_active_tab";
-const WORD_WRAP_STORAGE_KEY = "neatgit_word_wrap";
-const DIFF_VIEWER_MODE_STORAGE_KEY = "neatgit_diff_viewer_mode";
-const GIT_SETUP_COMPLETE_KEY = "neatgit_git_setup_complete";
+import packageJson from "../../package.json";
+import {
+  getTabs,
+  saveTabs,
+  removeTabs,
+  getActiveTab,
+  saveActiveTab,
+  removeActiveTab,
+  getWordWrap,
+  saveWordWrap,
+  getDiffViewerMode,
+  saveDiffViewerMode,
+  getGitSetupComplete,
+  saveGitSetupComplete,
+} from "@/lib/localStorage";
 
 // State for each repo tab
 interface RepoState {
@@ -96,7 +105,7 @@ export const Index = () => {
   // Load saved tabs from localStorage on mount
   const [tabs, setTabs] = useState<RepoTab[]>(() => {
     if (typeof window !== "undefined") {
-      const saved = localStorage.getItem(TABS_STORAGE_KEY);
+      const saved = getTabs();
       if (saved) {
         try {
           return JSON.parse(saved);
@@ -110,7 +119,7 @@ export const Index = () => {
 
   const [activeTabId, setActiveTabId] = useState<string | null>(() => {
     if (typeof window !== "undefined") {
-      return localStorage.getItem(ACTIVE_TAB_STORAGE_KEY);
+      return getActiveTab();
     }
     return null;
   });
@@ -156,7 +165,7 @@ export const Index = () => {
 
   const [wordWrap, setWordWrap] = useState<boolean>(() => {
     if (typeof window !== "undefined") {
-      const saved = localStorage.getItem(WORD_WRAP_STORAGE_KEY);
+      const saved = getWordWrap();
       return saved === "true";
     }
     return false;
@@ -164,7 +173,7 @@ export const Index = () => {
 
   const [diffViewerMode, setDiffViewerMode] = useState<DiffViewerMode>(() => {
     if (typeof window !== "undefined") {
-      const saved = localStorage.getItem(DIFF_VIEWER_MODE_STORAGE_KEY);
+      const saved = getDiffViewerMode();
       if (saved === "full" || saved === "hunks" || saved === "split") {
         return saved;
       }
@@ -184,7 +193,7 @@ export const Index = () => {
       if (typeof window === "undefined" || !window.ipcRenderer) return;
 
       // Check if we've already completed setup
-      const setupComplete = localStorage.getItem(GIT_SETUP_COMPLETE_KEY);
+      const setupComplete = getGitSetupComplete();
       if (setupComplete === "true") return;
 
       // On first launch, always show the setup dialog
@@ -197,36 +206,36 @@ export const Index = () => {
   }, []);
 
   const handleGitSetupComplete = () => {
-    localStorage.setItem(GIT_SETUP_COMPLETE_KEY, "true");
+    saveGitSetupComplete(true);
     setShowGitSetup(false);
   };
 
   // Save tabs to localStorage whenever they change
   useEffect(() => {
     if (tabs.length > 0) {
-      localStorage.setItem(TABS_STORAGE_KEY, JSON.stringify(tabs));
+      saveTabs(JSON.stringify(tabs));
     } else {
-      localStorage.removeItem(TABS_STORAGE_KEY);
+      removeTabs();
     }
   }, [tabs]);
 
   // Save active tab to localStorage
   useEffect(() => {
     if (activeTabId) {
-      localStorage.setItem(ACTIVE_TAB_STORAGE_KEY, activeTabId);
+      saveActiveTab(activeTabId);
     } else {
-      localStorage.removeItem(ACTIVE_TAB_STORAGE_KEY);
+      removeActiveTab();
     }
   }, [activeTabId]);
 
   // Save word wrap setting to localStorage
   useEffect(() => {
-    localStorage.setItem(WORD_WRAP_STORAGE_KEY, wordWrap.toString());
+    saveWordWrap(wordWrap);
   }, [wordWrap]);
 
   // Save diff viewer mode setting to localStorage
   useEffect(() => {
-    localStorage.setItem(DIFF_VIEWER_MODE_STORAGE_KEY, diffViewerMode);
+    saveDiffViewerMode(diffViewerMode);
   }, [diffViewerMode]);
 
   // Clear toasts when switching tabs
@@ -1641,6 +1650,9 @@ export const Index = () => {
           }
           onCloningChange={setIsCloning}
         />
+        <p className="absolute bottom-4 left-1/2 -translate-x-1/2 text-xs text-muted-foreground/60">
+          NeatGit v{packageJson.version}
+        </p>
       </div>
     );
   }

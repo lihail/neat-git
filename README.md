@@ -1,6 +1,6 @@
 # NeatGit
 
-A modern, beautiful Git client built with Electron, React, and TypeScript.
+A modern, beautiful Git client built with Electron, React and TypeScript.
 
 ## Installation & Usage
 
@@ -45,4 +45,4 @@ npm run electron:build:win     # Windows
 
 The built applications will be available in the `release` directory.
 
-**Note:** Building for a specific platform typically requires running the build on that platform (e.g., build macOS apps on a Mac, Windows apps on Windows).
+**Note:** Building for a specific platform typically requires running the build **on that platform** (e.g., build macOS apps on a Mac, Windows apps on Windows).

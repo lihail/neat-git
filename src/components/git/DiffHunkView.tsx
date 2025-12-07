@@ -35,12 +35,10 @@ export const DiffHunkView = ({
       <div className="font-mono text-xs w-fit min-w-full">
         {groupedByHunks.map((hunk, i) => (
           <div key={hunk.index}>
-            {i > 0 && (
-              <DiffHunkSeparator
-                startLine={hunk.startLine}
-                endLine={hunk.endLine}
-              />
-            )}
+            <DiffHunkSeparator
+              startLine={hunk.startLine}
+              endLine={hunk.endLine}
+            />
 
             {/* Hunk lines */}
             {wordWrap ? (
