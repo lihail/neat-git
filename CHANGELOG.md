@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.2.0 - ???
+## v0.2.0 - Dec. 7, 2025
 
 ### User-facing changes
 
