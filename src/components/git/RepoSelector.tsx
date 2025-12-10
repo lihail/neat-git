@@ -199,7 +199,8 @@ export const RepoSelector = ({
     if (typeof window !== "undefined" && window.electronAPI) {
       setIsLoading(true);
       try {
-        const result = await window.electronAPI.openFolderDialog();
+        const result =
+          await window.electronAPI.openSelectGitRepositoryFolderDialog();
         if (result.success) {
           onSelectRepo(result.path);
           toast.success(`Repository selected: ${result.path}`);
@@ -235,7 +236,7 @@ export const RepoSelector = ({
   const handleSelectCloneDestination = async () => {
     if (typeof window !== "undefined" && window.electronAPI) {
       try {
-        const result = await window.electronAPI.selectFolderDialog();
+        const result = await window.electronAPI.openSelectParentFolderDialog();
         if (result.success) {
           setCloneDestination(result.path);
         } else if (result.success === false && result.error) {
@@ -270,8 +271,7 @@ export const RepoSelector = ({
         }
       }
 
-      const result = await window.ipcRenderer.invoke(
-        "git:clone",
+      const result = await window.electronAPI.clone(
         cloneUrl,
         finalPath,
         effectiveUsername,
@@ -369,10 +369,7 @@ export const RepoSelector = ({
     if (isSshUrl(trimmedUrl)) {
       const hostname = extractHostFromUrl(trimmedUrl);
       try {
-        const result = await window.ipcRenderer.invoke(
-          "ssh:isHostTrusted",
-          hostname
-        );
+        const result = await window.electronAPI.isHostTrusted(hostname);
         if (result.success && !result.isTrusted) {
           // Host not trusted - show trust dialog
           setSshTrustHostname(hostname);
@@ -416,13 +413,12 @@ export const RepoSelector = ({
   const handleSshSetup = async () => {
     try {
       // Check for existing SSH keys
-      const result = await window.ipcRenderer.invoke("ssh:checkKeys");
+      const result = await window.electronAPI.findKeys();
       if (result.success) {
         setSshHasExistingKeys(result.hasKeys);
         if (result.hasKeys && result.keys.length > 0) {
           // Found existing keys - pre-load the public key but stay on check screen
-          const publicKeyResult = await window.ipcRenderer.invoke(
-            "ssh:readPublicKey",
+          const publicKeyResult = await window.electronAPI.readPublicKey(
             result.keys[0].publicPath
           );
           if (publicKeyResult.success) {
@@ -444,11 +440,10 @@ export const RepoSelector = ({
   const handleGenerateSshKey = async () => {
     setSshIsGenerating(true);
     try {
-      const result = await window.ipcRenderer.invoke("ssh:generateKey");
+      const result = await window.electronAPI.generateKey();
       if (result.success) {
         // Read the public key
-        const publicKeyResult = await window.ipcRenderer.invoke(
-          "ssh:readPublicKey",
+        const publicKeyResult = await window.electronAPI.readPublicKey(
           result.publicKeyPath
         );
         if (publicKeyResult.success) {
@@ -496,10 +491,7 @@ export const RepoSelector = ({
   const handleTrustHost = async () => {
     setSshIsTrusting(true);
     try {
-      const result = await window.ipcRenderer.invoke(
-        "ssh:trustHost",
-        sshTrustHostname
-      );
+      const result = await window.electronAPI.trustHost(sshTrustHostname);
       if (result.success) {
         toast.success(`Host ${sshTrustHostname} added to known hosts`);
         setShowSshTrustDialog(false);
@@ -526,7 +518,7 @@ export const RepoSelector = ({
   const handleCreateRepo = async () => {
     if (typeof window !== "undefined" && window.electronAPI) {
       try {
-        const result = await window.electronAPI.selectFolderDialog();
+        const result = await window.electronAPI.openSelectParentFolderDialog();
         if (result.success) {
           setSelectedParentPath(result.path);
           setShowCreateDialog(true);
@@ -562,8 +554,7 @@ export const RepoSelector = ({
 
     setIsLoading(true);
     try {
-      const result = await window.ipcRenderer.invoke(
-        "git:createRepository",
+      const result = await window.electronAPI.createRepository(
         selectedParentPath,
         trimmedName
       );

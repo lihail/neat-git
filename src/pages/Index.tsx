@@ -44,7 +44,7 @@ import {
   unstageLines,
   fetchFromRemote,
   pullFromRemote,
-  pullBranch,
+  pullNonCurrentBranch,
   pushToRemote,
   type Branch,
   type FileStatus as GitFileStatus,
@@ -271,8 +271,7 @@ export const Index = () => {
 
         // Check if repo has a remote configured
         try {
-          const remoteUrlResult = await window.ipcRenderer.invoke(
-            "git:getRemoteUrl",
+          const remoteUrlResult = await window.electronAPI.getRemoteUrl(
             currentRepoPath
           );
           if (!remoteUrlResult.success) {
@@ -1287,8 +1286,7 @@ export const Index = () => {
         // Show authentication dialog (first time - no error yet)
         // Get hostname from remote URL for display
         try {
-          const remoteUrlResult = await window.ipcRenderer.invoke(
-            "git:getRemoteUrl",
+          const remoteUrlResult = await window.electronAPI.getRemoteUrl(
             repoPath
           );
           if (remoteUrlResult.success) {
@@ -1385,8 +1383,7 @@ export const Index = () => {
         // Show authentication dialog (first time - no error yet)
         // Get hostname from remote URL for display
         try {
-          const remoteUrlResult = await window.ipcRenderer.invoke(
-            "git:getRemoteUrl",
+          const remoteUrlResult = await window.electronAPI.getRemoteUrl(
             repoPath
           );
           if (remoteUrlResult.success) {
@@ -1485,8 +1482,7 @@ export const Index = () => {
         // Show authentication dialog (first time - no error yet)
         // Get hostname from remote URL for display
         try {
-          const remoteUrlResult = await window.ipcRenderer.invoke(
-            "git:getRemoteUrl",
+          const remoteUrlResult = await window.electronAPI.getRemoteUrl(
             repoPath
           );
           if (remoteUrlResult.success) {
@@ -1576,7 +1572,7 @@ export const Index = () => {
       // Set pulling state
       setPullingRepos((prev) => ({ ...prev, [repoPath]: true }));
 
-      const result = await pullBranch(
+      const result = await pullNonCurrentBranch(
         repoPath,
         branchName,
         undefined,

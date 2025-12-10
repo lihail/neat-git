@@ -48,10 +48,7 @@ export async function getCurrentBranch(repoPath: string): Promise<string> {
   }
 
   try {
-    const branch = await window.ipcRenderer.invoke(
-      "git:currentBranch",
-      repoPath
-    );
+    const branch = await window.electronAPI.getCurrentBranch(repoPath);
     return branch || "main";
   } catch (error) {
     console.error("Error getting current branch:", error);
@@ -69,10 +66,7 @@ export async function listBranches(repoPath: string): Promise<Branch[]> {
   }
 
   try {
-    const branches = await window.ipcRenderer.invoke(
-      "git:listBranches",
-      repoPath
-    );
+    const branches = await window.electronAPI.listBranches(repoPath);
     return branches || [];
   } catch (error) {
     console.error("Error listing branches:", error);
@@ -90,7 +84,7 @@ export async function getStatus(repoPath: string): Promise<FileStatus[]> {
   }
 
   try {
-    const files = await window.ipcRenderer.invoke("git:status", repoPath);
+    const files = await window.electronAPI.getStatus(repoPath);
     return files || [];
   } catch (error) {
     console.error("Error getting git status:", error);
@@ -111,7 +105,7 @@ export async function stageFile(
   }
 
   try {
-    await window.ipcRenderer.invoke("git:add", repoPath, filepath);
+    await window.electronAPI.stageFile(repoPath, filepath);
   } catch (error) {
     console.error("Error staging file:", error);
     throw error;
@@ -131,7 +125,7 @@ export async function unstageFile(
   }
 
   try {
-    await window.ipcRenderer.invoke("git:remove", repoPath, filepath);
+    await window.electronAPI.unstageFile(repoPath, filepath);
   } catch (error) {
     console.error("Error unstaging file:", error);
     throw error;
@@ -148,10 +142,7 @@ export async function listRemoteBranches(repoPath: string): Promise<Branch[]> {
   }
 
   try {
-    const branches = await window.ipcRenderer.invoke(
-      "git:listRemoteBranches",
-      repoPath
-    );
+    const branches = await window.electronAPI.listRemoteBranches(repoPath);
     return branches || [];
   } catch (error) {
     console.error("Error listing remote branches:", error);
@@ -176,8 +167,7 @@ export async function getDiff(
   }
 
   try {
-    const diff = await window.ipcRenderer.invoke(
-      "git:diff",
+    const diff = await window.electronAPI.getDiff(
       repoPath,
       filepath,
       staged,
@@ -203,7 +193,7 @@ export async function createBranch(
   }
 
   try {
-    await window.ipcRenderer.invoke("git:createBranch", repoPath, branchName);
+    await window.electronAPI.createBranch(repoPath, branchName);
   } catch (error) {
     console.error("Error creating branch:", error);
     throw error;
@@ -223,7 +213,7 @@ export async function checkoutBranch(
   }
 
   try {
-    await window.ipcRenderer.invoke("git:checkout", repoPath, branchName);
+    await window.electronAPI.checkout(repoPath, branchName);
   } catch (error) {
     console.error("Error checking out branch:", error);
     throw error;
@@ -243,7 +233,7 @@ export async function deleteBranch(
   }
 
   try {
-    await window.ipcRenderer.invoke("git:deleteBranch", repoPath, branchName);
+    await window.electronAPI.deleteBranch(repoPath, branchName);
   } catch (error) {
     console.error("Error deleting branch:", error);
     throw error;
@@ -265,8 +255,7 @@ export async function renameBranch(
   }
 
   try {
-    await window.ipcRenderer.invoke(
-      "git:renameBranch",
+    await window.electronAPI.renameBranch(
       repoPath,
       oldName,
       newName,
@@ -288,7 +277,7 @@ export async function stageAll(repoPath: string): Promise<void> {
   }
 
   try {
-    await window.ipcRenderer.invoke("git:add", repoPath, ".");
+    await window.electronAPI.stageFile(repoPath, ".");
   } catch (error) {
     console.error("Error staging all files:", error);
     throw error;
@@ -305,7 +294,7 @@ export async function unstageAll(repoPath: string): Promise<void> {
   }
 
   try {
-    await window.ipcRenderer.invoke("git:resetHead", repoPath);
+    await window.electronAPI.unstageAllFiles(repoPath);
   } catch (error) {
     console.error("Error unstaging all files:", error);
     throw error;
@@ -325,7 +314,7 @@ export async function getCommitHistory(
   }
 
   try {
-    const commits = await window.ipcRenderer.invoke("git:log", repoPath, limit);
+    const commits = await window.electronAPI.log(repoPath, limit);
     return commits || [];
   } catch (error) {
     console.error("Error getting commit history:", error);
@@ -347,8 +336,7 @@ export async function commit(
   }
 
   try {
-    const result = await window.ipcRenderer.invoke(
-      "git:commit",
+    const result = await window.electronAPI.commit(
       repoPath,
       message,
       description
@@ -373,11 +361,7 @@ export async function stash(
   }
 
   try {
-    const result = await window.ipcRenderer.invoke(
-      "git:stash",
-      repoPath,
-      message
-    );
+    const result = await window.electronAPI.stash(repoPath, message);
     return result;
   } catch (error) {
     console.error("Error stashing changes:", error);
@@ -395,10 +379,7 @@ export async function listStashes(repoPath: string): Promise<Stash[]> {
   }
 
   try {
-    const stashes = await window.ipcRenderer.invoke(
-      "git:listStashes",
-      repoPath
-    );
+    const stashes = await window.electronAPI.listStashes(repoPath);
     return stashes || [];
   } catch (error) {
     console.error("Error listing stashes:", error);
@@ -419,11 +400,7 @@ export async function popStash(
   }
 
   try {
-    const result = await window.ipcRenderer.invoke(
-      "git:popStash",
-      repoPath,
-      index
-    );
+    const result = await window.electronAPI.popStash(repoPath, index);
     return result;
   } catch (error) {
     console.error("Error popping stash:", error);
@@ -444,11 +421,7 @@ export async function deleteStash(
   }
 
   try {
-    const result = await window.ipcRenderer.invoke(
-      "git:deleteStash",
-      repoPath,
-      index
-    );
+    const result = await window.electronAPI.deleteStash(repoPath, index);
     return result;
   } catch (error) {
     console.error("Error deleting stash:", error);
@@ -470,12 +443,7 @@ export async function stageLines(
   }
 
   try {
-    await window.ipcRenderer.invoke(
-      "git:stageLines",
-      repoPath,
-      filepath,
-      lines
-    );
+    await window.electronAPI.stageLines(repoPath, filepath, lines);
   } catch (error) {
     console.error("Error staging lines:", error);
     throw error;
@@ -496,12 +464,7 @@ export async function unstageLines(
   }
 
   try {
-    await window.ipcRenderer.invoke(
-      "git:unstageLines",
-      repoPath,
-      filepath,
-      lines
-    );
+    await window.electronAPI.unstageLines(repoPath, filepath, lines);
   } catch (error) {
     console.error("Error unstaging lines:", error);
     throw error;
@@ -530,8 +493,7 @@ export async function fetchFromRemote(
     const safePassword = password !== undefined ? String(password) : null;
     const safeSaveCredentials = Boolean(saveCredentials);
 
-    const result = await window.ipcRenderer.invoke(
-      "git:fetch",
+    const result = await window.electronAPI.fetch(
       safeRepoPath,
       safeUsername,
       safePassword,
@@ -570,8 +532,7 @@ export async function pushToRemote(
     const safePassword = password !== undefined ? String(password) : null;
     const safeSaveCredentials = Boolean(saveCredentials);
 
-    const result = await window.ipcRenderer.invoke(
-      "git:push",
+    const result = await window.electronAPI.push(
       safeRepoPath,
       safeUsername,
       safePassword,
@@ -610,8 +571,7 @@ export async function pullFromRemote(
     const safePassword = password !== undefined ? String(password) : null;
     const safeSaveCredentials = Boolean(saveCredentials);
 
-    const result = await window.ipcRenderer.invoke(
-      "git:pull",
+    const result = await window.electronAPI.pullCurrentBranch(
       safeRepoPath,
       safeUsername,
       safePassword,
@@ -632,7 +592,7 @@ export async function pullFromRemote(
  * Pull a specific branch without checking it out
  * This fetches the branch and updates the local ref without affecting the working directory
  */
-export async function pullBranch(
+export async function pullNonCurrentBranch(
   repoPath: string,
   branchName: string,
   username?: string,
@@ -652,8 +612,7 @@ export async function pullBranch(
     const safePassword = password !== undefined ? String(password) : null;
     const safeSaveCredentials = Boolean(saveCredentials);
 
-    const result = await window.ipcRenderer.invoke(
-      "git:pullBranch",
+    const result = await window.electronAPI.pullNonCurrentBranch(
       safeRepoPath,
       safeBranchName,
       safeUsername,

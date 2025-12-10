@@ -1,7 +1,6 @@
 {
   "name": "neat-git",
-  "private": true,
-  "version": "0.2.0",
+  "version": "0.3.0",
   "author": "lihail https://github.com/lihail",
   "homepage": "https://github.com/lihail/neat-git",
   "repository": {
@@ -108,6 +107,7 @@
   "build": {
     "appId": "com.neatgit.app",
     "productName": "NeatGit",
+    "artifactName": "${productName}-${version}-${arch}-${os}.${ext}",
     "directories": {
       "output": "release"
     },

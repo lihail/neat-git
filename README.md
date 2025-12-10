@@ -2,13 +2,14 @@
 
 A modern, beautiful Git client built with Electron, React and TypeScript.
 
-## Installation & Usage
+## Installation
 
 Download the latest release for your operating system from the [releases page](https://github.com/lihail/neat-git/releases).
 
 **Available versions:**
-- **Mac (Apple Silicon)**: Download the file ending in `-arm64.dmg` for M1/M2/M3/M4 Macs
-- **Mac (Intel)**: Download the other `.dmg` file for Intel-based Macs
+
+- **Mac (Apple Silicon)**: Download the file ending in `-arm64-mac.dmg` for M1/M2/M3/M4 Macs
+- **Mac (Intel)**: Download the file ending in `-x64-mac.dmg` for Intel-based Macs
 
 After downloading, open the `.dmg` file and drag NeatGit to your Applications folder.
 
@@ -46,3 +47,11 @@ npm run electron:build:win     # Windows
 The built applications will be available in the `release` directory.
 
 **Note:** Building for a specific platform typically requires running the build **on that platform** (e.g., build macOS apps on a Mac, Windows apps on Windows).
+
+## Issues
+
+Please submit any issue or bug reports on the [issues page](https://github.com/lihail/neat-git/issues).
+
+## License
+
+NeatGit is licensed under the [MIT](https://github.com/lihail/neat-git/blob/main/LICENSE.TXT) license.
