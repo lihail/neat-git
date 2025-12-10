@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { cn } from "@/lib/utils";
+import { cn, validateBranchName } from "@/lib/utils";
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -507,7 +507,7 @@ export const SidebarAccordion = ({
               }}
               disabled={
                 !renameBranchNewName.trim() ||
-                renameBranchNewName === renamingBranch ||
+                renameBranchNewName.trim() === renamingBranch ||
                 isRenaming
               }
             >

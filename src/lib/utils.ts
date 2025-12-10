@@ -54,3 +54,42 @@ const mapAceModeToPrism = (aceMode: string): string => {
 
   return exceptions[aceMode] || aceMode || "text";
 };
+
+/**
+ * Validates a git branch name according to git naming rules
+ * @param name - The branch name to validate
+ * @returns Error message if invalid, null if valid
+ */
+export const validateBranchName = (name: string): string | null => {
+  if (!name.trim()) {
+    return "Branch name cannot be empty";
+  }
+
+  // Git branch naming rules
+  if (name.startsWith(".")) {
+    return "Branch name cannot start with a dot";
+  }
+  if (name.endsWith("/")) {
+    return "Branch name cannot end with a slash";
+  }
+  if (name.endsWith(".lock")) {
+    return "Branch name cannot end with .lock";
+  }
+  if (name.includes("..")) {
+    return "Branch name cannot contain consecutive dots";
+  }
+  if (name.includes("//")) {
+    return "Branch name cannot contain consecutive slashes";
+  }
+  if (name.includes("@{")) {
+    return "Branch name cannot contain @{";
+  }
+  if (/[\s~^:?*\[\]\\]/.test(name)) {
+    return "Branch name cannot contain spaces or special characters (~^:?*[]\\)";
+  }
+  if (name.startsWith("/")) {
+    return "Branch name cannot start with a slash";
+  }
+
+  return null;
+};

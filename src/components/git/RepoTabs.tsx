@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { cn } from "@/lib/utils";
+import { cn, validateBranchName } from "@/lib/utils";
 import {
   Tooltip,
   TooltipContent,
@@ -76,40 +76,6 @@ export const RepoTabs = ({
   const [isCreatingBranch, setIsCreatingBranch] = useState(false);
   const [newBranchName, setNewBranchName] = useState("");
   const [branchNameError, setBranchNameError] = useState<string | null>(null);
-
-  const validateBranchName = (name: string): string | null => {
-    if (!name.trim()) {
-      return "Branch name cannot be empty";
-    }
-
-    // Git branch naming rules
-    if (name.startsWith(".")) {
-      return "Branch name cannot start with a dot";
-    }
-    if (name.endsWith("/")) {
-      return "Branch name cannot end with a slash";
-    }
-    if (name.endsWith(".lock")) {
-      return "Branch name cannot end with .lock";
-    }
-    if (name.includes("..")) {
-      return "Branch name cannot contain consecutive dots";
-    }
-    if (name.includes("//")) {
-      return "Branch name cannot contain consecutive slashes";
-    }
-    if (name.includes("@{")) {
-      return "Branch name cannot contain @{";
-    }
-    if (/[\s~^:?*\[\]\\]/.test(name)) {
-      return "Branch name cannot contain spaces or special characters (~^:?*[]\\)";
-    }
-    if (name.startsWith("/")) {
-      return "Branch name cannot start with a slash";
-    }
-
-    return null;
-  };
 
   const handleCreateBranch = () => {
     const trimmedName = newBranchName.trim();
