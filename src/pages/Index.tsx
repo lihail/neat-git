@@ -60,11 +60,10 @@ import {
   getActiveTab,
   saveActiveTab,
   removeActiveTab,
-  getDiffViewerMode,
-  saveDiffViewerMode,
 } from "@/lib/localStorage";
 import { useGitSetup } from "@/hooks/useGitSetup";
 import { useWordWrap } from "@/hooks/useWordWrap";
+import { useDiffViewerMode } from "@/hooks/useDiffViewerMode";
 
 // State for each repo tab
 interface RepoState {
@@ -161,15 +160,7 @@ export const Index = () => {
   const [savePushCredentials, setSavePushCredentials] = useState(true);
   const [showPushPassword, setShowPushPassword] = useState(false);
 
-  const [diffViewerMode, setDiffViewerMode] = useState<DiffViewerMode>(() => {
-    if (typeof window !== "undefined") {
-      const saved = getDiffViewerMode();
-      if (saved === "full" || saved === "hunks" || saved === "split") {
-        return saved;
-      }
-    }
-    return "full";
-  });
+  const { diffViewerMode, setDiffViewerMode } = useDiffViewerMode();
 
   // Auto-fetch interval (5 minutes)
   const [fetchIntervalId, setFetchIntervalId] = useState<NodeJS.Timeout | null>(
@@ -197,11 +188,6 @@ export const Index = () => {
   }, [activeTabId]);
 
   const { wordWrap, setWordWrap } = useWordWrap();
-
-  // Save diff viewer mode setting to localStorage
-  useEffect(() => {
-    saveDiffViewerMode(diffViewerMode);
-  }, [diffViewerMode]);
 
   // Clear toasts when switching tabs
   useEffect(() => {
