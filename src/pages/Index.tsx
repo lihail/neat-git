@@ -1676,6 +1676,7 @@ export const Index = () => {
         isPulling={isPulling}
         isPushing={isPushing}
         isAnyRemoteOperationActive={isAnyRemoteOperationActive}
+        existingBranches={currentState?.branches.map((b) => b.name) || []}
       />
 
       {/* Main Content */}

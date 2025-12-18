@@ -51,6 +51,7 @@ interface RepoTabsProps {
   isPulling?: boolean;
   isPushing?: boolean;
   isAnyRemoteOperationActive?: boolean;
+  existingBranches?: string[];
 }
 
 export const RepoTabs = ({
@@ -70,6 +71,7 @@ export const RepoTabs = ({
   isPulling = false,
   isPushing = false,
   isAnyRemoteOperationActive = false,
+  existingBranches = [],
 }: RepoTabsProps) => {
   const [draggedTabId, setDraggedTabId] = useState<string | null>(null);
   const [dragOverTabId, setDragOverTabId] = useState<string | null>(null);
@@ -86,6 +88,12 @@ export const RepoTabs = ({
       return;
     }
 
+    // Check if branch already exists
+    if (existingBranches.includes(trimmedName)) {
+      setBranchNameError("A branch with this name already exists");
+      return;
+    }
+
     if (onCreateBranch) {
       onCreateBranch(trimmedName);
       setNewBranchName("");
@@ -99,8 +107,14 @@ export const RepoTabs = ({
     setNewBranchName(value);
     // Validate in real-time if there was a previous error
     if (branchNameError && value.trim()) {
-      const error = validateBranchName(value);
-      setBranchNameError(error);
+      const error = validateBranchName(value.trim());
+      if (error) {
+        setBranchNameError(error);
+      } else if (existingBranches.includes(value.trim())) {
+        setBranchNameError("A branch with this name already exists");
+      } else {
+        setBranchNameError(null);
+      }
     } else if (!value.trim()) {
       setBranchNameError(null);
     }
