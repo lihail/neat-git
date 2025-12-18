@@ -190,11 +190,14 @@ export const Index = () => {
   // Check for Git setup on mount
   useEffect(() => {
     const checkGitSetup = async () => {
-      if (typeof window === "undefined" || !window.ipcRenderer) return;
+      if (typeof window === "undefined" || !window.electronAPI) {
+        return;
+      }
 
-      // Check if we've already completed setup
       const setupComplete = getGitSetupComplete();
-      if (setupComplete === "true") return;
+      if (setupComplete === "true") {
+        return;
+      }
 
       // On first launch, always show the setup dialog
       // It will display existing config (if any) and let user confirm/edit
