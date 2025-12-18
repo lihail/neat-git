@@ -60,12 +60,11 @@ import {
   getActiveTab,
   saveActiveTab,
   removeActiveTab,
-  getWordWrap,
-  saveWordWrap,
   getDiffViewerMode,
   saveDiffViewerMode,
 } from "@/lib/localStorage";
 import { useGitSetup } from "@/hooks/useGitSetup";
+import { useWordWrap } from "@/hooks/useWordWrap";
 
 // State for each repo tab
 interface RepoState {
@@ -162,14 +161,6 @@ export const Index = () => {
   const [savePushCredentials, setSavePushCredentials] = useState(true);
   const [showPushPassword, setShowPushPassword] = useState(false);
 
-  const [wordWrap, setWordWrap] = useState<boolean>(() => {
-    if (typeof window !== "undefined") {
-      const saved = getWordWrap();
-      return saved === "true";
-    }
-    return false;
-  });
-
   const [diffViewerMode, setDiffViewerMode] = useState<DiffViewerMode>(() => {
     if (typeof window !== "undefined") {
       const saved = getDiffViewerMode();
@@ -205,10 +196,7 @@ export const Index = () => {
     }
   }, [activeTabId]);
 
-  // Save word wrap setting to localStorage
-  useEffect(() => {
-    saveWordWrap(wordWrap);
-  }, [wordWrap]);
+  const { wordWrap, setWordWrap } = useWordWrap();
 
   // Save diff viewer mode setting to localStorage
   useEffect(() => {
