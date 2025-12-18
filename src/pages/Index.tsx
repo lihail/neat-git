@@ -53,17 +53,10 @@ import {
   type Stash,
 } from "@/lib/git";
 import packageJson from "../../package.json";
-import {
-  getTabs,
-  saveTabs,
-  removeTabs,
-  getActiveTab,
-  saveActiveTab,
-  removeActiveTab,
-} from "@/lib/localStorage";
 import { useGitSetup } from "@/hooks/useGitSetup";
 import { useWordWrap } from "@/hooks/useWordWrap";
 import { useDiffViewerMode } from "@/hooks/useDiffViewerMode";
+import { useRepoTabs } from "@/hooks/useRepoTabs";
 
 // State for each repo tab
 interface RepoState {
@@ -99,27 +92,9 @@ const getContextLinesForMode = (mode: DiffViewerMode): number => {
 };
 
 export const Index = () => {
-  // Load saved tabs from localStorage on mount
-  const [tabs, setTabs] = useState<RepoTab[]>(() => {
-    if (typeof window !== "undefined") {
-      const saved = getTabs();
-      if (saved) {
-        try {
-          return JSON.parse(saved);
-        } catch {
-          return [];
-        }
-      }
-    }
-    return [];
-  });
-
-  const [activeTabId, setActiveTabId] = useState<string | null>(() => {
-    if (typeof window !== "undefined") {
-      return getActiveTab();
-    }
-    return null;
-  });
+  const { tabs, setTabs, activeTabId, setActiveTabId } = useRepoTabs();
+  const { showGitSetup, handleGitSetupComplete } = useGitSetup();
+  const { wordWrap, setWordWrap } = useWordWrap();
 
   const [selectedCommit, setSelectedCommit] = useState<string>();
   const [repoStates, setRepoStates] = useState<Record<string, RepoState>>({});
@@ -166,28 +141,6 @@ export const Index = () => {
   const [fetchIntervalId, setFetchIntervalId] = useState<NodeJS.Timeout | null>(
     null
   );
-
-  const { showGitSetup, handleGitSetupComplete } = useGitSetup();
-
-  // Save tabs to localStorage whenever they change
-  useEffect(() => {
-    if (tabs.length > 0) {
-      saveTabs(JSON.stringify(tabs));
-    } else {
-      removeTabs();
-    }
-  }, [tabs]);
-
-  // Save active tab to localStorage
-  useEffect(() => {
-    if (activeTabId) {
-      saveActiveTab(activeTabId);
-    } else {
-      removeActiveTab();
-    }
-  }, [activeTabId]);
-
-  const { wordWrap, setWordWrap } = useWordWrap();
 
   // Clear toasts when switching tabs
   useEffect(() => {
