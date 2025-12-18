@@ -64,9 +64,8 @@ import {
   saveWordWrap,
   getDiffViewerMode,
   saveDiffViewerMode,
-  getGitSetupComplete,
-  saveGitSetupComplete,
 } from "@/lib/localStorage";
+import { useGitSetup } from "@/hooks/useGitSetup";
 
 // State for each repo tab
 interface RepoState {
@@ -185,33 +184,8 @@ export const Index = () => {
   const [fetchIntervalId, setFetchIntervalId] = useState<NodeJS.Timeout | null>(
     null
   );
-  const [showGitSetup, setShowGitSetup] = useState(false);
 
-  // Check for Git setup on mount
-  useEffect(() => {
-    const checkGitSetup = async () => {
-      if (typeof window === "undefined" || !window.electronAPI) {
-        return;
-      }
-
-      const setupComplete = getGitSetupComplete();
-      if (setupComplete === "true") {
-        return;
-      }
-
-      // On first launch, always show the setup dialog
-      // It will display existing config (if any) and let user confirm/edit
-      // Or let them enter new config if missing
-      setShowGitSetup(true);
-    };
-
-    checkGitSetup();
-  }, []);
-
-  const handleGitSetupComplete = () => {
-    saveGitSetupComplete(true);
-    setShowGitSetup(false);
-  };
+  const { showGitSetup, handleGitSetupComplete } = useGitSetup();
 
   // Save tabs to localStorage whenever they change
   useEffect(() => {
@@ -1616,7 +1590,6 @@ export const Index = () => {
     }
   };
 
-  // If showing Git setup, only show that
   if (showGitSetup) {
     return (
       <div className="flex h-screen flex-col bg-background">
