@@ -7,21 +7,9 @@ import { type DiffViewerMode } from "@/components/git/DiffViewerModeToggle";
 import { CommitPanel } from "@/components/git/CommitPanel";
 import { RepoTabs, type RepoTab } from "@/components/git/RepoTabs";
 import { GitSetupDialog } from "@/components/git/GitSetupDialog";
+import { AuthDialog } from "@/components/git/AuthDialog";
 import { toast } from "@/components/ui/toaster";
 import { cn } from "@/lib/utils";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Eye, EyeOff } from "lucide-react";
 import {
   listBranches,
   listRemoteBranches,
@@ -111,29 +99,11 @@ export const Index = () => {
     {}
   );
 
-  // Fetch authentication state
-  const [showFetchAuthDialog, setShowFetchAuthDialog] = useState(false);
-  const [fetchAuthUsername, setFetchAuthUsername] = useState("");
-  const [fetchAuthPassword, setFetchAuthPassword] = useState("");
-  const [fetchAuthError, setFetchAuthError] = useState<string | null>(null);
-  const [saveFetchCredentials, setSaveFetchCredentials] = useState(true);
-  const [showFetchPassword, setShowFetchPassword] = useState(false);
-
-  // Pull authentication state
-  const [showPullAuthDialog, setShowPullAuthDialog] = useState(false);
-  const [pullAuthUsername, setPullAuthUsername] = useState("");
-  const [pullAuthPassword, setPullAuthPassword] = useState("");
-  const [pullAuthError, setPullAuthError] = useState<string | null>(null);
-  const [savePullCredentials, setSavePullCredentials] = useState(true);
-  const [showPullPassword, setShowPullPassword] = useState(false);
-
-  // Push authentication state
-  const [showPushAuthDialog, setShowPushAuthDialog] = useState(false);
-  const [pushAuthUsername, setPushAuthUsername] = useState("");
-  const [pushAuthPassword, setPushAuthPassword] = useState("");
-  const [pushAuthError, setPushAuthError] = useState<string | null>(null);
-  const [savePushCredentials, setSavePushCredentials] = useState(true);
-  const [showPushPassword, setShowPushPassword] = useState(false);
+  const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
+  const [authDialogError, setAuthDialogError] = useState<string | null>(null);
+  const [currentAuthOperation, setCurrentAuthOperation] = useState<
+    "fetch" | "pull" | "push" | null
+  >(null);
 
   const { diffViewerMode, setDiffViewerMode } = useDiffViewerMode();
 
@@ -344,7 +314,9 @@ export const Index = () => {
 
   // Refresh git data when window regains focus
   useEffect(() => {
-    if (!repoPath) return;
+    if (!repoPath) {
+      return;
+    }
 
     const handleFocus = async () => {
       try {
@@ -464,7 +436,9 @@ export const Index = () => {
   };
 
   const handleToggleStage = async (path: string, shouldStage: boolean) => {
-    if (!repoPath || !currentState) return;
+    if (!repoPath || !currentState) {
+      return;
+    }
 
     try {
       // Check if file was in both sections before staging/unstaging
@@ -523,7 +497,9 @@ export const Index = () => {
   };
 
   const handleStageLine = async (lineIndex: number) => {
-    if (!repoPath || !currentState || !currentState.selectedFile) return;
+    if (!repoPath || !currentState || !currentState.selectedFile) {
+      return;
+    }
 
     try {
       setLoadingDiff(true);
@@ -551,7 +527,9 @@ export const Index = () => {
   };
 
   const handleUnstageLine = async (lineIndex: number) => {
-    if (!repoPath || !currentState || !currentState.selectedFile) return;
+    if (!repoPath || !currentState || !currentState.selectedFile) {
+      return;
+    }
 
     try {
       setLoadingDiff(true);
@@ -579,7 +557,9 @@ export const Index = () => {
   };
 
   const handleStageAll = async () => {
-    if (!repoPath || !currentState) return;
+    if (!repoPath || !currentState) {
+      return;
+    }
 
     try {
       // Check if selected file was in both sections before staging
@@ -644,7 +624,9 @@ export const Index = () => {
   };
 
   const handleUnstageAll = async () => {
-    if (!repoPath || !currentState) return;
+    if (!repoPath || !currentState) {
+      return;
+    }
 
     try {
       // Check if selected file was in both sections before unstaging
@@ -709,7 +691,9 @@ export const Index = () => {
   };
 
   const handleCommit = async (message: string, description?: string) => {
-    if (!repoPath || !currentState) return;
+    if (!repoPath || !currentState) {
+      return;
+    }
 
     const stagedCount = currentState.files.filter((f) => f.hasStaged).length;
 
@@ -748,7 +732,9 @@ export const Index = () => {
   };
 
   const handleSelectBranch = async (branch: string) => {
-    if (!repoPath || !currentState) return;
+    if (!repoPath || !currentState) {
+      return;
+    }
 
     // Don't switch if already on this branch
     if (branch === currentState.currentBranch) {
@@ -863,7 +849,9 @@ export const Index = () => {
   };
 
   const handleCreateBranch = async (branchName: string) => {
-    if (!repoPath) return;
+    if (!repoPath) {
+      return;
+    }
 
     try {
       await createBranch(repoPath, branchName);
@@ -892,7 +880,9 @@ export const Index = () => {
   };
 
   const handleDeleteBranch = async (branchName: string) => {
-    if (!repoPath) return;
+    if (!repoPath) {
+      return;
+    }
 
     try {
       await deleteBranch(repoPath, branchName);
@@ -914,7 +904,9 @@ export const Index = () => {
     newName: string,
     alsoRenameRemote: boolean
   ) => {
-    if (!repoPath || !currentState) return;
+    if (!repoPath || !currentState) {
+      return;
+    }
 
     try {
       // Set renaming state
@@ -960,7 +952,9 @@ export const Index = () => {
   };
 
   const handleStash = async () => {
-    if (!repoPath || !currentState) return;
+    if (!repoPath || !currentState) {
+      return;
+    }
 
     // Check if there are any changes to stash
     if (currentState.files.length === 0) {
@@ -969,7 +963,6 @@ export const Index = () => {
     }
 
     try {
-      // Create a human-readable timestamp with 24-hour format and date
       const now = new Date();
       const hours = now.getHours().toString().padStart(2, "0");
       const minutes = now.getMinutes().toString().padStart(2, "0");
@@ -997,7 +990,6 @@ export const Index = () => {
       if (result.success) {
         toast.success(`Changes stashed: ${message}`);
 
-        // Refresh git status, commit history, and stashes after stash
         const statusList = await getStatus(repoPath);
         const commitHistory = await getCommitHistory(repoPath);
         const stashList = await listStashes(repoPath);
@@ -1020,7 +1012,9 @@ export const Index = () => {
   };
 
   const handlePopStash = async (index: number) => {
-    if (!repoPath || !currentState) return;
+    if (!repoPath || !currentState) {
+      return;
+    }
 
     try {
       const stash = currentState.stashes[index];
@@ -1029,7 +1023,6 @@ export const Index = () => {
       if (result.success) {
         toast.success(`Stash popped: ${stash.message}`);
 
-        // Refresh git status, commit history, and stashes after pop
         const statusList = await getStatus(repoPath);
         const commitHistory = await getCommitHistory(repoPath);
         const stashList = await listStashes(repoPath);
@@ -1050,7 +1043,9 @@ export const Index = () => {
   };
 
   const handleDeleteStash = async (index: number) => {
-    if (!repoPath || !currentState) return;
+    if (!repoPath || !currentState) {
+      return;
+    }
 
     try {
       const stash = currentState.stashes[index];
@@ -1075,7 +1070,6 @@ export const Index = () => {
     }
   };
 
-  // Helper function to format commit date
   const formatCommitDate = (timestamp: number): string => {
     const now = Date.now();
     const diff = now - timestamp * 1000;
@@ -1085,16 +1079,39 @@ export const Index = () => {
     const days = Math.floor(hours / 24);
     const weeks = Math.floor(days / 7);
     const months = Math.floor(days / 30);
+    const years = Math.floor(days / 365);
 
-    if (seconds < 60) return "just now";
-    if (minutes < 60) return `${minutes} minute${minutes !== 1 ? "s" : ""} ago`;
-    if (hours < 24) return `${hours} hour${hours !== 1 ? "s" : ""} ago`;
-    if (days === 1) return "1 day ago";
-    if (days < 7) return `${days} days ago`;
-    if (weeks === 1) return "1 week ago";
-    if (weeks < 4) return `${weeks} weeks ago`;
-    if (months === 1) return "1 month ago";
-    return `${months} months ago`;
+    if (seconds < 60) {
+      return "just now";
+    }
+    if (minutes < 60) {
+      return `${minutes} minute${minutes !== 1 ? "s" : ""} ago`;
+    }
+    if (hours < 24) {
+      return `${hours} hour${hours !== 1 ? "s" : ""} ago`;
+    }
+    if (days === 1) {
+      return "1 day ago";
+    }
+    if (days < 7) {
+      return `${days} days ago`;
+    }
+    if (weeks === 1) {
+      return "1 week ago";
+    }
+    if (weeks < 4) {
+      return `${weeks} weeks ago`;
+    }
+    if (months === 1) {
+      return "1 month ago";
+    }
+    if (months < 12) {
+      return `${months} months ago`;
+    }
+    if (years === 1) {
+      return "1 year ago";
+    }
+    return `${years} years ago`;
   };
 
   // Create branches with current branch marked
@@ -1116,7 +1133,9 @@ export const Index = () => {
     : [];
 
   const handleSelectFile = async (filePath: string, isStaged: boolean) => {
-    if (!repoPath || !currentState) return;
+    if (!repoPath || !currentState) {
+      return;
+    }
 
     // Check if we're selecting the same file in a different section
     const isSameFileNewSection =
@@ -1151,32 +1170,30 @@ export const Index = () => {
     }
   };
 
-  const handleFetch = async (username?: string, password?: string) => {
-    if (!repoPath) return;
+  const handleFetch = async (
+    username?: string,
+    password?: string,
+    saveCredentials?: boolean
+  ) => {
+    if (!repoPath) {
+      return;
+    }
 
     try {
-      // Set fetching state
       setFetchingRepos((prev) => ({ ...prev, [repoPath]: true }));
 
       const result = await fetchFromRemote(
         repoPath,
         username,
         password,
-        saveFetchCredentials
+        saveCredentials
       );
 
       if (result.success) {
         toast.success("Successfully fetched from remote");
 
-        // Close auth dialog if open
-        setShowFetchAuthDialog(false);
-        setFetchAuthUsername("");
-        setFetchAuthPassword("");
-        setFetchAuthError(null);
-        setSaveFetchCredentials(true);
-        setShowFetchPassword(false);
+        handleAuthDialogOpenChange(false);
 
-        // Refresh remote branches and commit history after fetch
         const remoteBranchList = await listRemoteBranches(repoPath);
         const commitHistory = await getCommitHistory(repoPath);
         const branchList = await listBranches(repoPath);
@@ -1194,27 +1211,16 @@ export const Index = () => {
             repoPath
           );
           if (remoteUrlResult.success) {
-            const url = new URL(remoteUrlResult.url);
-            // Clear credentials for security
-            setFetchAuthUsername("");
-            setFetchAuthPassword("");
-            setFetchAuthError(null); // Clear any previous errors
-            setShowFetchPassword(false);
-            setShowFetchAuthDialog(true);
+            handleAuthDialogOpenChange(true, "fetch");
           }
         } catch {
-          // Clear credentials for security
-          setFetchAuthUsername("");
-          setFetchAuthPassword("");
-          setFetchAuthError(null); // Clear any previous errors
-          setShowFetchPassword(false);
-          setShowFetchAuthDialog(true);
+          handleAuthDialogOpenChange(true, "fetch");
         }
       } else {
         // If the auth dialog is open, only show error in dialog (not toast)
         // Otherwise show toast for other types of errors
-        if (showFetchAuthDialog) {
-          setFetchAuthError(result.error || null);
+        if (isAuthDialogOpen) {
+          setAuthDialogError(result.error || null);
         } else {
           toast.error(result.error || "Failed to fetch from remote");
         }
@@ -1230,50 +1236,30 @@ export const Index = () => {
     }
   };
 
-  const handleConfirmFetchAuth = async () => {
-    if (!fetchAuthUsername.trim() || !fetchAuthPassword.trim()) {
-      setFetchAuthError("Please enter both username and password");
+  const handlePush = async (
+    username?: string,
+    password?: string,
+    saveCredentials?: boolean
+  ) => {
+    if (!repoPath) {
       return;
     }
 
-    await handleFetch(fetchAuthUsername, fetchAuthPassword);
-  };
-
-  const handleCancelFetchAuth = () => {
-    setShowFetchAuthDialog(false);
-    setFetchAuthUsername("");
-    setFetchAuthPassword("");
-    setFetchAuthError(null);
-    setSaveFetchCredentials(true);
-    setShowFetchPassword(false);
-  };
-
-  const handlePush = async (username?: string, password?: string) => {
-    if (!repoPath) return;
-
     try {
-      // Set pushing state
       setPushingRepos((prev) => ({ ...prev, [repoPath]: true }));
 
       const result = await pushToRemote(
         repoPath,
         username,
         password,
-        savePushCredentials
+        saveCredentials
       );
 
       if (result.success) {
         toast.success("Successfully pushed to remote");
 
-        // Close auth dialog if open
-        setShowPushAuthDialog(false);
-        setPushAuthUsername("");
-        setPushAuthPassword("");
-        setPushAuthError(null);
-        setSavePushCredentials(true);
-        setShowPushPassword(false);
+        handleAuthDialogOpenChange(false);
 
-        // Refresh remote branches, local branches, and commit history after push
         const remoteBranchList = await listRemoteBranches(repoPath);
         const commitHistory = await getCommitHistory(repoPath);
         const branchList = await listBranches(repoPath);
@@ -1291,27 +1277,16 @@ export const Index = () => {
             repoPath
           );
           if (remoteUrlResult.success) {
-            const url = new URL(remoteUrlResult.url);
-            // Clear credentials for security
-            setPushAuthUsername("");
-            setPushAuthPassword("");
-            setPushAuthError(null); // Clear any previous errors
-            setShowPushPassword(false);
-            setShowPushAuthDialog(true);
+            handleAuthDialogOpenChange(true, "push");
           }
         } catch {
-          // Clear credentials for security
-          setPushAuthUsername("");
-          setPushAuthPassword("");
-          setPushAuthError(null); // Clear any previous errors
-          setShowPushPassword(false);
-          setShowPushAuthDialog(true);
+          handleAuthDialogOpenChange(true, "push");
         }
       } else {
         // If the auth dialog is open, only show error in dialog (not toast)
         // Otherwise show toast for other types of errors
-        if (showPushAuthDialog) {
-          setPushAuthError(result.error || null);
+        if (isAuthDialogOpen) {
+          setAuthDialogError(result.error || null);
         } else {
           toast.error(result.error || "Failed to push to remote");
         }
@@ -1327,50 +1302,30 @@ export const Index = () => {
     }
   };
 
-  const handleConfirmPushAuth = async () => {
-    if (!pushAuthUsername.trim() || !pushAuthPassword.trim()) {
-      setPushAuthError("Please enter both username and password");
+  const handlePull = async (
+    username?: string,
+    password?: string,
+    saveCredentials?: boolean
+  ) => {
+    if (!repoPath) {
       return;
     }
 
-    await handlePush(pushAuthUsername, pushAuthPassword);
-  };
-
-  const handleCancelPushAuth = () => {
-    setShowPushAuthDialog(false);
-    setPushAuthUsername("");
-    setPushAuthPassword("");
-    setPushAuthError(null);
-    setSavePushCredentials(true);
-    setShowPushPassword(false);
-  };
-
-  const handlePull = async (username?: string, password?: string) => {
-    if (!repoPath) return;
-
     try {
-      // Set pulling state
       setPullingRepos((prev) => ({ ...prev, [repoPath]: true }));
 
       const result = await pullFromRemote(
         repoPath,
         username,
         password,
-        savePullCredentials
+        saveCredentials
       );
 
       if (result.success) {
         toast.success("Successfully pulled from remote");
 
-        // Close auth dialog if open
-        setShowPullAuthDialog(false);
-        setPullAuthUsername("");
-        setPullAuthPassword("");
-        setPullAuthError(null);
-        setSavePullCredentials(true);
-        setShowPullPassword(false);
+        handleAuthDialogOpenChange(false);
 
-        // Refresh all repo data after pull
         const remoteBranchList = await listRemoteBranches(repoPath);
         const commitHistory = await getCommitHistory(repoPath);
         const branchList = await listBranches(repoPath);
@@ -1390,27 +1345,16 @@ export const Index = () => {
             repoPath
           );
           if (remoteUrlResult.success) {
-            const url = new URL(remoteUrlResult.url);
-            // Clear credentials for security
-            setPullAuthUsername("");
-            setPullAuthPassword("");
-            setPullAuthError(null); // Clear any previous errors
-            setShowPullPassword(false);
-            setShowPullAuthDialog(true);
+            handleAuthDialogOpenChange(true, "pull");
           }
         } catch {
-          // Clear credentials for security
-          setPullAuthUsername("");
-          setPullAuthPassword("");
-          setPullAuthError(null); // Clear any previous errors
-          setShowPullPassword(false);
-          setShowPullAuthDialog(true);
+          handleAuthDialogOpenChange(true, "pull");
         }
       } else {
         // If the auth dialog is open, only show error in dialog (not toast)
         // Otherwise show toast for other types of errors
-        if (showPullAuthDialog) {
-          setPullAuthError(result.error || null);
+        if (isAuthDialogOpen) {
+          setAuthDialogError(result.error || null);
         } else {
           toast.error(result.error || "Failed to pull from remote");
         }
@@ -1426,26 +1370,10 @@ export const Index = () => {
     }
   };
 
-  const handleConfirmPullAuth = async () => {
-    if (!pullAuthUsername.trim() || !pullAuthPassword.trim()) {
-      setPullAuthError("Please enter both username and password");
+  const handlePullBranch = async (branchName: string) => {
+    if (!repoPath) {
       return;
     }
-
-    await handlePull(pullAuthUsername, pullAuthPassword);
-  };
-
-  const handleCancelPullAuth = () => {
-    setShowPullAuthDialog(false);
-    setPullAuthUsername("");
-    setPullAuthPassword("");
-    setPullAuthError(null);
-    setSavePullCredentials(true);
-    setShowPullPassword(false);
-  };
-
-  const handlePullBranch = async (branchName: string) => {
-    if (!repoPath) return;
 
     // Get the branch object to check if it has unpushed commits
     const state = repoStates[repoPath];
@@ -1514,6 +1442,19 @@ export const Index = () => {
     } finally {
       // Clear pulling state
       setPullingRepos((prev) => ({ ...prev, [repoPath]: false }));
+    }
+  };
+
+  const handleAuthDialogOpenChange = (
+    open: boolean,
+    operation?: "fetch" | "pull" | "push"
+  ) => {
+    setIsAuthDialogOpen(open);
+    if (open && operation) {
+      setCurrentAuthOperation(operation);
+    } else {
+      setAuthDialogError(null);
+      setCurrentAuthOperation(null);
     }
   };
 
@@ -1680,408 +1621,39 @@ export const Index = () => {
           <p className="text-muted-foreground">No repository selected</p>
         </div>
       )}
-
-      {/* Fetch Authentication Dialog */}
-      <Dialog
-        open={showFetchAuthDialog}
-        onOpenChange={(open) => {
-          if (!isFetching) {
-            setShowFetchAuthDialog(open);
-          }
-        }}
-      >
-        <DialogContent>
-          {isFetching && (
-            <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center rounded-lg pointer-events-auto">
-              <div className="flex flex-col items-center gap-3">
-                <div className="h-8 w-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
-                <p className="text-sm text-muted-foreground">
-                  Fetching from remote...
-                </p>
-              </div>
-            </div>
-          )}
-          <div className={isFetching ? "pointer-events-none" : ""}>
-            <DialogHeader>
-              <DialogTitle>Authentication Required</DialogTitle>
-              <DialogDescription>
-                Please enter your credentials to fetch from the remote
-                repository.
-              </DialogDescription>
-            </DialogHeader>
-
-            {fetchAuthError && (
-              <div className="mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-md">
-                <p className="text-sm text-destructive">{fetchAuthError}</p>
-              </div>
-            )}
-
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="fetch-auth-username">Username</Label>
-                <Input
-                  id="fetch-auth-username"
-                  value={fetchAuthUsername}
-                  onChange={(e) => {
-                    setFetchAuthUsername(e.target.value);
-                    if (fetchAuthError) setFetchAuthError(null);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !isFetching) {
-                      handleConfirmFetchAuth();
-                    } else if (e.key === "Escape" && !isFetching) {
-                      handleCancelFetchAuth();
-                    }
-                  }}
-                  autoFocus
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="fetch-auth-password">Password / Token</Label>
-                <div className="relative">
-                  <Input
-                    id="fetch-auth-password"
-                    type={showFetchPassword ? "text" : "password"}
-                    value={fetchAuthPassword}
-                    onChange={(e) => {
-                      setFetchAuthPassword(e.target.value);
-                      if (fetchAuthError) setFetchAuthError(null);
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && !isFetching) {
-                        handleConfirmFetchAuth();
-                      } else if (e.key === "Escape" && !isFetching) {
-                        handleCancelFetchAuth();
-                      }
-                    }}
-                    className="pr-10"
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-                    onClick={() => setShowFetchPassword(!showFetchPassword)}
-                    tabIndex={-1}
-                  >
-                    {showFetchPassword ? (
-                      <EyeOff className="h-4 w-4 text-muted-foreground" />
-                    ) : (
-                      <Eye className="h-4 w-4 text-muted-foreground" />
-                    )}
-                  </Button>
-                </div>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="save-fetch-credentials"
-                  checked={saveFetchCredentials}
-                  onCheckedChange={(checked) =>
-                    setSaveFetchCredentials(checked as boolean)
-                  }
-                />
-                <label
-                  htmlFor="save-fetch-credentials"
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                >
-                  Save my credentials on this device
-                </label>
-              </div>
-            </div>
-
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={handleCancelFetchAuth}
-                disabled={isFetching}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleConfirmFetchAuth}
-                disabled={
-                  isFetching ||
-                  !fetchAuthUsername.trim() ||
-                  !fetchAuthPassword.trim()
-                }
-              >
-                {isFetching ? "Authenticating..." : "Sign In"}
-              </Button>
-            </DialogFooter>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Push Authentication Dialog */}
-      <Dialog
-        open={showPushAuthDialog}
-        onOpenChange={(open) => {
-          if (!isPushing) {
-            setShowPushAuthDialog(open);
-          }
-        }}
-      >
-        <DialogContent>
-          {isPushing && (
-            <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center rounded-lg pointer-events-auto">
-              <div className="flex flex-col items-center gap-3">
-                <div className="h-8 w-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
-                <p className="text-sm text-muted-foreground">
-                  Pushing to remote...
-                </p>
-              </div>
-            </div>
-          )}
-          <div className={isPushing ? "pointer-events-none" : ""}>
-            <DialogHeader>
-              <DialogTitle>Authentication Required</DialogTitle>
-              <DialogDescription>
-                Please enter your credentials to push to the remote repository.
-              </DialogDescription>
-            </DialogHeader>
-
-            {pushAuthError && (
-              <div className="mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-md">
-                <p className="text-sm text-destructive">{pushAuthError}</p>
-              </div>
-            )}
-
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="push-auth-username">Username</Label>
-                <Input
-                  id="push-auth-username"
-                  value={pushAuthUsername}
-                  onChange={(e) => {
-                    setPushAuthUsername(e.target.value);
-                    if (pushAuthError) setPushAuthError(null);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !isPushing) {
-                      handleConfirmPushAuth();
-                    } else if (e.key === "Escape" && !isPushing) {
-                      handleCancelPushAuth();
-                    }
-                  }}
-                  placeholder="Enter your username"
-                  autoFocus
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="push-auth-password">Password / Token</Label>
-                <div className="relative">
-                  <Input
-                    id="push-auth-password"
-                    type={showPushPassword ? "text" : "password"}
-                    value={pushAuthPassword}
-                    onChange={(e) => {
-                      setPushAuthPassword(e.target.value);
-                      if (pushAuthError) setPushAuthError(null);
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && !isPushing) {
-                        handleConfirmPushAuth();
-                      } else if (e.key === "Escape" && !isPushing) {
-                        handleCancelPushAuth();
-                      }
-                    }}
-                    placeholder="Enter your password or personal access token"
-                    className="pr-10"
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                    onClick={() => setShowPushPassword(!showPushPassword)}
-                    tabIndex={-1}
-                  >
-                    {showPushPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="save-push-credentials"
-                  checked={savePushCredentials}
-                  onCheckedChange={(checked) =>
-                    setSavePushCredentials(checked as boolean)
-                  }
-                />
-                <label
-                  htmlFor="save-push-credentials"
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                >
-                  Save my credentials on this device
-                </label>
-              </div>
-            </div>
-
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={handleCancelPushAuth}
-                disabled={isPushing}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleConfirmPushAuth}
-                disabled={
-                  isPushing ||
-                  !pushAuthUsername.trim() ||
-                  !pushAuthPassword.trim()
-                }
-              >
-                {isPushing ? "Authenticating..." : "Sign In"}
-              </Button>
-            </DialogFooter>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Pull Authentication Dialog */}
-      <Dialog
-        open={showPullAuthDialog}
-        onOpenChange={(open) => {
-          if (!isPulling) {
-            setShowPullAuthDialog(open);
-          }
-        }}
-      >
-        <DialogContent>
-          {isPulling && (
-            <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center rounded-lg pointer-events-auto">
-              <div className="flex flex-col items-center gap-3">
-                <div className="h-8 w-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
-                <p className="text-sm text-muted-foreground">
-                  Pulling from remote...
-                </p>
-              </div>
-            </div>
-          )}
-          <div className={isPulling ? "pointer-events-none" : ""}>
-            <DialogHeader>
-              <DialogTitle>Authentication Required</DialogTitle>
-              <DialogDescription>
-                Please enter your credentials to pull from the remote
-                repository.
-              </DialogDescription>
-            </DialogHeader>
-
-            {pullAuthError && (
-              <div className="mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-md">
-                <p className="text-sm text-destructive">{pullAuthError}</p>
-              </div>
-            )}
-
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="pull-auth-username">Username</Label>
-                <Input
-                  id="pull-auth-username"
-                  value={pullAuthUsername}
-                  onChange={(e) => {
-                    setPullAuthUsername(e.target.value);
-                    if (pullAuthError) setPullAuthError(null);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !isPulling) {
-                      handleConfirmPullAuth();
-                    } else if (e.key === "Escape" && !isPulling) {
-                      handleCancelPullAuth();
-                    }
-                  }}
-                  placeholder="Enter your username"
-                  autoFocus
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="pull-auth-password">Password / Token</Label>
-                <div className="relative">
-                  <Input
-                    id="pull-auth-password"
-                    type={showPullPassword ? "text" : "password"}
-                    value={pullAuthPassword}
-                    onChange={(e) => {
-                      setPullAuthPassword(e.target.value);
-                      if (pullAuthError) setPullAuthError(null);
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && !isPulling) {
-                        handleConfirmPullAuth();
-                      } else if (e.key === "Escape" && !isPulling) {
-                        handleCancelPullAuth();
-                      }
-                    }}
-                    placeholder="Enter your password or personal access token"
-                    className="pr-10"
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                    onClick={() => setShowPullPassword(!showPullPassword)}
-                    tabIndex={-1}
-                  >
-                    {showPullPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="save-pull-credentials"
-                  checked={savePullCredentials}
-                  onCheckedChange={(checked) =>
-                    setSavePullCredentials(checked as boolean)
-                  }
-                />
-                <label
-                  htmlFor="save-pull-credentials"
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                >
-                  Save my credentials on this device
-                </label>
-              </div>
-            </div>
-
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={handleCancelPullAuth}
-                disabled={isPulling}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleConfirmPullAuth}
-                disabled={
-                  isPulling ||
-                  !pullAuthUsername.trim() ||
-                  !pullAuthPassword.trim()
-                }
-              >
-                {isPulling ? "Authenticating..." : "Sign In"}
-              </Button>
-            </DialogFooter>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <AuthDialog
+        open={isAuthDialogOpen}
+        onOpenChange={handleAuthDialogOpenChange}
+        isLoading={isFetching || isPulling || isPushing}
+        loadingMessage={
+          currentAuthOperation === "fetch"
+            ? "Fetching from remote..."
+            : currentAuthOperation === "pull"
+            ? "Pulling from remote..."
+            : currentAuthOperation === "push"
+            ? "Pushing to remote..."
+            : ""
+        }
+        description={
+          currentAuthOperation === "fetch"
+            ? "Please enter your credentials to fetch from the remote repository."
+            : currentAuthOperation === "pull"
+            ? "Please enter your credentials to pull from the remote repository."
+            : currentAuthOperation === "push"
+            ? "Please enter your credentials to push to the remote repository."
+            : ""
+        }
+        onConfirm={
+          currentAuthOperation === "fetch"
+            ? handleFetch
+            : currentAuthOperation === "pull"
+            ? handlePull
+            : currentAuthOperation === "push"
+            ? handlePush
+            : () => Promise.resolve()
+        }
+        error={authDialogError}
+      />
     </div>
   );
 };

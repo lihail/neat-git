@@ -33,7 +33,9 @@ export const GitSetupDialog = ({ open, onComplete }: GitSetupDialogProps) => {
   }, [open]);
 
   const loadGitConfig = async () => {
-    if (typeof window === "undefined" || !window.electronAPI) return;
+    if (typeof window === "undefined" || !window.electronAPI) {
+      return;
+    }
 
     setIsLoading(true);
     try {
@@ -75,7 +77,9 @@ export const GitSetupDialog = ({ open, onComplete }: GitSetupDialogProps) => {
 
     setErrors(newErrors);
 
-    if (hasError) return;
+    if (hasError) {
+      return;
+    }
 
     setIsSaving(true);
     try {

@@ -56,7 +56,9 @@ export const DiffViewer = ({
 
   // Group lines by hunks for hunks view
   const groupedByHunks = useMemo(() => {
-    if (effectiveViewMode !== "hunks" || lines.length === 0) return null;
+    if (effectiveViewMode !== "hunks" || lines.length === 0) {
+      return null;
+    }
 
     const hunks: Array<{
       index: number;
@@ -91,7 +93,9 @@ export const DiffViewer = ({
 
   // Prepare split view data - convert unified diff to side-by-side
   const splitViewData = useMemo(() => {
-    if (effectiveViewMode !== "split" || lines.length === 0) return null;
+    if (effectiveViewMode !== "split" || lines.length === 0) {
+      return null;
+    }
 
     interface SplitLine {
       leftLine?: {
