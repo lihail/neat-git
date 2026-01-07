@@ -5,7 +5,7 @@ import { FileStatus } from "@/components/git/FileStatus";
 import { DiffViewer } from "@/components/git/DiffViewer";
 import { type DiffViewerMode } from "@/components/git/DiffViewerModeToggle";
 import { CommitPanel } from "@/components/git/CommitPanel";
-import { RepoTabs, type RepoTab } from "@/components/git/RepoTabs";
+import { TopBar, type RepoTab } from "@/components/git/TopBar";
 import { GitSetupDialog } from "@/components/git/GitSetupDialog";
 import { AuthDialog } from "@/components/git/AuthDialog";
 import { toast } from "@/components/ui/toaster";
@@ -89,7 +89,6 @@ export const Index = () => {
   const [isSelectingRepo, setIsSelectingRepo] = useState(tabs.length === 0);
   const [loadingRepos, setLoadingRepos] = useState<Record<string, boolean>>({});
   const [loadingDiff, setLoadingDiff] = useState(false);
-  const [isCloning, setIsCloning] = useState(false);
   const [fetchingRepos, setFetchingRepos] = useState<Record<string, boolean>>(
     {}
   );
@@ -1469,26 +1468,14 @@ export const Index = () => {
     );
   }
 
-  // If selecting repo, show repo selector
   if (isSelectingRepo) {
     return (
       <div className="relative h-screen w-full">
-        {isCloning && (
-          <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[9999] flex items-center justify-center">
-            <div className="flex flex-col items-center gap-3">
-              <div className="h-8 w-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
-              <p className="text-sm text-muted-foreground">
-                Cloning repository...
-              </p>
-            </div>
-          </div>
-        )}
         <RepoSelector
           onSelectRepo={handleOpenRepo}
           onCancel={
             tabs.length > 0 ? () => setIsSelectingRepo(false) : undefined
           }
-          onCloningChange={setIsCloning}
         />
         <p className="absolute bottom-4 left-1/2 -translate-x-1/2 text-xs text-muted-foreground/60">
           NeatGit v{packageJson.version}
@@ -1499,8 +1486,7 @@ export const Index = () => {
 
   return (
     <div className="flex h-screen flex-col bg-background">
-      {/* Tabs Header */}
-      <RepoTabs
+      <TopBar
         tabs={tabs}
         activeTabId={activeTabId}
         onSelectTab={setActiveTabId}
@@ -1621,6 +1607,7 @@ export const Index = () => {
           <p className="text-muted-foreground">No repository selected</p>
         </div>
       )}
+
       <AuthDialog
         open={isAuthDialogOpen}
         onOpenChange={handleAuthDialogOpenChange}

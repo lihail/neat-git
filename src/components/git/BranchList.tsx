@@ -20,7 +20,6 @@ import {
 import {
   Tooltip,
   TooltipContent,
-  TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
@@ -144,36 +143,32 @@ export const BranchList = ({
               )}
               {/* Pull option - disabled if branch has no upstream or has unpushed commits */}
               {!branch.hasUpstream ? (
-                <TooltipProvider>
-                  <Tooltip delayDuration={0}>
-                    <TooltipTrigger asChild>
-                      <div className="relative flex select-none items-center gap-3 rounded-sm px-2 py-1.5 text-sm outline-none text-muted-foreground opacity-50">
-                        <span className="flex-1">Pull</span>
-                        <Download className="h-4 w-4" />
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent side="right">
-                      <p>Cannot pull: branch is not tracking a remote branch</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                <Tooltip delayDuration={0}>
+                  <TooltipTrigger asChild>
+                    <div className="relative flex select-none items-center gap-3 rounded-sm px-2 py-1.5 text-sm outline-none text-muted-foreground opacity-50">
+                      <span className="flex-1">Pull</span>
+                      <Download className="h-4 w-4" />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">
+                    <p>Cannot pull: branch is not tracking a remote branch</p>
+                  </TooltipContent>
+                </Tooltip>
               ) : branch.ahead !== undefined &&
                 branch.ahead > 0 &&
                 !branch.current ? (
-                <TooltipProvider>
-                  <Tooltip delayDuration={0}>
-                    <TooltipTrigger asChild>
-                      <div className="relative flex select-none items-center gap-3 rounded-sm px-2 py-1.5 text-sm outline-none text-muted-foreground opacity-50">
-                        <span className="flex-1">Pull</span>
-                        <Download className="h-4 w-4" />
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent side="right">
-                      <p>Cannot pull: branch has unpushed commits.</p>
-                      <p>Switch to this branch first and push them.</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                <Tooltip delayDuration={0}>
+                  <TooltipTrigger asChild>
+                    <div className="relative flex select-none items-center gap-3 rounded-sm px-2 py-1.5 text-sm outline-none text-muted-foreground opacity-50">
+                      <span className="flex-1">Pull</span>
+                      <Download className="h-4 w-4" />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">
+                    <p>Cannot pull: branch has unpushed commits.</p>
+                    <p>Switch to this branch first and push them.</p>
+                  </TooltipContent>
+                </Tooltip>
               ) : (
                 <ContextMenuItem
                   className="gap-3 hover:bg-secondary focus:bg-secondary focus:text-foreground"
@@ -223,20 +218,18 @@ export const BranchList = ({
                 <Edit className="h-4 w-4" />
               </ContextMenuItem>
               {branch.current ? (
-                <TooltipProvider>
-                  <Tooltip delayDuration={0}>
-                    <TooltipTrigger asChild>
-                      <div className="relative flex select-none items-center gap-3 rounded-sm px-2 py-1.5 text-sm outline-none text-muted-foreground opacity-50">
-                        <span className="flex-1">Delete</span>
-                        <Trash2 className="h-4 w-4" />
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent side="right">
-                      <p>Cannot delete current branch.</p>
-                      <p>Switch to a different branch first</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                <Tooltip delayDuration={0}>
+                  <TooltipTrigger asChild>
+                    <div className="relative flex select-none items-center gap-3 rounded-sm px-2 py-1.5 text-sm outline-none text-muted-foreground opacity-50">
+                      <span className="flex-1">Delete</span>
+                      <Trash2 className="h-4 w-4" />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">
+                    <p>Cannot delete current branch.</p>
+                    <p>Switch to a different branch first</p>
+                  </TooltipContent>
+                </Tooltip>
               ) : (
                 <ContextMenuItem
                   className="gap-3 text-destructive hover:bg-secondary focus:bg-secondary focus:text-destructive"

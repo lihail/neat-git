@@ -19,6 +19,9 @@ interface AuthDialogProps {
   isLoading: boolean;
   loadingMessage: string;
   description: string;
+  title?: string;
+  initialUsername?: string;
+  initialPassword?: string;
   onConfirm: (
     username: string,
     password: string,
@@ -33,6 +36,9 @@ export const AuthDialog = ({
   isLoading,
   loadingMessage,
   description,
+  title,
+  initialUsername = "",
+  initialPassword = "",
   onConfirm,
   error: externalError,
 }: AuthDialogProps) => {
@@ -55,8 +61,12 @@ export const AuthDialog = ({
   useEffect(() => {
     if (!open) {
       resetDialog();
+    } else {
+      // Prefill when dialog opens
+      setUsername(initialUsername);
+      setPassword(initialPassword);
     }
-  }, [open]);
+  }, [open, initialUsername, initialPassword]);
 
   const handleOpenChange = (newOpen: boolean) => {
     if (!isLoading) {
@@ -102,7 +112,7 @@ export const AuthDialog = ({
         )}
         <div className={isLoading ? "pointer-events-none" : ""}>
           <DialogHeader>
-            <DialogTitle>Authentication Required</DialogTitle>
+            <DialogTitle>{title ?? "Authentication Required"}</DialogTitle>
             <DialogDescription>{description}</DialogDescription>
           </DialogHeader>
 

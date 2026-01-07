@@ -18,7 +18,6 @@ import {
 import {
   Tooltip,
   TooltipContent,
-  TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
@@ -443,36 +442,34 @@ export const SidebarAccordion = ({
                 false;
               return (
                 <div className="flex items-center space-x-2">
-                  <TooltipProvider>
-                    <Tooltip delayDuration={0}>
-                      <TooltipTrigger asChild>
-                        <div className="flex items-center space-x-2">
-                          <Checkbox
-                            id="also-remote"
-                            checked={renameAlsoRemote}
-                            onCheckedChange={(checked) =>
-                              setRenameAlsoRemote(checked as boolean)
-                            }
-                            disabled={!branchHasUpstream}
-                          />
-                          <Label
-                            htmlFor="also-remote"
-                            className={cn(
-                              "cursor-pointer",
-                              !branchHasUpstream && "text-muted-foreground"
-                            )}
-                          >
-                            Also rename on remote
-                          </Label>
-                        </div>
-                      </TooltipTrigger>
-                      {!branchHasUpstream && (
-                        <TooltipContent>
-                          <p>This branch is not tracking a remote branch</p>
-                        </TooltipContent>
-                      )}
-                    </Tooltip>
-                  </TooltipProvider>
+                  <Tooltip delayDuration={0}>
+                    <TooltipTrigger asChild>
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="also-remote"
+                          checked={renameAlsoRemote}
+                          onCheckedChange={(checked) =>
+                            setRenameAlsoRemote(checked as boolean)
+                          }
+                          disabled={!branchHasUpstream}
+                        />
+                        <Label
+                          htmlFor="also-remote"
+                          className={cn(
+                            "cursor-pointer",
+                            !branchHasUpstream && "text-muted-foreground"
+                          )}
+                        >
+                          Also rename on remote
+                        </Label>
+                      </div>
+                    </TooltipTrigger>
+                    {!branchHasUpstream && (
+                      <TooltipContent>
+                        <p>This branch is not tracking a remote branch</p>
+                      </TooltipContent>
+                    )}
+                  </Tooltip>
                 </div>
               );
             })()}

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { type RepoTab } from "@/components/git/RepoTabs";
+import { type RepoTab } from "@/components/git/TopBar";
 import {
   getTabs,
   getActiveTab,
