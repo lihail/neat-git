@@ -966,28 +966,13 @@ export const getDiff = async (
 
 export const listStashes = async (repoPath: string) => {
   try {
-    const gitDir = path.join(repoPath, ".git");
-    const stashDir = path.join(gitDir, "refs", "stash");
+    const stashList = (await git.stash({ fs, dir: repoPath, op: "list" })) as
+      | Array<{ reflogId: string; message: string }>
+      | undefined;
 
-    // Check if stash path exists
-    if (!fs.existsSync(stashDir)) {
+    if (!stashList || stashList.length === 0) {
       return [];
     }
-
-    // Check if it's a directory (not a file)
-    const stats = fs.statSync(stashDir);
-    if (!stats.isDirectory()) {
-      // If it's a file instead of a directory, delete it and recreate as directory
-      fs.unlinkSync(stashDir);
-      fs.mkdirSync(stashDir, { recursive: true });
-      return [];
-    }
-
-    // Read all stash files
-    const stashFiles = fs.readdirSync(stashDir);
-
-    // Sort by timestamp (filename is timestamp)
-    stashFiles.sort((a, b) => parseInt(b) - parseInt(a));
 
     const stashes: Array<{
       index: number;
@@ -995,22 +980,39 @@ export const listStashes = async (repoPath: string) => {
       date: string;
       sha: string;
     }> = [];
-    for (let i = 0; i < stashFiles.length; i++) {
-      const stashFile = stashFiles[i];
-      const stashPath = path.join(stashDir, stashFile);
-      const sha = fs.readFileSync(stashPath, "utf8").trim();
 
-      try {
-        // Read the commit to get the message and timestamp
-        const commit = await git.readCommit({
-          fs,
-          dir: repoPath,
-          oid: sha,
-        });
+    // Read reflog to get timestamps and SHAs
+    const gitDir = path.join(repoPath, ".git");
+    const reflogPath = path.join(gitDir, "logs", "refs", "stash");
 
-        // Parse timestamp from message or use file timestamp
-        const timestamp = parseInt(stashFile);
-        const date = new Date(timestamp);
+    let reflogEntries: Array<{ sha: string; timestamp: number }> = [];
+    if (fs.existsSync(reflogPath)) {
+      const reflogContent = fs.readFileSync(reflogPath, "utf8");
+      const lines = reflogContent.trim().split("\n").filter(Boolean);
+
+      // Parse reflog entries (oldest first in file, we want newest first)
+      for (let i = lines.length - 1; i >= 0; i--) {
+        const line = lines[i];
+        const match = line.match(/^[a-f0-9]+ ([a-f0-9]+) .+ (\d+) [+-]\d+\t/);
+        if (match) {
+          reflogEntries.push({
+            sha: match[1],
+            timestamp: parseInt(match[2]) * 1000,
+          });
+        }
+      }
+    }
+
+    for (let i = 0; i < stashList.length; i++) {
+      const entry = stashList[i];
+      const reflogEntry = reflogEntries[i];
+
+      let dateStr = "";
+      let sha = "";
+
+      if (reflogEntry) {
+        sha = reflogEntry.sha;
+        const timestamp = reflogEntry.timestamp;
         const now = Date.now();
         const diff = now - timestamp;
         const seconds = Math.floor(diff / 1000);
@@ -1018,7 +1020,6 @@ export const listStashes = async (repoPath: string) => {
         const hours = Math.floor(minutes / 60);
         const days = Math.floor(hours / 24);
 
-        let dateStr = "";
         if (seconds < 60) dateStr = "just now";
         else if (minutes < 60)
           dateStr = `${minutes} minute${minutes !== 1 ? "s" : ""} ago`;
@@ -1026,16 +1027,15 @@ export const listStashes = async (repoPath: string) => {
           dateStr = `${hours} hour${hours !== 1 ? "s" : ""} ago`;
         else if (days === 1) dateStr = "1 day ago";
         else dateStr = `${days} days ago`;
-
-        stashes.push({
-          index: i,
-          message: commit.commit.message,
-          date: dateStr,
-          sha,
-        });
-      } catch (error) {
-        console.warn(`Could not read stash ${sha}:`, error);
       }
+
+      const message = entry.message || entry.reflogId || "Stash";
+      stashes.push({
+        index: i,
+        message: message.replace(/^WIP on .+?: /, "").replace(/^On .+?: /, ""),
+        date: dateStr,
+        sha,
+      });
     }
 
     return stashes;
@@ -1047,13 +1047,11 @@ export const listStashes = async (repoPath: string) => {
 
 export const stash = async (repoPath: string, message: string) => {
   try {
-    // Get the status matrix to find all changed files
     const statusMatrix = await git.statusMatrix({
       fs,
       dir: repoPath,
     });
 
-    // Check if there are any changes to stash
     const hasChanges = statusMatrix.some(([_, head, workdir, stage]) => {
       return !(head === 1 && workdir === 1 && stage === 1);
     });
@@ -1062,119 +1060,78 @@ export const stash = async (repoPath: string, message: string) => {
       return { success: false, message: "No changes to stash" };
     }
 
-    // Stage all files (including unstaged and untracked)
-    for (const [filepath, head, workdir, stage] of statusMatrix) {
-      // Skip unmodified files
-      if (head === 1 && workdir === 1 && stage === 1) continue;
-
-      // Stage the file if it exists in workdir (this includes untracked files)
-      // Untracked: head=0, workdir=2, stage=0
-      // Modified unstaged: head=1, workdir=2, stage=1
-      // Already staged: head=1, workdir=2, stage=2 (will stage again to ensure it's included)
-      if (workdir === 2) {
-        await git.add({
-          fs,
-          dir: repoPath,
-          filepath,
-        });
-      } else if (workdir === 0 && head === 1) {
-        // Deleted files - stage the deletion using git.remove
-        // This removes the file from the index (stages the deletion)
-        await git.remove({
-          fs,
-          dir: repoPath,
-          filepath,
-        });
-      }
-    }
-
-    // Get git config for author (use defaults if not set)
-    let authorName = "User";
-    let authorEmail = "user@example.com";
-
-    try {
-      authorName =
-        (await git.getConfig({ fs, dir: repoPath, path: "user.name" })) ||
-        "User";
-      authorEmail =
-        (await git.getConfig({ fs, dir: repoPath, path: "user.email" })) ||
-        "user@example.com";
-    } catch (error) {
-      console.warn("Could not get git config, using defaults");
-    }
-
-    // Create a commit with the stash message
-    const sha = await git.commit({
+    // Ensure git config has author info (isomorphic-git stash requires it)
+    const authorName = await git.getConfig({
       fs,
       dir: repoPath,
-      message,
-      author: {
-        name: authorName,
-        email: authorEmail,
-      },
+      path: "user.name",
+    });
+    const authorEmail = await git.getConfig({
+      fs,
+      dir: repoPath,
+      path: "user.email",
     });
 
-    // Get current branch BEFORE we do anything that might detach HEAD
+    if (!authorName) {
+      await git.setConfig({
+        fs,
+        dir: repoPath,
+        path: "user.name",
+        value: "User",
+      });
+    }
+    if (!authorEmail) {
+      await git.setConfig({
+        fs,
+        dir: repoPath,
+        path: "user.email",
+        value: "user@example.com",
+      });
+    }
+
+    await git.stash({ fs, dir: repoPath, op: "push", message });
+
+    // Fix isomorphic-git's reflog entry (it has bugs with chaining and author format)
     const gitDir = path.join(repoPath, ".git");
-    const currentBranch = await git.currentBranch({
-      fs,
-      dir: repoPath,
-      fullname: false,
-    });
+    const reflogPath = path.join(gitDir, "logs", "refs", "stash");
 
-    // Get the commit we just created
-    const stashCommit = await git.readCommit({
-      fs,
-      dir: repoPath,
-      oid: sha,
-    });
+    if (fs.existsSync(reflogPath)) {
+      const reflogContent = fs.readFileSync(reflogPath, "utf8");
+      const lines = reflogContent.trim().split("\n");
 
-    // Save stash reference
-    const stashDir = path.join(gitDir, "refs", "stash");
-    if (!fs.existsSync(stashDir)) {
-      fs.mkdirSync(stashDir, { recursive: true });
-    }
+      if (lines.length > 0) {
+        const lastLine = lines[lines.length - 1];
 
-    // Save stash with timestamp as filename
-    const stashFile = path.join(stashDir, Date.now().toString());
-    fs.writeFileSync(stashFile, sha);
+        // Get previous stash SHA for proper chaining
+        let prevSha = "0000000000000000000000000000000000000000";
+        if (lines.length > 1) {
+          const prevMatch = lines[lines.length - 2].match(
+            /^[a-f0-9]+ ([a-f0-9]+)/
+          );
+          if (prevMatch) {
+            prevSha = prevMatch[1];
+          }
+        }
 
-    // Reset to the parent commit (before the stash commit)
-    const parentOid = stashCommit.commit.parent[0];
-
-    if (parentOid && currentBranch) {
-      // Update the branch ref to point to parent FIRST (before checkout)
-      const branchRefPath = path.join(gitDir, "refs", "heads", currentBranch);
-      fs.writeFileSync(branchRefPath, parentOid);
-
-      // Now checkout the parent commit's tree (using branch name to avoid detached HEAD)
-      await git.checkout({
-        fs,
-        dir: repoPath,
-        ref: currentBranch,
-        force: true,
-      });
-
-      // Reset the index to match HEAD
-      const statusMatrixAfter = await git.statusMatrix({
-        fs,
-        dir: repoPath,
-      });
-
-      for (const [filepath] of statusMatrixAfter) {
-        try {
-          await git.resetIndex({
-            fs,
-            dir: repoPath,
-            filepath,
-          });
-        } catch (error) {
-          // Ignore errors for untracked files
+        // Fix the last entry: proper chaining + author format with angle brackets
+        // Format: <old-sha> <new-sha> <author> <timestamp> <tz>\t<message>
+        const match = lastLine.match(
+          /^[a-f0-9]+ ([a-f0-9]+) (.+?) (\d+ [+-]\d+)\t(.+)$/
+        );
+        if (match) {
+          const [, newSha, author, timestamp, msg] = match;
+          // Fix author format: "User user@example.com" -> "User <user@example.com>"
+          const fixedAuthor = author.includes("<")
+            ? author
+            : author.replace(/^(.+?) (.+@.+)$/, "$1 <$2>");
+          const fixedLine = `${prevSha} ${newSha} ${fixedAuthor} ${timestamp}\t${msg}`;
+          lines[lines.length - 1] = fixedLine;
+          fs.writeFileSync(reflogPath, lines.join("\n") + "\n");
         }
       }
     }
 
-    return { success: true, sha, message: "Changes stashed successfully" };
+    return { success: true, message: "Changes stashed successfully" };
   } catch (error) {
     console.error("Error stashing changes:", error);
     throw error;
@@ -1183,135 +1140,12 @@ export const stash = async (repoPath: string, message: string) => {
 
 export const popStash = async (repoPath: string, index: number) => {
   try {
-    const gitDir = path.join(repoPath, ".git");
-    const stashDir = path.join(gitDir, "refs", "stash");
-
-    if (!fs.existsSync(stashDir)) {
-      return { success: false, message: "No stashes found" };
-    }
-
-    // Read all stash files
-    const stashFiles = fs.readdirSync(stashDir);
-    stashFiles.sort((a, b) => parseInt(b) - parseInt(a));
-
-    if (index >= stashFiles.length) {
-      return { success: false, message: "Stash not found" };
-    }
-
-    const stashFile = stashFiles[index];
-    const stashPath = path.join(stashDir, stashFile);
-    const sha = fs.readFileSync(stashPath, "utf8").trim();
-
-    // Read the stash commit
-    const stashCommit = await git.readCommit({
-      fs,
-      dir: repoPath,
-      oid: sha,
+    // Use native git command - isomorphic-git's pop has bugs
+    execSync(`git stash pop stash@{${index}}`, {
+      cwd: repoPath,
+      encoding: "utf8",
+      stdio: "pipe",
     });
-
-    // Get the tree from the stash commit
-    const { tree: stashTree } = stashCommit.commit;
-
-    // Get all files from the stash tree
-    const stashFiles_set = new Set<string>();
-    async function collectStashFiles(treeOid: string, basePath: string = "") {
-      const { tree: treeEntries } = await git.readTree({
-        fs,
-        dir: repoPath,
-        oid: treeOid,
-      });
-
-      for (const entry of treeEntries) {
-        const filepath = basePath ? `${basePath}/${entry.path}` : entry.path;
-
-        if (entry.type === "tree") {
-          await collectStashFiles(entry.oid, filepath);
-        } else if (entry.type === "blob") {
-          stashFiles_set.add(filepath);
-        }
-      }
-    }
-    await collectStashFiles(stashTree);
-
-    // Get all files from current HEAD tree to find deletions
-    const headFiles_set = new Set<string>();
-    try {
-      const headOid = await git.resolveRef({ fs, dir: repoPath, ref: "HEAD" });
-      const headCommit = await git.readCommit({
-        fs,
-        dir: repoPath,
-        oid: headOid,
-      });
-
-      async function collectHeadFiles(treeOid: string, basePath: string = "") {
-        const { tree: treeEntries } = await git.readTree({
-          fs,
-          dir: repoPath,
-          oid: treeOid,
-        });
-
-        for (const entry of treeEntries) {
-          const filepath = basePath ? `${basePath}/${entry.path}` : entry.path;
-
-          if (entry.type === "tree") {
-            await collectHeadFiles(entry.oid, filepath);
-          } else if (entry.type === "blob") {
-            headFiles_set.add(filepath);
-          }
-        }
-      }
-      await collectHeadFiles(headCommit.commit.tree);
-    } catch (error) {
-      // No HEAD commit yet, that's okay
-    }
-
-    // Delete files that exist in HEAD but not in stash (these were deleted in the stash)
-    for (const filepath of headFiles_set) {
-      if (!stashFiles_set.has(filepath)) {
-        const fullPath = path.join(repoPath, filepath);
-        if (fs.existsSync(fullPath)) {
-          fs.unlinkSync(fullPath);
-        }
-      }
-    }
-
-    // Recursively restore all files from the stash commit's tree
-    async function restoreTree(treeOid: string, basePath: string = "") {
-      const { tree: treeEntries } = await git.readTree({
-        fs,
-        dir: repoPath,
-        oid: treeOid,
-      });
-
-      for (const entry of treeEntries) {
-        const filepath = basePath ? `${basePath}/${entry.path}` : entry.path;
-
-        if (entry.type === "tree") {
-          // It's a directory, recurse into it
-          const dirPath = path.join(repoPath, filepath);
-          if (!fs.existsSync(dirPath)) {
-            fs.mkdirSync(dirPath, { recursive: true });
-          }
-          await restoreTree(entry.oid, filepath);
-        } else if (entry.type === "blob") {
-          // It's a file, restore it
-          const { blob } = await git.readBlob({
-            fs,
-            dir: repoPath,
-            oid: entry.oid,
-          });
-          const fullPath = path.join(repoPath, filepath);
-          fs.writeFileSync(fullPath, blob);
-        }
-      }
-    }
-
-    // Restore all files from the stash
-    await restoreTree(stashTree);
-
-    // Delete the stash file
-    fs.unlinkSync(stashPath);
-
     return { success: true, message: "Stash popped successfully" };
   } catch (error) {
     console.error("Error popping stash:", error);
@@ -1321,27 +1155,12 @@ export const popStash = async (repoPath: string, index: number) => {
 
 export const deleteStash = async (repoPath: string, index: number) => {
   try {
-    const gitDir = path.join(repoPath, ".git");
-    const stashDir = path.join(gitDir, "refs", "stash");
-
-    if (!fs.existsSync(stashDir)) {
-      return { success: false, message: "No stashes found" };
-    }
-
-    // Read all stash files
-    const stashFiles = fs.readdirSync(stashDir);
-    stashFiles.sort((a, b) => parseInt(b) - parseInt(a));
-
-    if (index >= stashFiles.length) {
-      return { success: false, message: "Stash not found" };
-    }
-
-    const stashFile = stashFiles[index];
-    const stashPath = path.join(stashDir, stashFile);
-
-    // Delete the stash file
-    fs.unlinkSync(stashPath);
-
+    // Use native git command for reliability
+    execSync(`git stash drop stash@{${index}}`, {
+      cwd: repoPath,
+      encoding: "utf8",
+      stdio: "pipe",
+    });
     return { success: true, message: "Stash deleted successfully" };
   } catch (error) {
     console.error("Error deleting stash:", error);
