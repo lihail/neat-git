@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { RepoSelector } from "@/components/git/RepoSelector";
 import { SidebarAccordion } from "@/components/git/SidebarAccordion";
-import { FileStatus } from "@/components/git/FileStatus";
+import { ChangedFilesSidebar } from "@/components/git/ChangedFilesSidebar";
 import { DiffViewer } from "@/components/git/DiffViewer";
 import { type DiffViewerMode } from "@/components/git/DiffViewerModeToggle";
 import { CommitPanel } from "@/components/git/CommitPanel";
@@ -35,7 +35,7 @@ import {
   pullNonCurrentBranch,
   pushToRemote,
   type Branch,
-  type FileStatus as GitFileStatus,
+  type FileStatus,
   type DiffLine,
   type Commit,
   type Stash,
@@ -45,6 +45,7 @@ import { useGitSetup } from "@/hooks/useGitSetup";
 import { useWordWrap } from "@/hooks/useWordWrap";
 import { useDiffViewerMode } from "@/hooks/useDiffViewerMode";
 import { useRepoTabs } from "@/hooks/useRepoTabs";
+import { LoadingOverlay } from "@/components/git/LoadingOverlay";
 
 // State for each repo tab
 interface RepoState {
@@ -53,7 +54,7 @@ interface RepoState {
   remoteBranches: Branch[];
   commits: Commit[];
   stashes: Stash[];
-  files: GitFileStatus[];
+  files: FileStatus[];
   selectedFile?: string;
   selectedFileIsStaged?: boolean; // Track if viewing staged or unstaged diff
   diffLines: DiffLine[];
@@ -1509,16 +1510,8 @@ export const Index = () => {
       {/* Main Content */}
       {currentState && repoPath ? (
         <div className="flex flex-1 overflow-hidden relative">
-          {/* Loading Overlay */}
           {loadingRepos[repoPath] && (
-            <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
-              <div className="flex flex-col items-center gap-3">
-                <div className="h-8 w-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
-                <p className="text-sm text-muted-foreground">
-                  Loading repository data...
-                </p>
-              </div>
-            </div>
+            <LoadingOverlay message="Loading repository data..." />
           )}
 
           {/* Left Sidebar - Accordion */}
@@ -1544,7 +1537,6 @@ export const Index = () => {
             />
           </div>
 
-          {/* Center - Diff Viewer */}
           <div
             className={cn(
               "flex flex-1 flex-col overflow-hidden border-r border-border",
@@ -1576,7 +1568,6 @@ export const Index = () => {
             />
           </div>
 
-          {/* Right - Changes */}
           <div
             className={cn(
               "flex w-96 flex-col",
@@ -1584,7 +1575,7 @@ export const Index = () => {
             )}
           >
             <div className="flex-1 min-h-0">
-              <FileStatus
+              <ChangedFilesSidebar
                 files={currentState.files}
                 onToggleStage={handleToggleStage}
                 onSelectFile={handleSelectFile}

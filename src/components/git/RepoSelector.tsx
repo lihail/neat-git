@@ -1,5 +1,5 @@
 import { FolderOpen, X, GitBranch, FolderPlus } from "lucide-react";
-import { CloneLoadingOverlay } from "./CloneLoadingOverlay";
+import { LoadingOverlay } from "./LoadingOverlay";
 import { AuthDialog } from "./AuthDialog";
 import { SshSetupDialog } from "./SshSetupDialog";
 import { SshTrustHostDialog } from "./SshTrustHostDialog";
@@ -688,7 +688,7 @@ export const RepoSelector = ({ onSelectRepo, onCancel }: RepoSelectorProps) => {
         onCancel={handleCancelTrustHost}
       />
 
-      <CloneLoadingOverlay isVisible={isCloning} />
+      {isCloning && <LoadingOverlay message="Cloning repository..." />}
     </div>
   );
 };
