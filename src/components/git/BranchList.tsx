@@ -1,46 +1,18 @@
 import { useState } from "react";
-import {
-  ArrowDown,
-  ArrowUp,
-  Copy,
-  Download,
-  Edit,
-  Trash2,
-  Laptop,
-  Cloud,
-} from "lucide-react";
+import { ArrowDown, ArrowUp, Laptop, Cloud } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuSeparator,
-  ContextMenuTrigger,
-} from "@/components/ui/context-menu";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { ContextMenu, ContextMenuTrigger } from "@/components/ui/context-menu";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { toast } from "@/components/ui/toaster";
-
-interface Branch {
-  name: string;
-  current: boolean;
-  behind?: number;
-  ahead?: number;
-  hasUpstream?: boolean;
-  upstream?: string;
-}
+import { BranchContextMenu } from "./BranchContextMenu";
+import type { Branch } from "@/types/git";
 
 interface BranchListProps {
   branches: Branch[];
   onSelectBranch: (branchName: string) => void;
-  onDeleteBranch?: (branchName: string) => void;
-  onPullBranch?: (branchName: string) => void;
-  onRenameClick?: (branchName: string) => void;
+  onDeleteBranch: (branchName: string) => void;
+  onPullBranch: (branchName: string) => void;
+  onRenameClick: (branchName: string) => void;
 }
 
 export const BranchList = ({
@@ -63,8 +35,8 @@ export const BranchList = ({
                   "w-full rounded-md px-3 py-2 text-sm transition-colors relative overflow-hidden",
                   branch.current && "bg-secondary text-primary",
                   !branch.current &&
-                    deletingBranch !== branch.name &&
-                    "hover:bg-secondary cursor-pointer"
+                  deletingBranch !== branch.name &&
+                  "hover:bg-secondary cursor-pointer"
                 )}
                 onDoubleClick={() =>
                   deletingBranch !== branch.name && onSelectBranch(branch.name)
@@ -81,9 +53,7 @@ export const BranchList = ({
                         variant="destructive"
                         className="h-6 px-2 text-xs"
                         onClick={() => {
-                          if (onDeleteBranch) {
-                            onDeleteBranch(branch.name);
-                          }
+                          onDeleteBranch(branch.name);
                           setDeletingBranch(null);
                         }}
                       >
@@ -129,121 +99,12 @@ export const BranchList = ({
                 )}
               </div>
             </ContextMenuTrigger>
-            <ContextMenuContent className="max-w-64">
-              {branch.hasUpstream && branch.upstream && (
-                <>
-                  <div className="px-2 py-1.5 text-xs text-muted-foreground">
-                    <div className="flex items-center gap-2">
-                      <span>Remote branch:</span>
-                      <span className="font-mono">{branch.upstream}</span>
-                    </div>
-                  </div>
-                  <ContextMenuSeparator />
-                </>
-              )}
-              {/* Pull option - disabled if branch has no upstream or has unpushed commits */}
-              {!branch.hasUpstream ? (
-                <Tooltip delayDuration={0}>
-                  <TooltipTrigger asChild>
-                    <div className="relative flex select-none items-center gap-3 rounded-sm px-2 py-1.5 text-sm outline-none text-muted-foreground opacity-50">
-                      <span className="flex-1">Pull</span>
-                      <Download className="h-4 w-4" />
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent side="right">
-                    <p>Cannot pull: branch is not tracking a remote branch</p>
-                  </TooltipContent>
-                </Tooltip>
-              ) : branch.ahead !== undefined &&
-                branch.ahead > 0 &&
-                !branch.current ? (
-                <Tooltip delayDuration={0}>
-                  <TooltipTrigger asChild>
-                    <div className="relative flex select-none items-center gap-3 rounded-sm px-2 py-1.5 text-sm outline-none text-muted-foreground opacity-50">
-                      <span className="flex-1">Pull</span>
-                      <Download className="h-4 w-4" />
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent side="right">
-                    <p>Cannot pull: branch has unpushed commits.</p>
-                    <p>Switch to this branch first and push them.</p>
-                  </TooltipContent>
-                </Tooltip>
-              ) : (
-                <ContextMenuItem
-                  className="gap-3 hover:bg-secondary focus:bg-secondary focus:text-foreground"
-                  onSelect={() => {
-                    if (onPullBranch) {
-                      onPullBranch(branch.name);
-                    }
-                  }}
-                >
-                  <span className="flex-1">Pull</span>
-                  <Download className="h-4 w-4" />
-                </ContextMenuItem>
-              )}
-              <ContextMenuItem
-                className="gap-3 hover:bg-secondary focus:bg-secondary focus:text-foreground"
-                onSelect={() => {
-                  navigator.clipboard.writeText(branch.name);
-                  toast.success(`Copied "${branch.name}" to clipboard`);
-                }}
-              >
-                <span className="flex-1">Copy Branch Name</span>
-                <Copy className="h-4 w-4" />
-              </ContextMenuItem>
-              {branch.upstream && (
-                <ContextMenuItem
-                  className="gap-3 hover:bg-secondary focus:bg-secondary focus:text-foreground"
-                  onSelect={() => {
-                    if (branch.upstream) {
-                      navigator.clipboard.writeText(branch.upstream);
-                      toast.success(`Copied "${branch.upstream}" to clipboard`);
-                    }
-                  }}
-                >
-                  <span className="flex-1">Copy Remote Branch Name</span>
-                  <Copy className="h-4 w-4" />
-                </ContextMenuItem>
-              )}
-              <ContextMenuItem
-                className="gap-3 hover:bg-secondary focus:bg-secondary focus:text-foreground"
-                onSelect={() => {
-                  if (onRenameClick) {
-                    onRenameClick(branch.name);
-                  }
-                }}
-              >
-                <span className="flex-1">Rename</span>
-                <Edit className="h-4 w-4" />
-              </ContextMenuItem>
-              {branch.current ? (
-                <Tooltip delayDuration={0}>
-                  <TooltipTrigger asChild>
-                    <div className="relative flex select-none items-center gap-3 rounded-sm px-2 py-1.5 text-sm outline-none text-muted-foreground opacity-50">
-                      <span className="flex-1">Delete</span>
-                      <Trash2 className="h-4 w-4" />
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent side="right">
-                    <p>Cannot delete current branch.</p>
-                    <p>Switch to a different branch first</p>
-                  </TooltipContent>
-                </Tooltip>
-              ) : (
-                <ContextMenuItem
-                  className="gap-3 text-destructive hover:bg-secondary focus:bg-secondary focus:text-destructive"
-                  onSelect={() => {
-                    if (onDeleteBranch) {
-                      setDeletingBranch(branch.name);
-                    }
-                  }}
-                >
-                  <span className="flex-1">Delete</span>
-                  <Trash2 className="h-4 w-4" />
-                </ContextMenuItem>
-              )}
-            </ContextMenuContent>
+            <BranchContextMenu
+              branch={branch}
+              onPull={() => onPullBranch(branch.name)}
+              onDelete={() => setDeletingBranch(branch.name)}
+              onRename={() => onRenameClick(branch.name)}
+            />
           </ContextMenu>
         ))}
       </div>

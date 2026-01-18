@@ -1,24 +1,16 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { DiffSplitViewRowSide } from "./DiffSplitViewRowSide";
 import { DiffSplitViewSidePane } from "./DiffSplitViewSidePane";
-
-export interface SplitLine {
-  leftLine?: {
-    content: string;
-    lineNumber?: number;
-    type: "delete" | "context";
-  };
-  rightLine?: { content: string; lineNumber?: number; type: "add" | "context" };
-}
+import type { SplitLine } from "@/types/git";
 
 interface DiffSplitViewProps {
-  splitViewData: SplitLine[];
+  splitLines: SplitLine[];
   language: string;
   wordWrap: boolean;
 }
 
 export const DiffSplitView = ({
-  splitViewData,
+  splitLines,
   language,
   wordWrap,
 }: DiffSplitViewProps) => {
@@ -35,7 +27,7 @@ export const DiffSplitView = ({
       <ScrollArea className="flex-1 bg-code-bg">
         {wordWrap ? (
           <div className="w-full">
-            {splitViewData.map((row, index) => (
+            {splitLines.map((row, index) => (
               <div key={index} className="flex">
                 <DiffSplitViewRowSide
                   line={row.leftLine}
@@ -53,18 +45,16 @@ export const DiffSplitView = ({
             ))}
           </div>
         ) : (
-          // No word wrap mode: separate left/right panes with independent scrolling
-          // Since height is fixed, they stay aligned without being in same container
           <div className="flex h-full">
             <DiffSplitViewSidePane
               side="left"
-              splitViewData={splitViewData}
+              splitLines={splitLines}
               language={language}
               wordWrap={wordWrap}
             />
             <DiffSplitViewSidePane
               side="right"
-              splitViewData={splitViewData}
+              splitLines={splitLines}
               language={language}
               wordWrap={wordWrap}
             />

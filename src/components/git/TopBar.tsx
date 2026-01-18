@@ -15,11 +15,11 @@ interface TopBarProps {
   onCloseTab: (tabId: string) => void;
   onReorderTabs: (newTabs: RepoTab[]) => void;
   onOpenNewRepo: () => void;
-  onCreateBranch?: (branchName: string) => void;
-  onStash?: () => void;
-  onFetch?: () => void;
-  onPull?: () => void;
-  onPush?: () => void;
+  onCreateBranch: (branchName: string) => void;
+  onStash: () => void;
+  onFetch: () => void;
+  onPull: () => void;
+  onPush: () => void;
   isLoading?: boolean;
   isFetching?: boolean;
   isPulling?: boolean;

@@ -319,7 +319,7 @@ export const RepoSelector = ({ onSelectRepo, onCancel }: RepoSelectorProps) => {
           // Show error in auth dialog
           setAuthError(
             result.error ||
-              "Failed to clone repository. Please check your credentials or verify the repository exists."
+            "Failed to clone repository. Please check your credentials or verify the repository exists."
           );
         } else {
           toast.error(result.error || "Failed to clone repository");

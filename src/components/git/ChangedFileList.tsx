@@ -1,13 +1,7 @@
 import { FilePlus, FileX, FileEdit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-
-interface FileChange {
-  path: string;
-  status: "added" | "deleted" | "modified";
-  hasStaged: boolean;
-  hasUnstaged: boolean;
-}
+import type { FileChange } from "@/types/git";
 
 interface ChangedFileListProps {
   files: FileChange[];
@@ -46,8 +40,8 @@ export const ChangedFileList = ({
           className={cn(
             "flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm transition-colors hover:bg-secondary group cursor-pointer",
             selectedFile === file.path &&
-              selectedFileIsStaged === isStaged &&
-              "bg-secondary"
+            selectedFileIsStaged === isStaged &&
+            "bg-secondary"
           )}
         >
           <div className="flex items-center gap-2 flex-1 min-w-0">

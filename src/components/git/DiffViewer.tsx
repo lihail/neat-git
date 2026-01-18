@@ -1,6 +1,7 @@
 import { WrapText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn, detectLanguageFromPath } from "@/lib/utils";
+import { groupLinesByHunks, pairSplitLines } from "@/lib/gitDiff";
 import { useMemo } from "react";
 import {
   DiffViewerModeToggle,
@@ -10,14 +11,7 @@ import { DiffSplitView } from "./DiffSplitView";
 import { DiffHunkView } from "./DiffHunkView";
 import { DiffFullView } from "./DiffFullView";
 import { DiffEmptyState } from "./DiffEmptyState";
-
-interface DiffLine {
-  type: "add" | "delete" | "context";
-  content: string;
-  lineNumber?: number;
-  hunkIndex?: number;
-  hunkHeader?: string;
-}
+import type { DiffLine } from "@/lib/git";
 
 interface DiffViewerProps {
   filePath?: string;
@@ -25,10 +19,10 @@ interface DiffViewerProps {
   fileStatus?: "modified" | "added" | "deleted";
   isLoading?: boolean;
   wordWrap?: boolean;
-  onWordWrapChange?: (value: boolean) => void;
+  onWordWrapChange: (value: boolean) => void;
   viewMode?: DiffViewerMode;
-  onViewModeChange?: (value: DiffViewerMode) => void;
-  onViewModeChangeStart?: () => void;
+  onViewModeChange: (value: DiffViewerMode) => void;
+  onViewModeChangeStart: () => void;
 }
 
 export const DiffViewer = ({
@@ -54,141 +48,18 @@ export const DiffViewer = ({
     return viewMode;
   }, [fileStatus, viewMode]);
 
-  // Group lines by hunks for hunks view
-  const groupedByHunks = useMemo(() => {
-    if (effectiveViewMode !== "hunks" || lines.length === 0) {
+  const hunks = useMemo(() => {
+    if (effectiveViewMode !== "hunks") {
       return null;
     }
-
-    const hunks: Array<{
-      index: number;
-      header: string;
-      lines: DiffLine[];
-      startLine: number;
-      endLine: number;
-    }> = [];
-
-    lines.forEach((line) => {
-      const hunkIndex = line.hunkIndex ?? 0;
-      if (!hunks[hunkIndex]) {
-        hunks[hunkIndex] = {
-          index: hunkIndex,
-          header: line.hunkHeader || "",
-          lines: [],
-          startLine: line.lineNumber || 0,
-          endLine: line.lineNumber || 0,
-        };
-      }
-      hunks[hunkIndex].lines.push(line);
-      if (line.lineNumber) {
-        hunks[hunkIndex].endLine = Math.max(
-          hunks[hunkIndex].endLine,
-          line.lineNumber
-        );
-      }
-    });
-
-    return hunks.filter((h) => h); // Remove any undefined entries
+    return groupLinesByHunks(lines);
   }, [lines, effectiveViewMode]);
 
-  // Prepare split view data - convert unified diff to side-by-side
-  const splitViewData = useMemo(() => {
-    if (effectiveViewMode !== "split" || lines.length === 0) {
+  const splitLines = useMemo(() => {
+    if (effectiveViewMode !== "split") {
       return null;
     }
-
-    interface SplitLine {
-      leftLine?: {
-        content: string;
-        lineNumber?: number;
-        type: "delete" | "context";
-      };
-      rightLine?: {
-        content: string;
-        lineNumber?: number;
-        type: "add" | "context";
-      };
-    }
-
-    const splitLines: SplitLine[] = [];
-    let leftLineNumber = 0;
-    let rightLineNumber = 0;
-
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-
-      if (line.type === "context") {
-        // Context appears on both sides
-        leftLineNumber++;
-        rightLineNumber++;
-        splitLines.push({
-          leftLine: {
-            content: line.content,
-            lineNumber: leftLineNumber,
-            type: "context",
-          },
-          rightLine: {
-            content: line.content,
-            lineNumber: rightLineNumber,
-            type: "context",
-          },
-        });
-      } else if (line.type === "delete") {
-        // Collect all consecutive delete lines
-        const deleteLines: typeof lines = [];
-        let j = i;
-        while (j < lines.length && lines[j].type === "delete") {
-          deleteLines.push(lines[j]);
-          j++;
-        }
-
-        // Collect all consecutive add lines that follow
-        const addLines: typeof lines = [];
-        while (j < lines.length && lines[j].type === "add") {
-          addLines.push(lines[j]);
-          j++;
-        }
-
-        // Pair up deletes and adds side by side
-        const maxLines = Math.max(deleteLines.length, addLines.length);
-        for (let k = 0; k < maxLines; k++) {
-          const deleteLine = deleteLines[k];
-          const addLine = addLines[k];
-
-          splitLines.push({
-            leftLine: deleteLine
-              ? {
-                  content: deleteLine.content,
-                  lineNumber: ++leftLineNumber,
-                  type: "delete",
-                }
-              : undefined,
-            rightLine: addLine
-              ? {
-                  content: addLine.content,
-                  lineNumber: ++rightLineNumber,
-                  type: "add",
-                }
-              : undefined,
-          });
-        }
-
-        // Move index forward (minus 1 because the loop will increment)
-        i = j - 1;
-      } else if (line.type === "add") {
-        // Standalone add line (not preceded by deletes)
-        rightLineNumber++;
-        splitLines.push({
-          rightLine: {
-            content: line.content,
-            lineNumber: rightLineNumber,
-            type: "add",
-          },
-        });
-      }
-    }
-
-    return splitLines;
+    return pairSplitLines(lines);
   }, [lines, effectiveViewMode]);
 
   if (!filePath) {
@@ -206,7 +77,6 @@ export const DiffViewer = ({
 
   return (
     <div className="flex h-full flex-col relative">
-      {/* Loading Overlay */}
       {isLoading && (
         <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
           <div className="flex flex-col items-center gap-3">
@@ -227,14 +97,14 @@ export const DiffViewer = ({
           <DiffViewerModeToggle
             value={viewMode}
             onChange={(value) => {
-              onViewModeChangeStart?.();
-              onViewModeChange?.(value);
+              onViewModeChangeStart();
+              onViewModeChange(value);
             }}
           />
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => onWordWrapChange?.(!wordWrap)}
+            onClick={() => onWordWrapChange(!wordWrap)}
             className={cn(
               "h-7 gap-2 text-xs text-foreground",
               wordWrap && "bg-accent text-accent-foreground"
@@ -247,15 +117,15 @@ export const DiffViewer = ({
       </div>
       {isEmpty ? (
         <DiffEmptyState />
-      ) : effectiveViewMode === "hunks" && groupedByHunks ? (
+      ) : effectiveViewMode === "hunks" && hunks ? (
         <DiffHunkView
-          groupedByHunks={groupedByHunks}
+          hunks={hunks}
           language={language}
           wordWrap={wordWrap}
         />
-      ) : effectiveViewMode === "split" && splitViewData ? (
+      ) : effectiveViewMode === "split" && splitLines ? (
         <DiffSplitView
-          splitViewData={splitViewData}
+          splitLines={splitLines}
           language={language}
           wordWrap={wordWrap}
         />

@@ -35,28 +35,7 @@ import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { BranchList } from "./BranchList";
-
-interface Branch {
-  name: string;
-  current: boolean;
-  behind?: number;
-  ahead?: number;
-  hasUpstream?: boolean;
-  upstream?: string;
-}
-
-interface Commit {
-  sha: string;
-  message: string;
-  author: string;
-  date: string;
-}
-
-export interface Stash {
-  index: number;
-  message: string;
-  date: string;
-}
+import type { Branch, Commit, Stash } from "@/types/git";
 
 interface SidebarAccordionProps {
   branches: Branch[];
@@ -66,16 +45,15 @@ interface SidebarAccordionProps {
   selectedCommit?: string;
   onSelectBranch: (branchName: string) => void;
   onSelectCommit: (sha: string) => void;
-  onCreateBranch?: (branchName: string) => void;
-  onDeleteBranch?: (branchName: string) => void;
-  onRenameBranch?: (
+  onDeleteBranch: (branchName: string) => void;
+  onRenameBranch: (
     oldName: string,
     newName: string,
     alsoRenameRemote: boolean
   ) => void;
-  onPullBranch?: (branchName: string) => void;
-  onPopStash?: (index: number) => void;
-  onDeleteStash?: (index: number) => void;
+  onPullBranch: (branchName: string) => void;
+  onPopStash: (index: number) => void;
+  onDeleteStash: (index: number) => void;
   isRenaming?: boolean;
 }
 
@@ -87,7 +65,6 @@ export const SidebarAccordion = ({
   selectedCommit,
   onSelectBranch,
   onSelectCommit,
-  onCreateBranch,
   onDeleteBranch,
   onRenameBranch,
   onPullBranch,
@@ -262,9 +239,7 @@ export const SidebarAccordion = ({
                             variant="destructive"
                             className="h-6 px-2 text-xs"
                             onClick={() => {
-                              if (onDeleteStash) {
-                                onDeleteStash(stash.index);
-                              }
+                              onDeleteStash(stash.index);
                               setDeletingStash(null);
                             }}
                           >
@@ -295,40 +270,36 @@ export const SidebarAccordion = ({
                           </div>
                         </div>
                         <div className="flex items-center gap-1 flex-shrink-0">
-                          {onPopStash && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onPopStash(stash.index);
-                              }}
-                              className={cn(
-                                "hover:bg-primary/20 rounded p-1 transition-all",
-                                hoveredStash === stash.index
-                                  ? "opacity-100"
-                                  : "opacity-0"
-                              )}
-                              title="Pop stash"
-                            >
-                              <Upload className="h-4 w-4 text-primary" />
-                            </button>
-                          )}
-                          {onDeleteStash && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setDeletingStash(stash.index);
-                              }}
-                              className={cn(
-                                "hover:bg-destructive/20 rounded p-1 transition-all",
-                                hoveredStash === stash.index
-                                  ? "opacity-100"
-                                  : "opacity-0"
-                              )}
-                              title="Delete stash"
-                            >
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </button>
-                          )}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onPopStash(stash.index);
+                            }}
+                            className={cn(
+                              "hover:bg-primary/20 rounded p-1 transition-all",
+                              hoveredStash === stash.index
+                                ? "opacity-100"
+                                : "opacity-0"
+                            )}
+                            title="Pop stash"
+                          >
+                            <Upload className="h-4 w-4 text-primary" />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeletingStash(stash.index);
+                            }}
+                            className={cn(
+                              "hover:bg-destructive/20 rounded p-1 transition-all",
+                              hoveredStash === stash.index
+                                ? "opacity-100"
+                                : "opacity-0"
+                            )}
+                            title="Delete stash"
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </button>
                         </div>
                       </div>
                     )}
@@ -427,7 +398,7 @@ export const SidebarAccordion = ({
                 placeholder="Enter new branch name"
                 className={cn(
                   renameBranchNameError &&
-                    "border-destructive focus-visible:ring-destructive"
+                  "border-destructive focus-visible:ring-destructive"
                 )}
               />
               {renameBranchNameError && (
@@ -497,7 +468,7 @@ export const SidebarAccordion = ({
                   return;
                 }
 
-                if (renamingBranch && onRenameBranch) {
+                if (renamingBranch) {
                   onRenameBranch(renamingBranch, trimmedName, renameAlsoRemote);
                   // Don't close dialog here - useEffect will close it after operation completes
                 }

@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/toaster";
 import { GitBranch } from "lucide-react";
+import { validateEmail } from "@/lib/utils";
 
 interface GitSetupDialogProps {
   open: boolean;
@@ -52,13 +53,7 @@ export const GitSetupDialog = ({ open, onComplete }: GitSetupDialogProps) => {
     }
   };
 
-  const validateEmail = (email: string): boolean => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
-
   const handleSave = async () => {
-    // Validate
     const newErrors = { name: "", email: "" };
     let hasError = false;
 
@@ -103,7 +98,7 @@ export const GitSetupDialog = ({ open, onComplete }: GitSetupDialogProps) => {
   };
 
   return (
-    <Dialog open={open} onOpenChange={() => {}}>
+    <Dialog open={open} onOpenChange={() => { }}>
       <DialogContent className="sm:max-w-[500px]" hideClose>
         <DialogHeader>
           <div className="flex items-center gap-3 mb-2">
@@ -189,8 +184,8 @@ export const GitSetupDialog = ({ open, onComplete }: GitSetupDialogProps) => {
             {isSaving
               ? "Saving..."
               : hasExistingConfig
-              ? "Confirm"
-              : "Continue"}
+                ? "Confirm"
+                : "Continue"}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -55,11 +55,6 @@ const mapAceModeToPrism = (aceMode: string): string => {
   return exceptions[aceMode] || aceMode || "text";
 };
 
-/**
- * Validates a git branch name according to git naming rules
- * @param name - The branch name to validate
- * @returns Error message if invalid, null if valid
- */
 export const validateBranchName = (name: string): string | null => {
   if (!name.trim()) {
     return "Branch name cannot be empty";
@@ -92,4 +87,9 @@ export const validateBranchName = (name: string): string | null => {
   }
 
   return null;
+};
+
+export const validateEmail = (email: string): boolean => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
 };

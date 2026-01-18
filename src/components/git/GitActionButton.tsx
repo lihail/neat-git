@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 interface GitActionButtonProps {
   icon: LucideIcon;
   label: string;
-  onClick?: () => void;
+  onClick: () => void;
   disabled?: boolean;
   iconClassName?: string;
 }

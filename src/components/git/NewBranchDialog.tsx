@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label";
 interface NewBranchDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onCreateBranch?: (branchName: string) => void;
+  onCreateBranch: (branchName: string) => void;
   existingBranches?: string[];
 }
 
@@ -37,18 +37,15 @@ export const NewBranchDialog = ({
       return;
     }
 
-    // Check if branch already exists
     if (existingBranches.includes(trimmedName)) {
       setBranchNameError("A branch with this name already exists");
       return;
     }
 
-    if (onCreateBranch) {
-      onCreateBranch(trimmedName);
-      setNewBranchName("");
-      onOpenChange(false);
-      setBranchNameError(null);
-    }
+    onCreateBranch(trimmedName);
+    setNewBranchName("");
+    onOpenChange(false);
+    setBranchNameError(null);
   };
 
   const handleBranchNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -108,7 +105,7 @@ export const NewBranchDialog = ({
               }}
               className={cn(
                 branchNameError &&
-                  "border-destructive focus-visible:ring-destructive"
+                "border-destructive focus-visible:ring-destructive"
               )}
             />
             {branchNameError && (

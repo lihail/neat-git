@@ -10,11 +10,11 @@ import { GitActionButton } from "./GitActionButton";
 import { NewBranchDialog } from "./NewBranchDialog";
 
 interface GitActionsPanelProps {
-  onFetch?: () => void;
-  onPull?: () => void;
-  onPush?: () => void;
-  onStash?: () => void;
-  onCreateBranch?: (branchName: string) => void;
+  onFetch: () => void;
+  onPull: () => void;
+  onPush: () => void;
+  onStash: () => void;
+  onCreateBranch: (branchName: string) => void;
   isLoading?: boolean;
   isFetching?: boolean;
   isPulling?: boolean;

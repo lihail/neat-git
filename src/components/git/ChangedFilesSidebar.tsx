@@ -7,8 +7,8 @@ interface ChangedFilesSidebarProps {
   onSelectFile: (path: string, isStaged: boolean) => void;
   selectedFile?: string;
   selectedFileIsStaged?: boolean;
-  onStageAll?: () => void;
-  onUnstageAll?: () => void;
+  onStageAll: () => void;
+  onUnstageAll: () => void;
 }
 
 export const ChangedFilesSidebar = ({

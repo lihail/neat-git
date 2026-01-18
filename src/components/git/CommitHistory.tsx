@@ -1,13 +1,7 @@
 import { GitCommit, User, Calendar } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-
-interface Commit {
-  sha: string;
-  message: string;
-  author: string;
-  date: string;
-}
+import type { Commit } from "@/types/git";
 
 interface CommitHistoryProps {
   commits: Commit[];

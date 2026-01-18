@@ -707,8 +707,7 @@ export const Index = () => {
 
       if (result.success) {
         toast.success(
-          `Committed ${stagedCount} file${
-            stagedCount !== 1 ? "s" : ""
+          `Committed ${stagedCount} file${stagedCount !== 1 ? "s" : ""
           }: ${message}`
         );
 
@@ -835,7 +834,7 @@ export const Index = () => {
           },
           cancel: {
             label: "Cancel",
-            onClick: () => {},
+            onClick: () => { },
           },
           duration: Infinity,
         });
@@ -914,8 +913,7 @@ export const Index = () => {
 
       await renameBranch(repoPath, oldName, newName, alsoRenameRemote);
       toast.success(
-        `Branch renamed from "${oldName}" to "${newName}"${
-          alsoRenameRemote ? " (including remote)" : ""
+        `Branch renamed from "${oldName}" to "${newName}"${alsoRenameRemote ? " (including remote)" : ""
         }`
       );
 
@@ -1117,19 +1115,19 @@ export const Index = () => {
   // Create branches with current branch marked
   const branchesWithCurrent = currentState
     ? currentState.branches.map((branch) => ({
-        ...branch,
-        current: branch.name === currentState.currentBranch,
-      }))
+      ...branch,
+      current: branch.name === currentState.currentBranch,
+    }))
     : [];
 
   // Format commits for display
   const formattedCommits = currentState
     ? currentState.commits.map((commit) => ({
-        sha: commit.sha,
-        message: commit.message,
-        author: commit.author,
-        date: formatCommitDate(commit.timestamp),
-      }))
+      sha: commit.sha,
+      message: commit.message,
+      author: commit.author,
+      date: formatCommitDate(commit.timestamp),
+    }))
     : [];
 
   const handleSelectFile = async (filePath: string, isStaged: boolean) => {
@@ -1527,7 +1525,6 @@ export const Index = () => {
               selectedCommit={selectedCommit}
               onSelectBranch={handleSelectBranch}
               onSelectCommit={setSelectedCommit}
-              onCreateBranch={handleCreateBranch}
               onDeleteBranch={handleDeleteBranch}
               onRenameBranch={handleRenameBranch}
               onPullBranch={handlePullBranch}
@@ -1549,8 +1546,8 @@ export const Index = () => {
               fileStatus={
                 currentState.selectedFile
                   ? currentState.files.find(
-                      (f) => f.path === currentState.selectedFile
-                    )?.status
+                    (f) => f.path === currentState.selectedFile
+                  )?.status
                   : undefined
               }
               isLoading={loadingDiff}
@@ -1607,28 +1604,28 @@ export const Index = () => {
           currentAuthOperation === "fetch"
             ? "Fetching from remote..."
             : currentAuthOperation === "pull"
-            ? "Pulling from remote..."
-            : currentAuthOperation === "push"
-            ? "Pushing to remote..."
-            : ""
+              ? "Pulling from remote..."
+              : currentAuthOperation === "push"
+                ? "Pushing to remote..."
+                : ""
         }
         description={
           currentAuthOperation === "fetch"
             ? "Please enter your credentials to fetch from the remote repository."
             : currentAuthOperation === "pull"
-            ? "Please enter your credentials to pull from the remote repository."
-            : currentAuthOperation === "push"
-            ? "Please enter your credentials to push to the remote repository."
-            : ""
+              ? "Please enter your credentials to pull from the remote repository."
+              : currentAuthOperation === "push"
+                ? "Please enter your credentials to push to the remote repository."
+                : ""
         }
         onConfirm={
           currentAuthOperation === "fetch"
             ? handleFetch
             : currentAuthOperation === "pull"
-            ? handlePull
-            : currentAuthOperation === "push"
-            ? handlePush
-            : () => Promise.resolve()
+              ? handlePull
+              : currentAuthOperation === "push"
+                ? handlePush
+                : () => Promise.resolve()
         }
         error={authDialogError}
       />
