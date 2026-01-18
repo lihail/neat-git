@@ -93,3 +93,129 @@ export const validateEmail = (email: string): boolean => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email);
 };
+
+export const validateRepoName = (name: string): string | null => {
+  if (!name.trim()) {
+    return "Repository name cannot be empty";
+  }
+
+  // Git repository naming rules
+  if (name.startsWith(".")) {
+    return "Repository name cannot start with a dot";
+  }
+  if (name.endsWith(".git")) {
+    return "Repository name cannot end with .git";
+  }
+  if (name.endsWith(".lock")) {
+    return "Repository name cannot end with .lock";
+  }
+  if (name.includes("..")) {
+    return "Repository name cannot contain consecutive dots";
+  }
+  if (/[\s~^:?*\[\]\\]/.test(name)) {
+    return "Repository name cannot contain spaces or special characters (~^:?*[]\\)";
+  }
+  if (name.includes("/")) {
+    return "Repository name cannot contain slashes";
+  }
+  if (name.length > 255) {
+    return "Repository name is too long (max 255 characters)";
+  }
+
+  return null;
+};
+
+const extractRepoNameFromUrl = (url: string): string => {
+  try {
+    // Remove trailing slashes and .git extension
+    let repoPath = url
+      .trim()
+      .replace(/\.git$/, "")
+      .replace(/\/$/, "");
+
+    // Extract the last part of the URL path
+    const parts = repoPath.split("/");
+    const repoName = parts[parts.length - 1];
+
+    return repoName || "repo";
+  } catch {
+    return "repo";
+  }
+};
+
+export const extractHostFromUrl = (url: string): string => {
+  try {
+    // Handle HTTPS/HTTP URLs
+    if (url.startsWith("http://") || url.startsWith("https://")) {
+      const urlObj = new URL(url);
+      return urlObj.hostname;
+    }
+
+    // Handle SSH URLs (git@github.com:user/repo.git)
+    if (url.startsWith("git@")) {
+      const match = url.match(/^git@([^:]+):/);
+      return match ? match[1] : "remote server";
+    }
+
+    // Handle git:// URLs
+    if (url.startsWith("git://")) {
+      const urlObj = new URL(url);
+      return urlObj.hostname;
+    }
+
+    return "remote server";
+  } catch {
+    return "remote server";
+  }
+};
+
+export const extractCredentialsFromUrl = (
+  url: string
+): { username: string; password: string } | null => {
+  try {
+    if (url.startsWith("http://") || url.startsWith("https://")) {
+      const urlObj = new URL(url);
+      if (urlObj.username || urlObj.password) {
+        return {
+          username: decodeURIComponent(urlObj.username),
+          password: decodeURIComponent(urlObj.password),
+        };
+      }
+    }
+    return null;
+  } catch {
+    return null;
+  }
+};
+
+export const isSshUrl = (url: string): boolean => {
+  return /^git@.+:.+/.test(url.trim());
+};
+
+export const validateCloneUrl = (url: string): string | null => {
+  const trimmedUrl = url.trim();
+
+  // If empty, don't show error (button will be disabled)
+  if (!trimmedUrl) {
+    return null;
+  }
+
+  // Check for common Git URL patterns
+  const isHttpUrl = /^https?:\/\/.+/.test(trimmedUrl);
+  const isSshUrl = /^git@.+:.+/.test(trimmedUrl);
+  const isGitUrl = /^git:\/\/.+/.test(trimmedUrl);
+
+  if (!isHttpUrl && !isSshUrl && !isGitUrl) {
+    return "Please enter a valid Git repository URL (https://, git@, or git://)";
+  }
+
+  return null;
+};
+
+export const getFullClonePath = (cloneDestination: string, cloneUrl: string): string => {
+  if (!cloneDestination || !cloneUrl) {
+    return "";
+  }
+  const repoName = extractRepoNameFromUrl(cloneUrl);
+  return `${cloneDestination}/${repoName}`;
+};

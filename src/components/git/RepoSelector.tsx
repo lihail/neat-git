@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useState } from "react";
 import { toast } from "@/components/ui/toaster";
+import { validateRepoName, extractCredentialsFromUrl, extractHostFromUrl, isSshUrl, validateCloneUrl, getFullClonePath } from "@/lib/utils";
+import packageJson from "../../../package.json";
 
 interface RepoSelectorProps {
   onSelectRepo: (path: string) => void;
@@ -51,134 +53,7 @@ export const RepoSelector = ({ onSelectRepo, onCancel }: RepoSelectorProps) => {
   const [sshTrustHostname, setSshTrustHostname] = useState("");
   const [sshIsTrusting, setSshIsTrusting] = useState(false);
 
-  const validateRepoName = (name: string): string | null => {
-    if (!name.trim()) {
-      return "Repository name cannot be empty";
-    }
-
-    // Git repository naming rules
-    if (name.startsWith(".")) {
-      return "Repository name cannot start with a dot";
-    }
-    if (name.endsWith(".git")) {
-      return "Repository name cannot end with .git";
-    }
-    if (name.endsWith(".lock")) {
-      return "Repository name cannot end with .lock";
-    }
-    if (name.includes("..")) {
-      return "Repository name cannot contain consecutive dots";
-    }
-    if (/[\s~^:?*\[\]\\]/.test(name)) {
-      return "Repository name cannot contain spaces or special characters (~^:?*[]\\)";
-    }
-    if (name.includes("/")) {
-      return "Repository name cannot contain slashes";
-    }
-    if (name.length > 255) {
-      return "Repository name is too long (max 255 characters)";
-    }
-
-    return null;
-  };
-
-  const extractRepoNameFromUrl = (url: string): string => {
-    try {
-      // Remove trailing slashes and .git extension
-      let repoPath = url
-        .trim()
-        .replace(/\.git$/, "")
-        .replace(/\/$/, "");
-
-      // Extract the last part of the URL path
-      const parts = repoPath.split("/");
-      const repoName = parts[parts.length - 1];
-
-      return repoName || "repo";
-    } catch {
-      return "repo";
-    }
-  };
-
-  const extractHostFromUrl = (url: string): string => {
-    try {
-      // Handle HTTPS/HTTP URLs
-      if (url.startsWith("http://") || url.startsWith("https://")) {
-        const urlObj = new URL(url);
-        return urlObj.hostname;
-      }
-
-      // Handle SSH URLs (git@github.com:user/repo.git)
-      if (url.startsWith("git@")) {
-        const match = url.match(/^git@([^:]+):/);
-        return match ? match[1] : "remote server";
-      }
-
-      // Handle git:// URLs
-      if (url.startsWith("git://")) {
-        const urlObj = new URL(url);
-        return urlObj.hostname;
-      }
-
-      return "remote server";
-    } catch {
-      return "remote server";
-    }
-  };
-
-  const extractCredentialsFromUrl = (
-    url: string
-  ): { username: string; password: string } | null => {
-    try {
-      if (url.startsWith("http://") || url.startsWith("https://")) {
-        const urlObj = new URL(url);
-        if (urlObj.username || urlObj.password) {
-          return {
-            username: decodeURIComponent(urlObj.username),
-            password: decodeURIComponent(urlObj.password),
-          };
-        }
-      }
-      return null;
-    } catch {
-      return null;
-    }
-  };
-
-  const isSshUrl = (url: string): boolean => {
-    return /^git@.+:.+/.test(url.trim());
-  };
-
-  const validateCloneUrl = (url: string): string | null => {
-    const trimmedUrl = url.trim();
-
-    // If empty, don't show error (button will be disabled)
-    if (!trimmedUrl) {
-      return null;
-    }
-
-    // Check for common Git URL patterns
-    const isHttpUrl = /^https?:\/\/.+/.test(trimmedUrl);
-    const isSshUrl = /^git@.+:.+/.test(trimmedUrl);
-    const isGitUrl = /^git:\/\/.+/.test(trimmedUrl);
-
-    if (!isHttpUrl && !isSshUrl && !isGitUrl) {
-      return "Please enter a valid Git repository URL (https://, git@, or git://)";
-    }
-
-    return null;
-  };
-
-  const getFullClonePath = (): string => {
-    if (!cloneDestination || !cloneUrl) {
-      return "";
-    }
-    const repoName = extractRepoNameFromUrl(cloneUrl);
-    return `${cloneDestination}/${repoName}`;
-  };
-
   const handleSelectRepo = async () => {
-    // Check if we're in Electron
     if (typeof window !== "undefined" && window.electronAPI) {
       setIsLoading(true);
       try {
@@ -210,7 +85,6 @@ export const RepoSelector = ({ onSelectRepo, onCancel }: RepoSelectorProps) => {
   const handleCloneUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setCloneUrl(value);
-    // Clear error when user starts typing
     if (cloneUrlError) {
       setCloneUrlError(null);
     }
@@ -241,10 +115,10 @@ export const RepoSelector = ({ onSelectRepo, onCancel }: RepoSelectorProps) => {
   ) => {
     setIsLoading(true);
     setIsCloning(true);
-    const isAuthRetry = !!username || !!password; // Are we retrying with auth?
+    const isAuthRetry = !!username || !!password;
 
     try {
-      const finalPath = getFullClonePath();
+      const finalPath = getFullClonePath(cloneDestination, cloneUrl);
 
       // If no credentials provided, check if URL has embedded credentials
       let effectiveUsername = username;
@@ -278,19 +152,16 @@ export const RepoSelector = ({ onSelectRepo, onCancel }: RepoSelectorProps) => {
         setInitialPassword("");
         onSelectRepo(result.path);
       } else if (result.needsSshTrust) {
-        // SSH host not trusted - show trust dialog
         setShowCloneDialog(false);
         setShowAuthDialog(false);
         setSshTrustHostname(result.sshHostname || "unknown");
         setShowSshTrustDialog(true);
       } else if (result.needsSsh) {
-        // SSH permission error - show SSH setup dialog
         setShowCloneDialog(false);
         setShowAuthDialog(false);
         await handleSshSetup();
       } else if (result.needsAuth) {
         if (isAuthRetry) {
-          // Auth failed - show error in the auth dialog
           setAuthError(
             "Authentication failed. Please check your credentials and try again."
           );
@@ -316,7 +187,6 @@ export const RepoSelector = ({ onSelectRepo, onCancel }: RepoSelectorProps) => {
       } else {
         // Other errors
         if (isAuthRetry) {
-          // Show error in auth dialog
           setAuthError(
             result.error ||
             "Failed to clone repository. Please check your credentials or verify the repository exists."
@@ -373,8 +243,7 @@ export const RepoSelector = ({ onSelectRepo, onCancel }: RepoSelectorProps) => {
 
   const handleConfirmAuth = async (
     username: string,
-    password: string,
-    saveCredentials: boolean
+    password: string
   ) => {
     // Retry clone with credentials
     await performClone(username, password);
@@ -572,123 +441,128 @@ export const RepoSelector = ({ onSelectRepo, onCancel }: RepoSelectorProps) => {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-8">
-      <Card className="w-full max-w-4xl p-12 text-center relative">
-        {onCancel && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute top-4 right-4"
-            onClick={onCancel}
-          >
-            <X className="h-5 w-5" />
-          </Button>
-        )}
-        <h1 className="mb-4 text-3xl font-bold text-foreground">
-          Welcome to NeatGit
-        </h1>
-        <p className="mb-12 text-muted-foreground">
-          Choose how you'd like to get started with your repository
-        </p>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <RepoActionCard
-            icon={FolderOpen}
-            title="Open Repository"
-            description="Browse and open an existing Git repository from your local machine"
-            buttonText="Browse"
-            buttonLoadingText="Opening..."
-            isLoading={isLoading}
-            onClick={handleSelectRepo}
-          />
-          <RepoActionCard
-            icon={GitBranch}
-            title="Clone Repository"
-            description="Clone a remote Git repository from GitHub, GitLab, or other sources"
-            buttonText="Clone"
-            onClick={handleCloneRepo}
-          />
-          <RepoActionCard
-            icon={FolderPlus}
-            title="Create Repository"
-            description="Initialize a new Git repository in an existing or new folder"
-            buttonText="Create"
-            onClick={handleCreateRepo}
-          />
-        </div>
-
-        {onCancel && (
-          <div className="flex justify-center">
-            <Button onClick={onCancel} size="lg" variant="ghost">
-              Cancel
+    <div className="relative h-screen w-full">
+      <div className="flex min-h-screen items-center justify-center p-8">
+        <Card className="w-full max-w-4xl p-12 text-center relative">
+          {onCancel && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-4 right-4"
+              onClick={onCancel}
+            >
+              <X className="h-5 w-5" />
             </Button>
+          )}
+          <h1 className="mb-4 text-3xl font-bold text-foreground">
+            Welcome to NeatGit
+          </h1>
+          <p className="mb-12 text-muted-foreground">
+            Choose how you'd like to get started with your repository
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <RepoActionCard
+              icon={FolderOpen}
+              title="Open Repository"
+              description="Browse and open an existing Git repository from your local machine"
+              buttonText="Browse"
+              buttonLoadingText="Opening..."
+              isLoading={isLoading}
+              onClick={handleSelectRepo}
+            />
+            <RepoActionCard
+              icon={GitBranch}
+              title="Clone Repository"
+              description="Clone a remote Git repository from GitHub, GitLab, or other sources"
+              buttonText="Clone"
+              onClick={handleCloneRepo}
+            />
+            <RepoActionCard
+              icon={FolderPlus}
+              title="Create Repository"
+              description="Initialize a new Git repository in an existing or new folder"
+              buttonText="Create"
+              onClick={handleCreateRepo}
+            />
           </div>
-        )}
-      </Card>
 
-      <CreateRepoDialog
-        open={showCreateDialog}
-        onOpenChange={setShowCreateDialog}
-        selectedParentPath={selectedParentPath}
-        repoName={repoName}
-        repoNameError={repoNameError}
-        isLoading={isLoading}
-        onRepoNameChange={handleRepoNameChange}
-        onConfirm={handleConfirmCreate}
-        onCancel={handleCancelCreate}
-      />
+          {onCancel && (
+            <div className="flex justify-center">
+              <Button onClick={onCancel} size="lg" variant="ghost">
+                Cancel
+              </Button>
+            </div>
+          )}
+        </Card>
 
-      <CloneRepoDialog
-        open={showCloneDialog}
-        onOpenChange={setShowCloneDialog}
-        cloneUrl={cloneUrl}
-        cloneDestination={cloneDestination}
-        cloneUrlError={cloneUrlError}
-        isLoading={isLoading}
-        fullClonePath={getFullClonePath()}
-        onCloneUrlChange={handleCloneUrlChange}
-        onSelectDestination={handleSelectCloneDestination}
-        onConfirm={handleConfirmClone}
-        onCancel={handleCancelClone}
-      />
+        <CreateRepoDialog
+          open={showCreateDialog}
+          onOpenChange={setShowCreateDialog}
+          selectedParentPath={selectedParentPath}
+          repoName={repoName}
+          repoNameError={repoNameError}
+          isLoading={isLoading}
+          onRepoNameChange={handleRepoNameChange}
+          onConfirm={handleConfirmCreate}
+          onCancel={handleCancelCreate}
+        />
 
-      <AuthDialog
-        open={showAuthDialog}
-        onOpenChange={handleAuthDialogChange}
-        isLoading={isLoading}
-        loadingMessage="Cloning repository..."
-        title={`Sign in to ${authHost}`}
-        description="Authentication is required to clone this repository. Please enter your credentials."
-        initialUsername={initialUsername}
-        initialPassword={initialPassword}
-        onConfirm={handleConfirmAuth}
-        error={authError}
-      />
+        <CloneRepoDialog
+          open={showCloneDialog}
+          onOpenChange={setShowCloneDialog}
+          cloneUrl={cloneUrl}
+          cloneDestination={cloneDestination}
+          cloneUrlError={cloneUrlError}
+          isLoading={isLoading}
+          fullClonePath={getFullClonePath(cloneDestination, cloneUrl)}
+          onCloneUrlChange={handleCloneUrlChange}
+          onSelectDestination={handleSelectCloneDestination}
+          onConfirm={handleConfirmClone}
+          onCancel={handleCancelClone}
+        />
 
-      <SshSetupDialog
-        open={showSshDialog}
-        onOpenChange={setShowSshDialog}
-        sshStep={sshStep}
-        sshHasExistingKeys={sshHasExistingKeys}
-        sshPublicKey={sshPublicKey}
-        sshIsGenerating={sshIsGenerating}
-        onUseExistingKey={handleUseExistingKey}
-        onGenerateSshKey={handleGenerateSshKey}
-        onCopySshKey={handleCopySshKey}
-        onRetryClone={handleRetryClone}
-        onCancel={handleCancelSshSetup}
-      />
+        <AuthDialog
+          open={showAuthDialog}
+          onOpenChange={handleAuthDialogChange}
+          isLoading={isLoading}
+          loadingMessage="Cloning repository..."
+          title={`Sign in to ${authHost}`}
+          description="Authentication is required to clone this repository. Please enter your credentials."
+          initialUsername={initialUsername}
+          initialPassword={initialPassword}
+          onConfirm={handleConfirmAuth}
+          error={authError}
+        />
 
-      <SshTrustHostDialog
-        open={showSshTrustDialog}
-        onOpenChange={setShowSshTrustDialog}
-        hostname={sshTrustHostname}
-        isTrusting={sshIsTrusting}
-        onTrust={handleTrustHost}
-        onCancel={handleCancelTrustHost}
-      />
+        <SshSetupDialog
+          open={showSshDialog}
+          onOpenChange={setShowSshDialog}
+          sshStep={sshStep}
+          sshHasExistingKeys={sshHasExistingKeys}
+          sshPublicKey={sshPublicKey}
+          sshIsGenerating={sshIsGenerating}
+          onUseExistingKey={handleUseExistingKey}
+          onGenerateSshKey={handleGenerateSshKey}
+          onCopySshKey={handleCopySshKey}
+          onRetryClone={handleRetryClone}
+          onCancel={handleCancelSshSetup}
+        />
 
-      {isCloning && <LoadingOverlay message="Cloning repository..." />}
+        <SshTrustHostDialog
+          open={showSshTrustDialog}
+          onOpenChange={setShowSshTrustDialog}
+          hostname={sshTrustHostname}
+          isTrusting={sshIsTrusting}
+          onTrust={handleTrustHost}
+          onCancel={handleCancelTrustHost}
+        />
+
+        {isCloning && <LoadingOverlay message="Cloning repository..." />}
+      </div>
+      <p className="absolute bottom-4 left-1/2 -translate-x-1/2 text-xs text-muted-foreground/60">
+        NeatGit v{packageJson.version}
+      </p>
     </div>
   );
 };

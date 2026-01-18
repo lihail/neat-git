@@ -40,7 +40,6 @@ import {
   type Commit,
   type Stash,
 } from "@/lib/git";
-import packageJson from "../../package.json";
 import { useGitSetup } from "@/hooks/useGitSetup";
 import { useWordWrap } from "@/hooks/useWordWrap";
 import { useDiffViewerMode } from "@/hooks/useDiffViewerMode";
@@ -1469,17 +1468,12 @@ export const Index = () => {
 
   if (isSelectingRepo) {
     return (
-      <div className="relative h-screen w-full">
-        <RepoSelector
-          onSelectRepo={handleOpenRepo}
-          onCancel={
-            tabs.length > 0 ? () => setIsSelectingRepo(false) : undefined
-          }
-        />
-        <p className="absolute bottom-4 left-1/2 -translate-x-1/2 text-xs text-muted-foreground/60">
-          NeatGit v{packageJson.version}
-        </p>
-      </div>
+      <RepoSelector
+        onSelectRepo={handleOpenRepo}
+        onCancel={
+          tabs.length > 0 ? () => setIsSelectingRepo(false) : undefined
+        }
+      />
     );
   }
 
