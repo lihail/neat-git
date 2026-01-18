@@ -60,8 +60,8 @@ All colors MUST be HSL.
   input,
   textarea,
   [contenteditable="true"],
-  .diff-viewer-content,
-  .diff-viewer-content * {
+  .select-text,
+  .select-text * {
     user-select: text !important;
     -webkit-user-select: text !important;
   }
