@@ -38,7 +38,6 @@ export const BranchContextMenu = ({
           <ContextMenuSeparator />
         </>
       )}
-      {/* Pull option - disabled if branch has no upstream or has unpushed commits */}
       {!branch.hasUpstream ? (
         <Tooltip delayDuration={0}>
           <TooltipTrigger asChild>
