@@ -12,6 +12,8 @@ export interface FileStatus {
   status: "modified" | "added" | "deleted";
   hasStaged: boolean; // Has staged changes
   hasUnstaged: boolean; // Has unstaged changes
+  oldPath?: string; // Original path before rename
+  unstagedStatus?: "modified" | "added" | "deleted"; // Status for unstaged section (when different from staged)
 }
 
 export interface DiffLine {
@@ -39,7 +41,7 @@ export interface Stash {
 }
 
 /**
- * Get the current branch name via IPC
+ * Get the current branch name
  */
 export async function getCurrentBranch(repoPath: string): Promise<string> {
   if (typeof window === "undefined" || !window.electronAPI) {
@@ -57,7 +59,7 @@ export async function getCurrentBranch(repoPath: string): Promise<string> {
 }
 
 /**
- * List all local branches via IPC
+ * List all local branches
  */
 export async function listBranches(repoPath: string): Promise<Branch[]> {
   if (typeof window === "undefined" || !window.electronAPI) {
@@ -113,11 +115,12 @@ export async function stageFile(
 }
 
 /**
- * Unstage a file
+ * Unstage a change
  */
-export async function unstageFile(
+export async function unstageChange(
   repoPath: string,
-  filepath: string
+  filepath: string,
+  oldFilePath?: string
 ): Promise<void> {
   if (typeof window === "undefined" || !window.electronAPI) {
     console.warn("Electron API not available");
@@ -125,9 +128,9 @@ export async function unstageFile(
   }
 
   try {
-    await window.electronAPI.unstageFile(repoPath, filepath);
+    await window.electronAPI.unstageChange(repoPath, filepath, oldFilePath);
   } catch (error) {
-    console.error("Error unstaging file:", error);
+    console.error("Error unstaging change:", error);
     throw error;
   }
 }
@@ -159,7 +162,8 @@ export async function getDiff(
   repoPath: string,
   filepath: string,
   staged: boolean = false,
-  contextLines: number = 999999
+  contextLines: number = 999999,
+  oldFilePath?: string
 ): Promise<DiffLine[]> {
   if (typeof window === "undefined" || !window.electronAPI) {
     console.warn("Electron API not available");
@@ -171,7 +175,8 @@ export async function getDiff(
       repoPath,
       filepath,
       staged,
-      contextLines
+      contextLines,
+      oldFilePath
     );
     return diff || [];
   } catch (error) {

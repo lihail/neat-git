@@ -10,11 +10,12 @@ import {
 import { DiffSplitView } from "./DiffSplitView";
 import { DiffHunkView } from "./DiffHunkView";
 import { DiffFullView } from "./DiffFullView";
-import { DiffEmptyState } from "./DiffEmptyState";
+import { DiffViewerEmptyState } from "./DiffViewerEmptyState";
 import type { DiffLine } from "@/lib/git";
 
 interface DiffViewerProps {
   filePath?: string;
+  oldFilePath?: string;
   lines: DiffLine[];
   fileStatus?: "modified" | "added" | "deleted";
   isLoading?: boolean;
@@ -27,6 +28,7 @@ interface DiffViewerProps {
 
 export const DiffViewer = ({
   filePath,
+  oldFilePath,
   lines,
   fileStatus,
   isLoading = false,
@@ -72,8 +74,10 @@ export const DiffViewer = ({
     );
   }
 
-  const isEmpty =
+  const isEmptyFile =
     lines.length === 0 || lines.every((line) => line.content.trim() === "");
+
+  const isPureRename = oldFilePath && fileStatus === "added";
 
   return (
     <div className="flex h-full flex-col relative">
@@ -89,9 +93,17 @@ export const DiffViewer = ({
       <div className="border-b border-border bg-card px-4 py-3 flex items-center justify-between gap-4">
         <p
           className="font-mono text-sm text-foreground overflow-hidden text-ellipsis whitespace-nowrap min-w-0 flex-1"
-          title={filePath}
+          title={oldFilePath ? `${oldFilePath} → ${filePath}` : filePath}
         >
-          {filePath}
+          {oldFilePath ? (
+            <>
+              <span className="text-muted-foreground">{oldFilePath}</span>
+              <span className="text-primary mx-2">→</span>
+              <span>{filePath}</span>
+            </>
+          ) : (
+            filePath
+          )}
         </p>
         <div className="flex items-center gap-2 flex-shrink-0">
           <DiffViewerModeToggle
@@ -115,8 +127,10 @@ export const DiffViewer = ({
           </Button>
         </div>
       </div>
-      {isEmpty ? (
-        <DiffEmptyState />
+      {isPureRename ? (
+        <DiffViewerEmptyState message="File renamed or moved, no content changes" />
+      ) : isEmptyFile ? (
+        <DiffViewerEmptyState message="File is empty" />
       ) : effectiveViewMode === "hunks" && hunks ? (
         <DiffHunkView
           hunks={hunks}

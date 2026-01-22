@@ -41,8 +41,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
     ipcRenderer.invoke(IPC_CHANNELS.GIT_GET_STATUS, repoPath),
   stageFile: (repoPath: string, filepath: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.GIT_STAGE_FILE, repoPath, filepath),
-  unstageFile: (repoPath: string, filepath: string) =>
-    ipcRenderer.invoke(IPC_CHANNELS.GIT_UNSTAGE_FILE, repoPath, filepath),
+  unstageChange: (repoPath: string, filepath: string, oldFilePath?: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.GIT_UNSTAGE_CHANGE, repoPath, filepath, oldFilePath),
   unstageAllFiles: (repoPath: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.GIT_UNSTAGE_ALL_FILES, repoPath),
   stageLines: (
@@ -70,14 +70,16 @@ contextBridge.exposeInMainWorld("electronAPI", {
     repoPath: string,
     filepath: string,
     staged?: boolean,
-    contextLines?: number
+    contextLines?: number,
+    oldFilePath?: string
   ) =>
     ipcRenderer.invoke(
       IPC_CHANNELS.GIT_GET_DIFF,
       repoPath,
       filepath,
       staged,
-      contextLines
+      contextLines,
+      oldFilePath
     ),
   listStashes: (repoPath: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.GIT_LIST_STASHES, repoPath),

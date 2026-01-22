@@ -54,6 +54,7 @@ export default {
           add: "hsl(var(--git-add))",
           delete: "hsl(var(--git-delete))",
           modify: "hsl(var(--git-modify))",
+          rename: "hsl(var(--git-rename))",
         },
       },
       fontFamily: {

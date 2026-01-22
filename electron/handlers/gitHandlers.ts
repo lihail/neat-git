@@ -7,7 +7,7 @@ import {
   listRemoteBranches,
   getStatus,
   stageFile,
-  unstageFile,
+  unstageChange,
   unstageAllFiles,
   createBranch,
   deleteBranch,
@@ -77,9 +77,9 @@ export const registerGitHandlers = () => {
   );
 
   ipcMain.handle(
-    IPC_CHANNELS.GIT_UNSTAGE_FILE,
-    async (_, repoPath: string, filepath: string) => {
-      return await unstageFile(repoPath, filepath);
+    IPC_CHANNELS.GIT_UNSTAGE_CHANGE,
+    async (_, repoPath: string, filepath: string, oldFilePath?: string) => {
+      return await unstageChange(repoPath, filepath, oldFilePath);
     }
   );
 
@@ -145,9 +145,10 @@ export const registerGitHandlers = () => {
       repoPath: string,
       filepath: string,
       staged: boolean = false,
-      contextLines: number = 999999
+      contextLines: number = 999999,
+      oldFilePath?: string
     ) => {
-      return await getDiff(repoPath, filepath, staged, contextLines);
+      return await getDiff(repoPath, filepath, staged, contextLines, oldFilePath);
     }
   );
 

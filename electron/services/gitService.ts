@@ -6,6 +6,15 @@ import { promisify } from "node:util";
 
 const execAsync = promisify(exec);
 
+type FileStatus = {
+  path: string;
+  status: "modified" | "added" | "deleted";
+  hasStaged: boolean;
+  hasUnstaged: boolean;
+  oldPath?: string;
+  unstagedStatus?: "modified" | "added" | "deleted";
+};
+
 export const getGlobalConfig = async () => {
   try {
     let userName = "";
@@ -291,64 +300,134 @@ export const getStatus = async (repoPath: string) => {
       throw new Error(`Not a valid Git repository: ${repoPath}`);
     }
 
-    // Get the status matrix - returns [filepath, HEADStatus, WorkdirStatus, StageStatus]
-    const statusMatrix = await git.statusMatrix({
-      fs,
-      dir: repoPath,
+    // Use git status --porcelain=v2 for rename detection
+    // -M flag enables rename detection with default 50% similarity threshold
+    const statusOutput = execSync("git status --porcelain=v2 -M", {
+      cwd: repoPath,
+      encoding: "utf8",
     });
 
-    const files = statusMatrix
-      .filter(([filepath, head, workdir, stage]) => {
-        // Filter out unmodified files (1,1,1)
-        return !(head === 1 && workdir === 1 && stage === 1);
-      })
-      .map(([filepath, head, workdir, stage]) => {
-        // Determine status and staging
-        let status: "modified" | "added" | "deleted";
-        let hasStaged = false;
-        let hasUnstaged = false;
+    const fileMap = new Map<string, FileStatus>();
 
-        // Check if file has staged changes (stage differs from head)
-        // stage === 2 or 3: staged modifications/additions
-        // head === 1 && stage === 0: staged deletion
-        hasStaged = stage === 2 || stage === 3 || (head === 1 && stage === 0);
+    const lines = statusOutput.trim().split("\n").filter(Boolean);
 
-        // Check if file has unstaged changes (workdir has changes and differs from stage)
-        // workdir === 2: file is modified or added in working directory
-        // workdir === 0: file is deleted in working directory
-        // Must also differ from stage to be considered unstaged changes
-        hasUnstaged = (workdir === 2 || workdir === 0) && workdir !== stage;
+    for (const line of lines) {
+      // Porcelain v2 format:
+      // 1 <XY> ... <path> - ordinary changed entries
+      // 2 <XY> ... <path>\t<origPath> - renamed/copied entries
+      // ? <path> - untracked files
 
-        // Determine the file status based on what's in the working directory
-        if (head === 0 && (workdir === 2 || stage === 2)) {
-          // New file (either in workdir or staged)
-          status = "added";
-        } else if (
-          workdir === 0 ||
-          (head === 1 && stage === 0 && workdir === 1)
-        ) {
-          // File deleted in workdir, or deletion staged but workdir caught up
-          status = "deleted";
-        } else {
-          // File modified
-          status = "modified";
+      if (line.startsWith("1 ")) {
+        // Ordinary changed entry: 1 <XY> <sub> <mH> <mI> <mW> <hH> <hI> <path>
+        const parts = line.split(" ");
+        const xy = parts[1];
+        const hashHead = parts[6]; // Content hash in HEAD
+        const hashIndex = parts[7]; // Content hash in index (staged)
+        const filePath = parts.slice(8).join(" ");
+
+        const stagedCode = xy[0];
+        const unstagedCode = xy[1];
+
+        // Check if staged change is mode-only (no content change)
+        // If hashes match but staged code shows change, it's mode-only
+        const isModeOnlyStaged = stagedCode !== "." && hashHead === hashIndex;
+
+        // Filter out mode-only staged changes
+        const hasStaged = stagedCode !== "." && !isModeOnlyStaged;
+        const hasUnstaged = unstagedCode !== ".";
+
+        // Skip entirely if only mode changed and no unstaged changes
+        if (isModeOnlyStaged && !hasUnstaged) {
+          continue;
         }
 
-        return {
-          path: filepath,
+        // Determine staged status based on staged code
+        let status: "modified" | "added" | "deleted";
+        if (stagedCode === "D") {
+          status = "deleted";
+        } else if (stagedCode === "A") {
+          status = "added";
+        } else if (stagedCode === "M" || stagedCode === "T") {
+          status = "modified";
+        } else {
+          // Fallback for when there's no staged change - use unstaged code
+          if (unstagedCode === "D") {
+            status = "deleted";
+          } else if (unstagedCode === "A") {
+            status = "added";
+          } else {
+            status = "modified";
+          }
+        }
+
+        // Determine unstaged status if there are unstaged changes
+        let unstagedStatus: "modified" | "added" | "deleted" | undefined;
+        if (hasUnstaged) {
+          if (unstagedCode === "D") {
+            unstagedStatus = "deleted";
+          } else if (unstagedCode === "A") {
+            unstagedStatus = "added";
+          } else if (unstagedCode === "M" || unstagedCode === "T") {
+            unstagedStatus = "modified";
+          }
+        }
+
+        fileMap.set(filePath, { path: filePath, status, hasStaged, hasUnstaged, unstagedStatus });
+      } else if (line.startsWith("2 ")) {
+        // Renamed entry: 2 <XY> <sub> <mH> <mI> <mW> <hH> <hI> <X><score> <path>\t<origPath>
+        const parts = line.split(" ");
+        const xy = parts[1];
+        const renameInfo = parts[8]; // e.g., "R100" or "R095"
+        const pathPart = parts.slice(9).join(" ");
+        const [newFilePath, oldFilePath] = pathPart.split("\t");
+
+        const stagedCode = xy[0];
+        const unstagedCode = xy[1];
+        const hasStaged = stagedCode !== ".";
+        const hasUnstaged = unstagedCode !== ".";
+
+        // Staged status: based on rename similarity
+        // - If similarity < 100%, the rename included content changes → "modified"
+        // - Otherwise it's a pure rename → "added"
+        const similarity = parseInt(renameInfo.slice(1), 10);
+        const status: "modified" | "added" | "deleted" =
+          similarity === 100 ? "added" : "modified";
+
+        // Unstaged status: based on unstaged code (only if there are unstaged changes)
+        let unstagedStatus: "modified" | "added" | "deleted" | undefined;
+        if (hasUnstaged) {
+          if (unstagedCode === "D") {
+            unstagedStatus = "deleted";
+          } else if (unstagedCode === "M") {
+            unstagedStatus = "modified";
+          } else if (unstagedCode === "A") {
+            unstagedStatus = "added";
+          }
+        }
+
+        fileMap.set(newFilePath, {
+          path: newFilePath,
           status,
           hasStaged,
           hasUnstaged,
-        };
-      });
+          oldPath: oldFilePath,
+          unstagedStatus,
+        });
+      } else if (line.startsWith("? ")) {
+        // Untracked file
+        const filePath = line.slice(2);
+        fileMap.set(filePath, {
+          path: filePath,
+          status: "added",
+          hasStaged: false,
+          hasUnstaged: true,
+        });
+      }
+    }
 
-    return files;
+    return Array.from(fileMap.values());
   } catch (error) {
     console.error("Error getting git status:", error);
-    console.error(
-      "Error details:",
-      error instanceof Error ? error.stack : error
-    );
     throw error;
   }
 };
@@ -382,17 +461,19 @@ export const stageFile = async (repoPath: string, filepath: string) => {
   }
 };
 
-export const unstageFile = async (repoPath: string, filepath: string) => {
+export const unstageChange = async (
+  repoPath: string,
+  filepath: string,
+  oldFilePath?: string
+) => {
   try {
-    // Use resetIndex to unstage the file (keep workdir changes)
-    await git.resetIndex({
-      fs,
-      dir: repoPath,
-      filepath,
-    });
+    const paths = oldFilePath ? [filepath, oldFilePath] : [filepath];
+    await Promise.all(
+      paths.map((path) => git.resetIndex({ fs, dir: repoPath, filepath: path }))
+    );
     return { success: true };
   } catch (error) {
-    console.error("Error unstaging file:", error);
+    console.error("Error unstaging change:", error);
     throw error;
   }
 };
@@ -649,8 +730,7 @@ export const checkout = async (repoPath: string, branchName: string) => {
         } catch (error) {
           console.error("Error checking out branch:", error);
           throw new Error(
-            `Failed to checkout branch: ${
-              error instanceof Error ? error.message : String(error)
+            `Failed to checkout branch: ${error instanceof Error ? error.message : String(error)
             }`
           );
         }
@@ -683,8 +763,7 @@ export const checkout = async (repoPath: string, branchName: string) => {
           } catch (error) {
             console.error("Error creating tracking branch:", error);
             throw new Error(
-              `Failed to checkout remote branch: ${
-                error instanceof Error ? error.message : String(error)
+              `Failed to checkout remote branch: ${error instanceof Error ? error.message : String(error)
               }`
             );
           }
@@ -813,13 +892,20 @@ export const getDiff = async (
   repoPath: string,
   filepath: string,
   staged: boolean = false,
-  contextLines: number = 999999
+  contextLines: number = 999999,
+  oldFilePath?: string
 ) => {
   try {
-    // Use git diff to get the actual diff
-    const diffCommand = staged
-      ? `git diff --cached -U${contextLines} -- "${filepath}"` // --cached for staged
-      : `git diff -U${contextLines} -- "${filepath}"`; // unstaged changes
+    let diffCommand: string;
+
+    if (staged && oldFilePath) {
+      // For staged renamed files, compare HEAD's old path with staged new path
+      diffCommand = `git diff -U${contextLines} HEAD:"${oldFilePath}" :"${filepath}"`;
+    } else if (staged) {
+      diffCommand = `git diff --cached -U${contextLines} -- "${filepath}"`;
+    } else {
+      diffCommand = `git diff -U${contextLines} -- "${filepath}"`;
+    }
 
     let diffOutput = "";
     try {

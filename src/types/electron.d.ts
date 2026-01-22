@@ -14,6 +14,8 @@ export interface FileStatus {
   status: "modified" | "added" | "deleted";
   hasStaged: boolean;
   hasUnstaged: boolean;
+  oldPath?: string;
+  unstagedStatus?: "modified" | "added" | "deleted";
 }
 
 export interface Commit {
@@ -89,7 +91,7 @@ export interface ElectronAPI {
   ) => Promise<{ success: boolean; error?: string }>;
   getStatus: (repoPath: string) => Promise<FileStatus[]>;
   stageFile: (repoPath: string, filepath: string) => Promise<void>;
-  unstageFile: (repoPath: string, filepath: string) => Promise<void>;
+  unstageChange: (repoPath: string, filepath: string, oldFilePath?: string) => Promise<void>;
   unstageAllFiles: (repoPath: string) => Promise<void>;
   stageLines: (
     repoPath: string,
@@ -111,7 +113,8 @@ export interface ElectronAPI {
     repoPath: string,
     filepath: string,
     staged?: boolean,
-    contextLines?: number
+    contextLines?: number,
+    oldFilePath?: string
   ) => Promise<DiffLine[]>;
   listStashes: (repoPath: string) => Promise<Stash[]>;
   stash: (

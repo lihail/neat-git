@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { RepoSelector } from "@/components/git/RepoSelector";
 import { SidebarAccordion } from "@/components/git/SidebarAccordion";
 import { ChangedFilesSidebar } from "@/components/git/ChangedFilesSidebar";
@@ -16,7 +16,7 @@ import {
   getCurrentBranch,
   getStatus,
   stageFile,
-  unstageFile,
+  unstageChange,
   getDiff,
   createBranch,
   checkoutBranch,
@@ -239,6 +239,25 @@ export const Index = () => {
     }));
   };
 
+  // Clear selection if selected file no longer exists in the file list
+  useEffect(() => {
+    if (!repoPath || !currentState?.selectedFile) {
+      return;
+    }
+
+    const selectedFileExists = currentState.files.some(
+      (f) => f.path === currentState.selectedFile
+    );
+
+    if (!selectedFileExists) {
+      updateRepoState(repoPath, {
+        selectedFile: undefined,
+        selectedFileIsStaged: undefined,
+        diffLines: [],
+      });
+    }
+  }, [repoPath, currentState?.files, currentState?.selectedFile]);
+
   // Load real Git data when active tab changes
   useEffect(() => {
     if (repoPath && !repoStates[repoPath]) {
@@ -278,7 +297,22 @@ export const Index = () => {
     }
   }, [repoPath]);
 
-  // Load diff when selected file changes or view mode changes
+  // Memoize the selected file's oldPath for renamed files
+  // Only use oldPath when viewing staged (renames are always staged)
+  const selectedFileOldPath = useMemo(() => {
+    if (!currentState?.selectedFile) {
+      return undefined;
+    }
+    const file = currentState.files.find(
+      (f) => f.path === currentState.selectedFile
+    );
+    if (!file?.oldPath) {
+      return undefined;
+    }
+    return currentState.selectedFileIsStaged ? file.oldPath : undefined;
+  }, [currentState?.files, currentState?.selectedFile, currentState?.selectedFileIsStaged]);
+
+  // Load diff when selected file changes, view mode changes, or rename status changes
   // Note: We intentionally don't include selectedFileIsStaged in dependencies
   // to avoid reloading when programmatically updating the section after staging
   useEffect(() => {
@@ -290,7 +324,8 @@ export const Index = () => {
             repoPath,
             currentState.selectedFile!,
             currentState.selectedFileIsStaged ?? false,
-            getContextLinesForMode(diffViewerMode)
+            getContextLinesForMode(diffViewerMode),
+            selectedFileOldPath
           );
           updateRepoState(repoPath, { diffLines: diff });
         } catch (error) {
@@ -309,7 +344,7 @@ export const Index = () => {
       updateRepoState(repoPath, { diffLines: [] });
       setLoadingDiff(false);
     }
-  }, [repoPath, currentState?.selectedFile, diffViewerMode]);
+  }, [repoPath, currentState?.selectedFile, diffViewerMode, selectedFileOldPath]);
 
   // Refresh git data when window regains focus
   useEffect(() => {
@@ -362,11 +397,19 @@ export const Index = () => {
 
         // Reload diff if a file is selected
         if (currentState?.selectedFile) {
+          const selectedFileData = statusList.find(
+            (f) => f.path === currentState.selectedFile
+          );
+          // Only use oldPath when viewing staged (renames are always staged)
+          const effectiveOldPath = newSelectedFileIsStaged
+            ? selectedFileData?.oldPath
+            : undefined;
           const diff = await getDiff(
             repoPath,
             currentState.selectedFile,
             newSelectedFileIsStaged ?? false,
-            getContextLinesForMode(diffViewerMode)
+            getContextLinesForMode(diffViewerMode),
+            effectiveOldPath
           );
           updateRepoState(repoPath, { diffLines: diff });
         }
@@ -449,8 +492,7 @@ export const Index = () => {
         // Stage the file
         await stageFile(repoPath, path);
       } else {
-        // Unstage the file
-        await unstageFile(repoPath, path);
+        await unstageChange(repoPath, path, fileBeforeAction?.oldPath);
       }
 
       // Refresh the git status
@@ -458,15 +500,21 @@ export const Index = () => {
 
       // If this is the selected file, update which section it's shown in
       if (currentState.selectedFile === path) {
-        // Only reload diff if file was in both sections (meaning changes shifted)
+        // Reload diff if file was in both sections (meaning staged/unstaged content differs)
         if (wasInBothSections) {
           setLoadingDiff(true);
           try {
+            const selectedFileData = statusList.find((f) => f.path === path);
+            // Only use oldPath when viewing staged (renames are always staged)
+            const effectiveOldPath = shouldStage
+              ? selectedFileData?.oldPath
+              : undefined;
             const diff = await getDiff(
               repoPath,
               path,
               shouldStage,
-              getContextLinesForMode(diffViewerMode)
+              getContextLinesForMode(diffViewerMode),
+              effectiveOldPath
             );
             updateRepoState(repoPath, {
               files: statusList,
@@ -589,11 +637,15 @@ export const Index = () => {
         if (wasInBothSections) {
           setLoadingDiff(true);
           try {
+            const selectedFileData = statusList.find(
+              (f) => f.path === currentState.selectedFile
+            );
             const diff = await getDiff(
               repoPath,
               currentState.selectedFile,
               true,
-              getContextLinesForMode(diffViewerMode)
+              getContextLinesForMode(diffViewerMode),
+              selectedFileData?.oldPath
             );
             updateRepoState(repoPath, {
               files: statusList,
@@ -639,9 +691,8 @@ export const Index = () => {
       // Get all staged files
       const stagedFiles = currentState.files.filter((f) => f.hasStaged);
 
-      // Unstage each file individually
       for (const file of stagedFiles) {
-        await unstageFile(repoPath, file.path);
+        await unstageChange(repoPath, file.path, file.oldPath);
       }
 
       // Refresh the git status
@@ -656,11 +707,15 @@ export const Index = () => {
         if (wasInBothSections) {
           setLoadingDiff(true);
           try {
+            const selectedFileData = statusList.find(
+              (f) => f.path === currentState.selectedFile
+            );
             const diff = await getDiff(
               repoPath,
               currentState.selectedFile,
               false,
-              getContextLinesForMode(diffViewerMode)
+              getContextLinesForMode(diffViewerMode),
+              selectedFileData?.oldPath
             );
             updateRepoState(repoPath, {
               files: statusList,
@@ -1139,6 +1194,11 @@ export const Index = () => {
       currentState.selectedFile === filePath &&
       currentState.selectedFileIsStaged !== isStaged;
 
+    // Find the file to get oldPath for renamed files
+    const fileData = currentState.files.find((f) => f.path === filePath);
+    // Only use oldPath when viewing staged (renames are always staged)
+    const effectiveOldPath = isStaged ? fileData?.oldPath : undefined;
+
     // Update selection state
     updateRepoState(repoPath, {
       selectedFile: filePath,
@@ -1153,7 +1213,8 @@ export const Index = () => {
           repoPath,
           filePath,
           isStaged,
-          getContextLinesForMode(diffViewerMode)
+          getContextLinesForMode(diffViewerMode),
+          effectiveOldPath
         );
         updateRepoState(repoPath, { diffLines: diff });
       } catch (error) {
@@ -1374,7 +1435,9 @@ export const Index = () => {
 
     // Get the branch object to check if it has unpushed commits
     const state = repoStates[repoPath];
-    if (!state) return;
+    if (!state) {
+      return;
+    }
 
     const branch = state.branches.find((b) => b.name === branchName);
     if (!branch) {
@@ -1536,6 +1599,7 @@ export const Index = () => {
           >
             <DiffViewer
               filePath={currentState.selectedFile}
+              oldFilePath={selectedFileOldPath}
               lines={currentState.diffLines}
               fileStatus={
                 currentState.selectedFile
