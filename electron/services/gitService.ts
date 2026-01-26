@@ -877,6 +877,7 @@ export const getDiff = async (
             type: "add" as const,
             content: line,
             lineNumber: index + 1,
+            newLineNumber: index + 1,
           }));
         }
       }
@@ -888,12 +889,15 @@ export const getDiff = async (
       type: "add" | "delete" | "context";
       content: string;
       lineNumber: number;
+      oldLineNumber?: number;
+      newLineNumber?: number;
       hunkIndex?: number;
       hunkHeader?: string;
     }> = [];
 
     const lines = diffOutput.split("\n");
-    let lineNumber = 0;
+    let oldLineNumber = 0;
+    let newLineNumber = 0;
     let inHunk = false;
     let hunkIndex = -1;
     let currentHunkHeader = "";
@@ -914,10 +918,11 @@ export const getDiff = async (
         inHunk = true;
         hunkIndex++;
         currentHunkHeader = line;
-        // Extract starting line number from hunk header
-        const match = line.match(/@@\s*-\d+(?:,\d+)?\s+\+(\d+)/);
+        // Extract starting line numbers from hunk header: @@ -oldStart,oldCount +newStart,newCount @@
+        const match = line.match(/@@\s*-(\d+)(?:,\d+)?\s+\+(\d+)/);
         if (match) {
-          lineNumber = parseInt(match[1]) - 1; // Will be incremented for first line
+          oldLineNumber = parseInt(match[1]) - 1; // Will be incremented for first line
+          newLineNumber = parseInt(match[2]) - 1; // Will be incremented for first line
         }
         continue;
       }
@@ -926,41 +931,50 @@ export const getDiff = async (
 
       // Parse diff lines
       if (line.startsWith("+")) {
-        // Added line
-        lineNumber++;
+        // Added line - increment and use new line number
+        newLineNumber++;
         diffLines.push({
           type: "add",
           content: line.substring(1), // Remove the + prefix
-          lineNumber,
+          lineNumber: newLineNumber,
+          newLineNumber,
           hunkIndex,
           hunkHeader: currentHunkHeader,
         });
       } else if (line.startsWith("-")) {
-        // Deleted line (don't increment line number for deletions)
+        // Deleted line - increment and use old line number
+        oldLineNumber++;
         diffLines.push({
           type: "delete",
           content: line.substring(1), // Remove the - prefix
-          lineNumber: lineNumber + 1, // Show at next line position
+          lineNumber: oldLineNumber,
+          oldLineNumber,
           hunkIndex,
           hunkHeader: currentHunkHeader,
         });
       } else if (line.startsWith(" ")) {
-        // Context line (unchanged)
-        lineNumber++;
+        // Context line (unchanged) - increment both
+        oldLineNumber++;
+        newLineNumber++;
         diffLines.push({
           type: "context",
           content: line.substring(1), // Remove the space prefix
-          lineNumber,
+          lineNumber: newLineNumber,
+          oldLineNumber,
+          newLineNumber,
           hunkIndex,
           hunkHeader: currentHunkHeader,
         });
       } else if (line === "") {
-        // Empty line in context
-        lineNumber++;
+        // Empty line in context - increment both
+        oldLineNumber++;
+        newLineNumber++;
         diffLines.push({
           type: "context",
           content: "",
-          lineNumber,
+          lineNumber: newLineNumber,
+          oldLineNumber,
+          newLineNumber,
           hunkIndex,
           hunkHeader: currentHunkHeader,
         });

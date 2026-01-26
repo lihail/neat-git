@@ -20,6 +20,8 @@ export interface DiffLine {
   type: "add" | "delete" | "context";
   content: string;
   lineNumber: number;
+  oldLineNumber?: number;
+  newLineNumber?: number;
   hunkIndex?: number;
   hunkHeader?: string;
 }
