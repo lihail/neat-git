@@ -18,7 +18,7 @@ build({
   target: 'node18',
   format: 'esm',
   outdir: join(rootDir, 'dist-electron'),
-  external: ['electron', 'isomorphic-git', 'fs', 'path', 'buffer', 'util', 'stream', 'events', 'crypto', 'http', 'https', 'url', 'zlib'],
+  external: ['electron', 'isomorphic-git', 'dugite', 'fs', 'path', 'buffer', 'util', 'stream', 'events', 'crypto', 'http', 'https', 'url', 'zlib'],
   sourcemap: isDev,
   minify: !isDev,
   define: {

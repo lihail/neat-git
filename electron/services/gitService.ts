@@ -1,10 +1,7 @@
 import path from "node:path";
 import fs from "node:fs";
 import * as git from "isomorphic-git";
-import { execSync, exec } from "node:child_process";
-import { promisify } from "node:util";
-
-const execAsync = promisify(exec);
+import { execGitCommand } from "./dugiteService";
 
 type FileStatus = {
   path: string;
@@ -20,20 +17,14 @@ export const getGlobalConfig = async () => {
     let userName = "";
     let userEmail = "";
 
-    try {
-      userName = execSync("git config --global user.name", {
-        encoding: "utf8",
-      }).trim();
-    } catch (error) {
-      // user.name not set
+    const nameResult = await execGitCommand(["config", "--global", "user.name"]);
+    if (nameResult.success) {
+      userName = nameResult.output.trim();
     }
 
-    try {
-      userEmail = execSync("git config --global user.email", {
-        encoding: "utf8",
-      }).trim();
-    } catch (error) {
-      // user.email not set
+    const emailResult = await execGitCommand(["config", "--global", "user.email"]);
+    if (emailResult.success) {
+      userEmail = emailResult.output.trim();
     }
 
     return {
@@ -53,15 +44,11 @@ export const getGlobalConfig = async () => {
 export const setGlobalConfig = async (userName: string, userEmail: string) => {
   try {
     if (userName) {
-      execSync(`git config --global user.name "${userName}"`, {
-        encoding: "utf8",
-      });
+      await execGitCommand(["config", "--global", "user.name", userName]);
     }
 
     if (userEmail) {
-      execSync(`git config --global user.email "${userEmail}"`, {
-        encoding: "utf8",
-      });
+      await execGitCommand(["config", "--global", "user.email", userEmail]);
     }
 
     return { success: true };
@@ -155,23 +142,16 @@ export const listBranches = async (repoPath: string) => {
 
         try {
           // Check if branch has an upstream tracking branch using git for-each-ref
-          try {
-            const result = execSync(
-              `git -C "${repoPath}" for-each-ref --format='%(upstream:short)' "refs/heads/${name}"`,
-              {
-                encoding: "utf8",
-                stdio: ["pipe", "pipe", "pipe"],
-              }
-            );
-            // If the result is not empty, the branch has an upstream
-            const trimmedResult = result.trim();
+          const upstreamResult = await execGitCommand(
+            ["for-each-ref", "--format=%(upstream:short)", `refs/heads/${name}`],
+            repoPath
+          );
+          if (upstreamResult.success) {
+            const trimmedResult = upstreamResult.output.trim();
             if (trimmedResult.length > 0) {
               hasUpstream = true;
               upstreamName = trimmedResult.replace(/^origin\//, "");
             }
-          } catch (upstreamError) {
-            // Error checking upstream, assume no upstream
-            hasUpstream = false;
           }
 
           // Try to get the tracking branch info
@@ -302,10 +282,11 @@ export const getStatus = async (repoPath: string) => {
 
     // Use git status --porcelain=v2 for rename detection
     // -M flag enables rename detection with default 50% similarity threshold
-    const statusOutput = execSync("git status --porcelain=v2 -M", {
-      cwd: repoPath,
-      encoding: "utf8",
-    });
+    const statusResult = await execGitCommand(["status", "--porcelain=v2", "-M"], repoPath);
+    if (!statusResult.success) {
+      throw new Error(`git status failed: ${statusResult.error}`);
+    }
+    const statusOutput = statusResult.output;
 
     const fileMap = new Map<string, FileStatus>();
 
@@ -601,20 +582,15 @@ export const renameBranch = async (
   try {
     // Get the upstream tracking branch before renaming
     let upstreamBranch: string | null = null;
-    try {
-      const result = execSync(
-        `git -C "${repoPath}" for-each-ref --format='%(upstream:short)' "refs/heads/${oldName}"`,
-        {
-          encoding: "utf8",
-          stdio: ["pipe", "pipe", "pipe"],
-        }
-      );
-      const trimmed = result.trim();
+    const upstreamResult = await execGitCommand(
+      ["for-each-ref", "--format=%(upstream:short)", `refs/heads/${oldName}`],
+      repoPath
+    );
+    if (upstreamResult.success) {
+      const trimmed = upstreamResult.output.trim();
       if (trimmed.length > 0) {
         upstreamBranch = trimmed;
       }
-    } catch (error) {
-      // No upstream configured, which is fine
     }
 
     // Rename local branch
@@ -639,29 +615,24 @@ export const renameBranch = async (
           : "origin";
 
         // Push the new branch to remote with upstream tracking
-        await execAsync(`git push -u ${remoteName} ${newName}`, {
-          cwd: repoPath,
-          encoding: "utf8",
-        });
+        const pushResult = await execGitCommand(["push", "-u", remoteName, newName], repoPath);
+        if (!pushResult.success) {
+          throw new Error(`Failed to push branch during rename: ${pushResult.error}`);
+        }
 
         // Delete the old branch from remote using the actual remote branch name
-        try {
-          await execAsync(
-            `git push ${remoteName} --delete ${remoteBranchName}`,
-            {
-              cwd: repoPath,
-              encoding: "utf8",
-            }
-          );
-        } catch (deleteError: any) {
+        const deleteResult = await execGitCommand(
+          ["push", remoteName, "--delete", remoteBranchName],
+          repoPath
+        );
+        if (!deleteResult.success) {
           // Check if the error is due to trying to delete the default branch
-          const errorMessage = deleteError.message || String(deleteError);
-          if (errorMessage.includes("refusing to delete the current branch")) {
+          if (deleteResult.error.includes("refusing to delete the current branch")) {
             throw new Error(
               `Local branch renamed to "${newName}" and pushed to remote, but could not delete old branch "${remoteBranchName}" because it is the default branch on the remote. Please change the default branch on GitHub/GitLab first, then delete "${remoteBranchName}" manually.`
             );
           }
-          throw deleteError;
+          throw new Error(`Failed to delete remote branch during rename: ${deleteResult.error}`);
         }
       } catch (remoteError) {
         console.error("Error renaming branch on remote:", remoteError);
@@ -669,15 +640,12 @@ export const renameBranch = async (
       }
     } else if (upstreamBranch && !alsoRenameRemote) {
       // Not renaming on remote, just restore the existing upstream tracking
-      try {
-        execSync(
-          `git -C "${repoPath}" branch --set-upstream-to="${upstreamBranch}" "${newName}"`,
-          {
-            stdio: ["pipe", "pipe", "pipe"],
-          }
-        );
-      } catch (error) {
-        console.error("Error restoring upstream tracking:", error);
+      const setUpstreamResult = await execGitCommand(
+        ["branch", `--set-upstream-to=${upstreamBranch}`, newName],
+        repoPath
+      );
+      if (!setUpstreamResult.success) {
+        console.error("Error restoring upstream tracking during rename:", setUpstreamResult.error);
         // Don't fail the whole operation if this fails
       }
     }
@@ -718,22 +686,12 @@ export const checkout = async (repoPath: string, branchName: string) => {
 
       if (localBranchExists) {
         // Local branch exists - checkout using git CLI to ensure index is properly reset
-        try {
-          const { stdout, stderr } = await execAsync(
-            `git checkout "${branchName}"`,
-            {
-              cwd: repoPath,
-              encoding: "utf8",
-            }
-          );
-          console.log("Checked out branch:", stdout);
-        } catch (error) {
-          console.error("Error checking out branch:", error);
-          throw new Error(
-            `Failed to checkout branch: ${error instanceof Error ? error.message : String(error)
-            }`
-          );
+        const checkoutResult = await execGitCommand(["checkout", branchName], repoPath);
+        if (!checkoutResult.success) {
+          console.error("Error checking out branch:", checkoutResult.error);
+          throw new Error(`Failed to checkout branch: ${checkoutResult.error}`);
         }
+        console.log("Checked out branch:", checkoutResult.output);
       } else {
         // Local branch doesn't exist - check if remote branch exists
         let remoteBranchExists = false;
@@ -750,23 +708,15 @@ export const checkout = async (repoPath: string, branchName: string) => {
 
         if (remoteBranchExists) {
           // Remote branch exists - create local tracking branch and checkout
-          // Using git CLI for this as it's more reliable for setting up tracking
-          try {
-            const { stdout, stderr } = await execAsync(
-              `git checkout -b "${branchName}" "origin/${branchName}"`,
-              {
-                cwd: repoPath,
-                encoding: "utf8",
-              }
-            );
-            console.log("Created tracking branch:", stdout);
-          } catch (error) {
-            console.error("Error creating tracking branch:", error);
-            throw new Error(
-              `Failed to checkout remote branch: ${error instanceof Error ? error.message : String(error)
-              }`
-            );
+          const checkoutResult = await execGitCommand(
+            ["checkout", "-b", branchName, `origin/${branchName}`],
+            repoPath
+          );
+          if (!checkoutResult.success) {
+            console.error("Error creating tracking branch:", checkoutResult.error);
+            throw new Error(`Failed to checkout remote branch: ${checkoutResult.error}`);
           }
+          console.log("Created tracking branch:", checkoutResult.output);
         } else {
           // Neither local nor remote branch exists
           throw new Error(
@@ -896,33 +846,22 @@ export const getDiff = async (
   oldFilePath?: string
 ) => {
   try {
-    let diffCommand: string;
+    let diffArgs: string[];
 
     if (staged && oldFilePath) {
       // For staged renamed files, compare HEAD's old path with staged new path
-      diffCommand = `git diff -U${contextLines} HEAD:"${oldFilePath}" :"${filepath}"`;
+      diffArgs = ["diff", `-U${contextLines}`, `HEAD:${oldFilePath}`, `:${filepath}`];
     } else if (staged) {
-      diffCommand = `git diff --cached -U${contextLines} -- "${filepath}"`;
+      diffArgs = ["diff", "--cached", `-U${contextLines}`, "--", filepath];
     } else {
-      diffCommand = `git diff -U${contextLines} -- "${filepath}"`;
+      diffArgs = ["diff", `-U${contextLines}`, "--", filepath];
     }
 
-    let diffOutput = "";
-    try {
-      diffOutput = execSync(diffCommand, {
-        cwd: repoPath,
-        encoding: "utf8",
-        maxBuffer: 10 * 1024 * 1024,
-      });
-    } catch (error: any) {
-      // Git diff exits with code 1 when there are differences, which is normal
-      if (error.stdout) {
-        diffOutput = error.stdout;
-      } else {
-        // No diff or error
-        return [];
-      }
+    const diffResult = await execGitCommand(diffArgs, repoPath);
+    if (!diffResult.success) {
+      return [];
     }
+    const diffOutput = diffResult.output;
 
     // If no diff output, check if it's a new file
     if (!diffOutput.trim()) {
@@ -1226,12 +1165,10 @@ export const stash = async (repoPath: string, message: string) => {
 
 export const popStash = async (repoPath: string, index: number) => {
   try {
-    // Use native git command - isomorphic-git's pop has bugs
-    execSync(`git stash pop stash@{${index}}`, {
-      cwd: repoPath,
-      encoding: "utf8",
-      stdio: "pipe",
-    });
+    const result = await execGitCommand(["stash", "pop", `stash@{${index}}`], repoPath);
+    if (!result.success) {
+      throw new Error(`Failed to pop stash: ${result.error}`);
+    }
     return { success: true, message: "Stash popped successfully" };
   } catch (error) {
     console.error("Error popping stash:", error);
@@ -1241,12 +1178,10 @@ export const popStash = async (repoPath: string, index: number) => {
 
 export const deleteStash = async (repoPath: string, index: number) => {
   try {
-    // Use native git command for reliability
-    execSync(`git stash drop stash@{${index}}`, {
-      cwd: repoPath,
-      encoding: "utf8",
-      stdio: "pipe",
-    });
+    const result = await execGitCommand(["stash", "drop", `stash@{${index}}`], repoPath);
+    if (!result.success) {
+      throw new Error(`Failed to delete stash: ${result.error}`);
+    }
     return { success: true, message: "Stash deleted successfully" };
   } catch (error) {
     console.error("Error deleting stash:", error);
@@ -1364,21 +1299,17 @@ export const stageLines = async (
     const tempPatchPath = path.join(repoPath, ".git", "temp_stage.patch");
     fs.writeFileSync(tempPatchPath, patchContent);
 
-    try {
-      execSync(`git apply --cached "${tempPatchPath}"`, {
-        cwd: repoPath,
-        stdio: "pipe",
-      });
-    } catch (applyError) {
+    const applyResult = await execGitCommand(["apply", "--cached", tempPatchPath], repoPath);
+    if (!applyResult.success) {
       console.error(
         "Patch application failed, falling back to full file staging"
       );
       // Fallback: stage the whole file
       await git.add({ fs, dir: repoPath, filepath });
-    } finally {
-      if (fs.existsSync(tempPatchPath)) {
-        fs.unlinkSync(tempPatchPath);
-      }
+    }
+
+    if (fs.existsSync(tempPatchPath)) {
+      fs.unlinkSync(tempPatchPath);
     }
 
     return { success: true };
@@ -1476,24 +1407,25 @@ export const clone = async (
       cloneUrl = url;
     }
 
-    // Build git command with credential helper config
-    let gitCommand = "git";
+    // Build git args with credential helper config
+    const cloneArgs: string[] = [];
     if (!saveCredentials && isHttpsUrl) {
       // Only apply credential helper config for HTTPS URLs
       // SSH doesn't use credential helpers
-      gitCommand = `git -c "credential.helper="`;
+      cloneArgs.push("-c", "credential.helper=");
     }
+    cloneArgs.push("clone", cloneUrl, destination);
 
-    // Execute git clone asynchronously
-    await execAsync(`${gitCommand} clone "${cloneUrl}" "${destination}"`, {
-      encoding: "utf8",
-    });
+    // Execute git clone
+    const result = await execGitCommand(cloneArgs, process.cwd());
+    if (!result.success) {
+      throw { stderr: result.error, message: result.error };
+    }
 
     return { success: true, path: destination };
   } catch (error: any) {
     console.error("Error cloning repository:", error);
 
-    // execAsync errors include stderr which has the actual git error
     const errorMessage = error.stderr || error.message || String(error);
     const lowerError = errorMessage.toLowerCase();
 
@@ -1604,11 +1536,11 @@ export const clone = async (
 
 export const getRemoteUrl = async (repoPath: string) => {
   try {
-    const { stdout } = await execAsync("git remote get-url origin", {
-      cwd: repoPath,
-      encoding: "utf8",
-    });
-    return { success: true, url: String(stdout).trim() };
+    const result = await execGitCommand(["remote", "get-url", "origin"], repoPath);
+    if (!result.success) {
+      return { success: false, error: result.error };
+    }
+    return { success: true, url: result.output.trim() };
   } catch (error: any) {
     console.error("Error getting remote URL:", error);
     const errorMessage = String(error.message || error);
@@ -1649,14 +1581,8 @@ export const fetch = async (
 
     // Get remote URL to check if it's HTTPS
     let remoteUrl = "";
-    try {
-      const { stdout } = await execAsync("git remote get-url origin", {
-        cwd: repoPath,
-        encoding: "utf8",
-      });
-      remoteUrl = stdout.trim();
-      originalRemoteUrl = remoteUrl;
-    } catch (error) {
+    const remoteResult = await execGitCommand(["remote", "get-url", "origin"], repoPath);
+    if (!remoteResult.success) {
       // No remote configured
       return {
         success: false,
@@ -1664,13 +1590,14 @@ export const fetch = async (
         needsAuth: false,
       };
     }
+    remoteUrl = remoteResult.output.trim();
+    originalRemoteUrl = remoteUrl;
 
     const isHttpsUrl =
       remoteUrl.startsWith("https://") || remoteUrl.startsWith("http://");
 
-    // Build git command with credentials if provided
-    let gitCommand = "git";
-    let fetchCommand = "fetch --all --prune";
+    // Build fetch args
+    const fetchArgs = ["fetch", "--all", "--prune"];
 
     // Check if credentials are provided (not null, undefined, or empty)
     if (username && password && isHttpsUrl) {
@@ -1681,59 +1608,29 @@ export const fetch = async (
         urlObj.password = encodeURIComponent(password);
         const authenticatedUrl = urlObj.toString();
 
-        // Use -c credential.helper to manage credential storage
-        if (!saveCredentials) {
-          gitCommand = `git -c "credential.helper="`;
-        }
+        // Build fetch args with credential helper config if not saving
+        const authFetchArgs = !saveCredentials
+          ? ["-c", "credential.helper=", ...fetchArgs]
+          : [...fetchArgs];
 
         // Temporarily update the remote URL, fetch, then restore it
-        await execAsync(`git remote set-url origin "${authenticatedUrl}"`, {
-          cwd: repoPath,
-          encoding: "utf8",
-        });
+        await execGitCommand(["remote", "set-url", "origin", authenticatedUrl], repoPath);
 
-        try {
-          await execAsync(`${gitCommand} ${fetchCommand}`, {
-            cwd: repoPath,
-            encoding: "utf8",
-          });
-        } catch (fetchError: any) {
-          // Restore original URL before re-throwing
-          if (originalRemoteUrl) {
-            try {
-              await execAsync(
-                `git remote set-url origin "${originalRemoteUrl}"`,
-                {
-                  cwd: repoPath,
-                  encoding: "utf8",
-                }
-              );
-            } catch (restoreError) {
-              console.error(
-                "Failed to restore original remote URL:",
-                restoreError
-              );
-            }
+        const fetchResult = await execGitCommand(authFetchArgs, repoPath);
+
+        // Restore original URL
+        if (originalRemoteUrl) {
+          const restoreResult = await execGitCommand(
+            ["remote", "set-url", "origin", originalRemoteUrl],
+            repoPath
+          );
+          if (!restoreResult.success) {
+            console.error("Failed to restore original remote URL:", restoreResult.error);
           }
-          throw fetchError;
         }
 
-        // Restore original URL after successful fetch
-        if (originalRemoteUrl) {
-          try {
-            await execAsync(
-              `git remote set-url origin "${originalRemoteUrl}"`,
-              {
-                cwd: repoPath,
-                encoding: "utf8",
-              }
-            );
-          } catch (restoreError) {
-            console.error(
-              "Failed to restore original remote URL:",
-              restoreError
-            );
-          }
+        if (!fetchResult.success) {
+          throw { stderr: fetchResult.error, message: fetchResult.error };
         }
       } catch (error: any) {
         // If URL parsing or remote setting fails, return a clean error
@@ -1764,14 +1661,14 @@ export const fetch = async (
       }
     } else {
       // No credentials or SSH URL - fetch normally
-      if (!saveCredentials && isHttpsUrl) {
-        gitCommand = `git -c "credential.helper="`;
-      }
+      const noCredFetchArgs = !saveCredentials && isHttpsUrl
+        ? ["-c", "credential.helper=", ...fetchArgs]
+        : [...fetchArgs];
 
-      await execAsync(`${gitCommand} ${fetchCommand}`, {
-        cwd: repoPath,
-        encoding: "utf8",
-      });
+      const fetchResult = await execGitCommand(noCredFetchArgs, repoPath);
+      if (!fetchResult.success) {
+        throw { stderr: fetchResult.error, message: fetchResult.error };
+      }
     }
 
     return { success: true };
@@ -1862,14 +1759,8 @@ export const push = async (
 
     // Get remote URL to check if it's HTTPS
     let remoteUrl = "";
-    try {
-      const { stdout } = await execAsync("git remote get-url origin", {
-        cwd: repoPath,
-        encoding: "utf8",
-      });
-      remoteUrl = stdout.trim();
-      originalRemoteUrl = remoteUrl;
-    } catch (error) {
+    const remoteResult = await execGitCommand(["remote", "get-url", "origin"], repoPath);
+    if (!remoteResult.success) {
       // No remote configured
       return {
         success: false,
@@ -1877,13 +1768,11 @@ export const push = async (
         needsAuth: false,
       };
     }
+    remoteUrl = remoteResult.output.trim();
+    originalRemoteUrl = remoteUrl;
 
     const isHttpsUrl =
       remoteUrl.startsWith("https://") || remoteUrl.startsWith("http://");
-
-    // Build git command with credentials if provided
-    let gitCommand = "git";
-    let pushCommand = "push";
 
     // Check if credentials are provided (not null, undefined, or empty)
     if (username && password && isHttpsUrl) {
@@ -1894,59 +1783,29 @@ export const push = async (
         urlObj.password = encodeURIComponent(password);
         const authenticatedUrl = urlObj.toString();
 
-        // Use -c credential.helper to manage credential storage
-        if (!saveCredentials) {
-          gitCommand = `git -c "credential.helper="`;
-        }
+        // Build push args with credential helper config if not saving
+        const authPushArgs = saveCredentials
+          ? ["push"]
+          : ["-c", "credential.helper=", "push"];
 
         // Temporarily update the remote URL, push, then restore it
-        await execAsync(`git remote set-url origin "${authenticatedUrl}"`, {
-          cwd: repoPath,
-          encoding: "utf8",
-        });
+        await execGitCommand(["remote", "set-url", "origin", authenticatedUrl], repoPath);
 
-        try {
-          await execAsync(`${gitCommand} ${pushCommand}`, {
-            cwd: repoPath,
-            encoding: "utf8",
-          });
-        } catch (pushError: any) {
-          // Restore original URL before re-throwing
-          if (originalRemoteUrl) {
-            try {
-              await execAsync(
-                `git remote set-url origin "${originalRemoteUrl}"`,
-                {
-                  cwd: repoPath,
-                  encoding: "utf8",
-                }
-              );
-            } catch (restoreError) {
-              console.error(
-                "Failed to restore original remote URL:",
-                restoreError
-              );
-            }
+        const pushResult = await execGitCommand(authPushArgs, repoPath);
+
+        // Restore original URL
+        if (originalRemoteUrl) {
+          const restoreResult = await execGitCommand(
+            ["remote", "set-url", "origin", originalRemoteUrl],
+            repoPath
+          );
+          if (!restoreResult.success) {
+            console.error("Failed to restore original remote URL:", restoreResult.error);
           }
-          throw pushError;
         }
 
-        // Restore original URL after successful push
-        if (originalRemoteUrl) {
-          try {
-            await execAsync(
-              `git remote set-url origin "${originalRemoteUrl}"`,
-              {
-                cwd: repoPath,
-                encoding: "utf8",
-              }
-            );
-          } catch (restoreError) {
-            console.error(
-              "Failed to restore original remote URL:",
-              restoreError
-            );
-          }
+        if (!pushResult.success) {
+          throw { stderr: pushResult.error, message: pushResult.error };
         }
       } catch (error: any) {
         // If URL parsing or remote setting fails, return a clean error
@@ -1977,14 +1836,14 @@ export const push = async (
       }
     } else {
       // No credentials or SSH URL - push normally
-      if (!saveCredentials && isHttpsUrl) {
-        gitCommand = `git -c "credential.helper="`;
-      }
+      const noCredPushArgs = !saveCredentials && isHttpsUrl
+        ? ["-c", "credential.helper=", "push"]
+        : ["push"];
 
-      await execAsync(`${gitCommand} ${pushCommand}`, {
-        cwd: repoPath,
-        encoding: "utf8",
-      });
+      const pushResult = await execGitCommand(noCredPushArgs, repoPath);
+      if (!pushResult.success) {
+        throw { stderr: pushResult.error, message: pushResult.error };
+      }
     }
 
     return { success: true };
@@ -2096,14 +1955,8 @@ const pull = async (
 
     // Get remote URL to check if it's HTTPS
     let remoteUrl = "";
-    try {
-      const { stdout } = await execAsync("git remote get-url origin", {
-        cwd: repoPath,
-        encoding: "utf8",
-      });
-      remoteUrl = stdout.trim();
-      originalRemoteUrl = remoteUrl;
-    } catch (error) {
+    const remoteResult = await execGitCommand(["remote", "get-url", "origin"], repoPath);
+    if (!remoteResult.success) {
       // No remote configured
       return {
         success: false,
@@ -2111,17 +1964,17 @@ const pull = async (
         needsAuth: false,
       };
     }
+    remoteUrl = remoteResult.output.trim();
+    originalRemoteUrl = remoteUrl;
 
     const isHttpsUrl =
       remoteUrl.startsWith("https://") || remoteUrl.startsWith("http://");
 
-    // Build git command with credentials if provided
-    let gitCommand = "git";
     // If branchName is provided, use fetch to update specific branch without checking it out
     // Otherwise, use pull to update and merge current branch
-    const gitOperation = branchName
-      ? `fetch origin ${branchName}:${branchName}`
-      : "pull";
+    const operationArgs = branchName
+      ? ["fetch", "origin", `${branchName}:${branchName}`]
+      : ["pull"];
 
     // Check if credentials are provided (not null, undefined, or empty)
     if (username && password && isHttpsUrl) {
@@ -2132,59 +1985,29 @@ const pull = async (
         urlObj.password = encodeURIComponent(password);
         const authenticatedUrl = urlObj.toString();
 
-        // Use -c credential.helper to manage credential storage
-        if (!saveCredentials) {
-          gitCommand = `git -c "credential.helper="`;
-        }
+        // Build args with credential helper config if not saving
+        const authOperationArgs = !saveCredentials
+          ? ["-c", "credential.helper=", ...operationArgs]
+          : [...operationArgs];
 
         // Temporarily update the remote URL, execute git operation, then restore it
-        await execAsync(`git remote set-url origin "${authenticatedUrl}"`, {
-          cwd: repoPath,
-          encoding: "utf8",
-        });
+        await execGitCommand(["remote", "set-url", "origin", authenticatedUrl], repoPath);
 
-        try {
-          await execAsync(`${gitCommand} ${gitOperation}`, {
-            cwd: repoPath,
-            encoding: "utf8",
-          });
-        } catch (operationError: any) {
-          // Restore original URL before re-throwing
-          if (originalRemoteUrl) {
-            try {
-              await execAsync(
-                `git remote set-url origin "${originalRemoteUrl}"`,
-                {
-                  cwd: repoPath,
-                  encoding: "utf8",
-                }
-              );
-            } catch (restoreError) {
-              console.error(
-                "Failed to restore original remote URL:",
-                restoreError
-              );
-            }
+        const operationResult = await execGitCommand(authOperationArgs, repoPath);
+
+        // Restore original URL
+        if (originalRemoteUrl) {
+          const restoreResult = await execGitCommand(
+            ["remote", "set-url", "origin", originalRemoteUrl],
+            repoPath
+          );
+          if (!restoreResult.success) {
+            console.error("Failed to restore original remote URL:", restoreResult.error);
           }
-          throw operationError;
         }
 
-        // Restore original URL after successful operation
-        if (originalRemoteUrl) {
-          try {
-            await execAsync(
-              `git remote set-url origin "${originalRemoteUrl}"`,
-              {
-                cwd: repoPath,
-                encoding: "utf8",
-              }
-            );
-          } catch (restoreError) {
-            console.error(
-              "Failed to restore original remote URL:",
-              restoreError
-            );
-          }
+        if (!operationResult.success) {
+          throw { stderr: operationResult.error, message: operationResult.error };
         }
       } catch (error: any) {
         // If URL parsing or remote setting fails, return a clean error
@@ -2215,14 +2038,14 @@ const pull = async (
       }
     } else {
       // No credentials or SSH URL - execute git operation normally
-      if (!saveCredentials && isHttpsUrl) {
-        gitCommand = `git -c "credential.helper="`;
-      }
+      const noCredOperationArgs = !saveCredentials && isHttpsUrl
+        ? ["-c", "credential.helper=", ...operationArgs]
+        : [...operationArgs];
 
-      await execAsync(`${gitCommand} ${gitOperation}`, {
-        cwd: repoPath,
-        encoding: "utf8",
-      });
+      const operationResult = await execGitCommand(noCredOperationArgs, repoPath);
+      if (!operationResult.success) {
+        throw { stderr: operationResult.error, message: operationResult.error };
+      }
     }
 
     return { success: true };
