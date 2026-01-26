@@ -97,10 +97,7 @@ export async function getStatus(repoPath: string): Promise<FileStatus[]> {
 /**
  * Stage a file
  */
-export async function stageFile(
-  repoPath: string,
-  filepath: string
-): Promise<void> {
+export async function stageFile(repoPath: string, filepath: string): Promise<void> {
   if (typeof window === "undefined" || !window.electronAPI) {
     console.warn("Electron API not available");
     return;
@@ -188,10 +185,7 @@ export async function getDiff(
 /**
  * Create a new branch and checkout to it
  */
-export async function createBranch(
-  repoPath: string,
-  branchName: string
-): Promise<void> {
+export async function createBranch(repoPath: string, branchName: string): Promise<void> {
   if (typeof window === "undefined" || !window.electronAPI) {
     console.warn("Electron API not available");
     return;
@@ -208,10 +202,7 @@ export async function createBranch(
 /**
  * Checkout an existing branch
  */
-export async function checkoutBranch(
-  repoPath: string,
-  branchName: string
-): Promise<void> {
+export async function checkoutBranch(repoPath: string, branchName: string): Promise<void> {
   if (typeof window === "undefined" || !window.electronAPI) {
     console.warn("Electron API not available");
     return;
@@ -228,10 +219,7 @@ export async function checkoutBranch(
 /**
  * Delete a branch
  */
-export async function deleteBranch(
-  repoPath: string,
-  branchName: string
-): Promise<void> {
+export async function deleteBranch(repoPath: string, branchName: string): Promise<void> {
   if (typeof window === "undefined" || !window.electronAPI) {
     console.warn("Electron API not available");
     return;
@@ -260,12 +248,7 @@ export async function renameBranch(
   }
 
   try {
-    await window.electronAPI.renameBranch(
-      repoPath,
-      oldName,
-      newName,
-      alsoRenameRemote
-    );
+    await window.electronAPI.renameBranch(repoPath, oldName, newName, alsoRenameRemote);
   } catch (error) {
     console.error("Error renaming branch:", error);
     throw error;
@@ -309,10 +292,7 @@ export async function unstageAll(repoPath: string): Promise<void> {
 /**
  * Get commit history
  */
-export async function getCommitHistory(
-  repoPath: string,
-  limit: number = 50
-): Promise<Commit[]> {
+export async function getCommitHistory(repoPath: string, limit: number = 50): Promise<Commit[]> {
   if (typeof window === "undefined" || !window.electronAPI) {
     console.warn("Electron API not available");
     return [];
@@ -341,11 +321,7 @@ export async function commit(
   }
 
   try {
-    const result = await window.electronAPI.commit(
-      repoPath,
-      message,
-      description
-    );
+    const result = await window.electronAPI.commit(repoPath, message, description);
     return result;
   } catch (error) {
     console.error("Error committing:", error);

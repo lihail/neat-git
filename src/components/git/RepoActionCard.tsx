@@ -33,12 +33,7 @@ export const RepoActionCard = ({
       </div>
       <h2 className="text-xl font-semibold mb-4 text-foreground">{title}</h2>
       <p className="text-sm text-muted-foreground mb-6 flex-1">{description}</p>
-      <Button
-        onClick={onClick}
-        className="w-full gap-2"
-        variant="outline"
-        disabled={isLoading}
-      >
+      <Button onClick={onClick} className="w-full gap-2" variant="outline" disabled={isLoading}>
         <Icon className="h-4 w-4" />
         {isLoading && buttonLoadingText ? buttonLoadingText : buttonText}
       </Button>

@@ -89,14 +89,10 @@ export const Index = () => {
   const [isSelectingRepo, setIsSelectingRepo] = useState(tabs.length === 0);
   const [loadingRepos, setLoadingRepos] = useState<Record<string, boolean>>({});
   const [loadingDiff, setLoadingDiff] = useState(false);
-  const [fetchingRepos, setFetchingRepos] = useState<Record<string, boolean>>(
-    {}
-  );
+  const [fetchingRepos, setFetchingRepos] = useState<Record<string, boolean>>({});
   const [pullingRepos, setPullingRepos] = useState<Record<string, boolean>>({});
   const [pushingRepos, setPushingRepos] = useState<Record<string, boolean>>({});
-  const [renamingRepos, setRenamingRepos] = useState<Record<string, boolean>>(
-    {}
-  );
+  const [renamingRepos, setRenamingRepos] = useState<Record<string, boolean>>({});
 
   const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
   const [authDialogError, setAuthDialogError] = useState<string | null>(null);
@@ -107,9 +103,7 @@ export const Index = () => {
   const { diffViewerMode, setDiffViewerMode } = useDiffViewerMode();
 
   // Auto-fetch interval (5 minutes)
-  const [fetchIntervalId, setFetchIntervalId] = useState<NodeJS.Timeout | null>(
-    null
-  );
+  const [fetchIntervalId, setFetchIntervalId] = useState<NodeJS.Timeout | null>(null);
 
   // Clear toasts when switching tabs
   useEffect(() => {
@@ -144,9 +138,7 @@ export const Index = () => {
 
         // Check if repo has a remote configured
         try {
-          const remoteUrlResult = await window.electronAPI.getRemoteUrl(
-            currentRepoPath
-          );
+          const remoteUrlResult = await window.electronAPI.getRemoteUrl(currentRepoPath);
           if (!remoteUrlResult.success) {
             // No remote configured, skip auto-fetch
             return;
@@ -245,9 +237,7 @@ export const Index = () => {
       return;
     }
 
-    const selectedFileExists = currentState.files.some(
-      (f) => f.path === currentState.selectedFile
-    );
+    const selectedFileExists = currentState.files.some((f) => f.path === currentState.selectedFile);
 
     if (!selectedFileExists) {
       updateRepoState(repoPath, {
@@ -285,8 +275,7 @@ export const Index = () => {
         } catch (error) {
           console.error("Error loading Git data:", error);
           toast.error("Failed to load Git repository data", {
-            description:
-              error instanceof Error ? error.message : "Unknown error",
+            description: error instanceof Error ? error.message : "Unknown error",
           });
         } finally {
           // Clear loading state
@@ -303,9 +292,7 @@ export const Index = () => {
     if (!currentState?.selectedFile) {
       return undefined;
     }
-    const file = currentState.files.find(
-      (f) => f.path === currentState.selectedFile
-    );
+    const file = currentState.files.find((f) => f.path === currentState.selectedFile);
     if (!file?.oldPath) {
       return undefined;
     }
@@ -331,8 +318,7 @@ export const Index = () => {
         } catch (error) {
           console.error("Error loading diff:", error);
           toast.error("Failed to load diff", {
-            description:
-              error instanceof Error ? error.message : "Unknown error",
+            description: error instanceof Error ? error.message : "Unknown error",
           });
           updateRepoState(repoPath, { diffLines: [] });
         } finally {
@@ -363,9 +349,7 @@ export const Index = () => {
         // Check if selected file still exists and adjust section if needed
         let newSelectedFileIsStaged = currentState?.selectedFileIsStaged;
         if (currentState?.selectedFile) {
-          const selectedFileStatus = statusList.find(
-            (f) => f.path === currentState.selectedFile
-          );
+          const selectedFileStatus = statusList.find((f) => f.path === currentState.selectedFile);
           if (selectedFileStatus) {
             // If viewing unstaged but file no longer has unstaged changes, switch to staged
             if (
@@ -397,13 +381,9 @@ export const Index = () => {
 
         // Reload diff if a file is selected
         if (currentState?.selectedFile) {
-          const selectedFileData = statusList.find(
-            (f) => f.path === currentState.selectedFile
-          );
+          const selectedFileData = statusList.find((f) => f.path === currentState.selectedFile);
           // Only use oldPath when viewing staged (renames are always staged)
-          const effectiveOldPath = newSelectedFileIsStaged
-            ? selectedFileData?.oldPath
-            : undefined;
+          const effectiveOldPath = newSelectedFileIsStaged ? selectedFileData?.oldPath : undefined;
           const diff = await getDiff(
             repoPath,
             currentState.selectedFile,
@@ -485,8 +465,7 @@ export const Index = () => {
     try {
       // Check if file was in both sections before staging/unstaging
       const fileBeforeAction = currentState.files.find((f) => f.path === path);
-      const wasInBothSections =
-        fileBeforeAction?.hasStaged && fileBeforeAction?.hasUnstaged;
+      const wasInBothSections = fileBeforeAction?.hasStaged && fileBeforeAction?.hasUnstaged;
 
       if (shouldStage) {
         // Stage the file
@@ -506,9 +485,7 @@ export const Index = () => {
           try {
             const selectedFileData = statusList.find((f) => f.path === path);
             // Only use oldPath when viewing staged (renames are always staged)
-            const effectiveOldPath = shouldStage
-              ? selectedFileData?.oldPath
-              : undefined;
+            const effectiveOldPath = shouldStage ? selectedFileData?.oldPath : undefined;
             const diff = await getDiff(
               repoPath,
               path,
@@ -614,8 +591,7 @@ export const Index = () => {
         ? currentState.files.find((f) => f.path === currentState.selectedFile)
         : null;
       const wasInBothSections =
-        selectedFileBeforeAction?.hasStaged &&
-        selectedFileBeforeAction?.hasUnstaged;
+        selectedFileBeforeAction?.hasStaged && selectedFileBeforeAction?.hasUnstaged;
 
       // Get all unstaged files
       const unstagedFiles = currentState.files.filter((f) => f.hasUnstaged);
@@ -629,17 +605,12 @@ export const Index = () => {
       const statusList = await getStatus(repoPath);
 
       // If the selected file was in unstaged section, move selection to staged section
-      if (
-        currentState.selectedFile &&
-        currentState.selectedFileIsStaged === false
-      ) {
+      if (currentState.selectedFile && currentState.selectedFileIsStaged === false) {
         // Only reload diff if file was in both sections
         if (wasInBothSections) {
           setLoadingDiff(true);
           try {
-            const selectedFileData = statusList.find(
-              (f) => f.path === currentState.selectedFile
-            );
+            const selectedFileData = statusList.find((f) => f.path === currentState.selectedFile);
             const diff = await getDiff(
               repoPath,
               currentState.selectedFile,
@@ -685,8 +656,7 @@ export const Index = () => {
         ? currentState.files.find((f) => f.path === currentState.selectedFile)
         : null;
       const wasInBothSections =
-        selectedFileBeforeAction?.hasStaged &&
-        selectedFileBeforeAction?.hasUnstaged;
+        selectedFileBeforeAction?.hasStaged && selectedFileBeforeAction?.hasUnstaged;
 
       // Get all staged files
       const stagedFiles = currentState.files.filter((f) => f.hasStaged);
@@ -699,17 +669,12 @@ export const Index = () => {
       const statusList = await getStatus(repoPath);
 
       // If the selected file was in staged section, move selection to unstaged section
-      if (
-        currentState.selectedFile &&
-        currentState.selectedFileIsStaged === true
-      ) {
+      if (currentState.selectedFile && currentState.selectedFileIsStaged === true) {
         // Only reload diff if file was in both sections
         if (wasInBothSections) {
           setLoadingDiff(true);
           try {
-            const selectedFileData = statusList.find(
-              (f) => f.path === currentState.selectedFile
-            );
+            const selectedFileData = statusList.find((f) => f.path === currentState.selectedFile);
             const diff = await getDiff(
               repoPath,
               currentState.selectedFile,
@@ -760,10 +725,7 @@ export const Index = () => {
       const result = await commit(repoPath, message, description);
 
       if (result.success) {
-        toast.success(
-          `Committed ${stagedCount} file${stagedCount !== 1 ? "s" : ""
-          }: ${message}`
-        );
+        toast.success(`Committed ${stagedCount} file${stagedCount !== 1 ? "s" : ""}: ${message}`);
 
         // Refresh git status, commit history, and branches after commit
         const statusList = await getStatus(repoPath);
@@ -810,14 +772,11 @@ export const Index = () => {
       });
     } catch (error) {
       console.error("Error switching branch:", error);
-      const errorMessage =
-        error instanceof Error ? error.message : "Unknown error";
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
 
       // Check if error is about uncommitted changes
       if (
-        errorMessage.includes(
-          "Your local changes to the following files would be overwritten"
-        ) ||
+        errorMessage.includes("Your local changes to the following files would be overwritten") ||
         errorMessage.includes("Please commit your changes or stash them")
       ) {
         toast.error("Cannot switch branches", {
@@ -878,17 +837,14 @@ export const Index = () => {
               } catch (stashError) {
                 console.error("Error stashing and switching:", stashError);
                 toast.error("Failed to stash and switch", {
-                  description:
-                    stashError instanceof Error
-                      ? stashError.message
-                      : "Unknown error",
+                  description: stashError instanceof Error ? stashError.message : "Unknown error",
                 });
               }
             },
           },
           cancel: {
             label: "Cancel",
-            onClick: () => { },
+            onClick: () => {},
           },
           duration: Infinity,
         });
@@ -967,7 +923,8 @@ export const Index = () => {
 
       await renameBranch(repoPath, oldName, newName, alsoRenameRemote);
       toast.success(
-        `Branch renamed from "${oldName}" to "${newName}"${alsoRenameRemote ? " (including remote)" : ""
+        `Branch renamed from "${oldName}" to "${newName}"${
+          alsoRenameRemote ? " (including remote)" : ""
         }`
       );
 
@@ -1169,19 +1126,19 @@ export const Index = () => {
   // Create branches with current branch marked
   const branchesWithCurrent = currentState
     ? currentState.branches.map((branch) => ({
-      ...branch,
-      current: branch.name === currentState.currentBranch,
-    }))
+        ...branch,
+        current: branch.name === currentState.currentBranch,
+      }))
     : [];
 
   // Format commits for display
   const formattedCommits = currentState
     ? currentState.commits.map((commit) => ({
-      sha: commit.sha,
-      message: commit.message,
-      author: commit.author,
-      date: formatCommitDate(commit.timestamp),
-    }))
+        sha: commit.sha,
+        message: commit.message,
+        author: commit.author,
+        date: formatCommitDate(commit.timestamp),
+      }))
     : [];
 
   const handleSelectFile = async (filePath: string, isStaged: boolean) => {
@@ -1191,8 +1148,7 @@ export const Index = () => {
 
     // Check if we're selecting the same file in a different section
     const isSameFileNewSection =
-      currentState.selectedFile === filePath &&
-      currentState.selectedFileIsStaged !== isStaged;
+      currentState.selectedFile === filePath && currentState.selectedFileIsStaged !== isStaged;
 
     // Find the file to get oldPath for renamed files
     const fileData = currentState.files.find((f) => f.path === filePath);
@@ -1228,11 +1184,7 @@ export const Index = () => {
     }
   };
 
-  const handleFetch = async (
-    username?: string,
-    password?: string,
-    saveCredentials?: boolean
-  ) => {
+  const handleFetch = async (username?: string, password?: string, saveCredentials?: boolean) => {
     if (!repoPath) {
       return;
     }
@@ -1240,12 +1192,7 @@ export const Index = () => {
     try {
       setFetchingRepos((prev) => ({ ...prev, [repoPath]: true }));
 
-      const result = await fetchFromRemote(
-        repoPath,
-        username,
-        password,
-        saveCredentials
-      );
+      const result = await fetchFromRemote(repoPath, username, password, saveCredentials);
 
       if (result.success) {
         toast.success("Successfully fetched from remote");
@@ -1265,9 +1212,7 @@ export const Index = () => {
         // Show authentication dialog (first time - no error yet)
         // Get hostname from remote URL for display
         try {
-          const remoteUrlResult = await window.electronAPI.getRemoteUrl(
-            repoPath
-          );
+          const remoteUrlResult = await window.electronAPI.getRemoteUrl(repoPath);
           if (remoteUrlResult.success) {
             handleAuthDialogOpenChange(true, "fetch");
           }
@@ -1294,11 +1239,7 @@ export const Index = () => {
     }
   };
 
-  const handlePush = async (
-    username?: string,
-    password?: string,
-    saveCredentials?: boolean
-  ) => {
+  const handlePush = async (username?: string, password?: string, saveCredentials?: boolean) => {
     if (!repoPath) {
       return;
     }
@@ -1306,12 +1247,7 @@ export const Index = () => {
     try {
       setPushingRepos((prev) => ({ ...prev, [repoPath]: true }));
 
-      const result = await pushToRemote(
-        repoPath,
-        username,
-        password,
-        saveCredentials
-      );
+      const result = await pushToRemote(repoPath, username, password, saveCredentials);
 
       if (result.success) {
         toast.success("Successfully pushed to remote");
@@ -1331,9 +1267,7 @@ export const Index = () => {
         // Show authentication dialog (first time - no error yet)
         // Get hostname from remote URL for display
         try {
-          const remoteUrlResult = await window.electronAPI.getRemoteUrl(
-            repoPath
-          );
+          const remoteUrlResult = await window.electronAPI.getRemoteUrl(repoPath);
           if (remoteUrlResult.success) {
             handleAuthDialogOpenChange(true, "push");
           }
@@ -1360,11 +1294,7 @@ export const Index = () => {
     }
   };
 
-  const handlePull = async (
-    username?: string,
-    password?: string,
-    saveCredentials?: boolean
-  ) => {
+  const handlePull = async (username?: string, password?: string, saveCredentials?: boolean) => {
     if (!repoPath) {
       return;
     }
@@ -1372,12 +1302,7 @@ export const Index = () => {
     try {
       setPullingRepos((prev) => ({ ...prev, [repoPath]: true }));
 
-      const result = await pullFromRemote(
-        repoPath,
-        username,
-        password,
-        saveCredentials
-      );
+      const result = await pullFromRemote(repoPath, username, password, saveCredentials);
 
       if (result.success) {
         toast.success("Successfully pulled from remote");
@@ -1399,9 +1324,7 @@ export const Index = () => {
         // Show authentication dialog (first time - no error yet)
         // Get hostname from remote URL for display
         try {
-          const remoteUrlResult = await window.electronAPI.getRemoteUrl(
-            repoPath
-          );
+          const remoteUrlResult = await window.electronAPI.getRemoteUrl(repoPath);
           if (remoteUrlResult.success) {
             handleAuthDialogOpenChange(true, "pull");
           }
@@ -1464,13 +1387,7 @@ export const Index = () => {
       // Set pulling state
       setPullingRepos((prev) => ({ ...prev, [repoPath]: true }));
 
-      const result = await pullNonCurrentBranch(
-        repoPath,
-        branchName,
-        undefined,
-        undefined,
-        true
-      );
+      const result = await pullNonCurrentBranch(repoPath, branchName, undefined, undefined, true);
 
       if (result.success) {
         toast.success(`Successfully pulled branch "${branchName}"`);
@@ -1488,9 +1405,7 @@ export const Index = () => {
       } else if (result.needsAuth) {
         // For now, show a message that auth is needed
         // In the future, we could show an auth dialog specifically for this operation
-        toast.error(
-          "Authentication required. Please configure your credentials."
-        );
+        toast.error("Authentication required. Please configure your credentials.");
       } else {
         toast.error(result.error || `Failed to pull branch "${branchName}"`);
       }
@@ -1505,10 +1420,7 @@ export const Index = () => {
     }
   };
 
-  const handleAuthDialogOpenChange = (
-    open: boolean,
-    operation?: "fetch" | "pull" | "push"
-  ) => {
+  const handleAuthDialogOpenChange = (open: boolean, operation?: "fetch" | "pull" | "push") => {
     setIsAuthDialogOpen(open);
     if (open && operation) {
       setCurrentAuthOperation(operation);
@@ -1521,10 +1433,7 @@ export const Index = () => {
   if (showGitSetup) {
     return (
       <div className="flex h-screen flex-col bg-background">
-        <GitSetupDialog
-          open={showGitSetup}
-          onComplete={handleGitSetupComplete}
-        />
+        <GitSetupDialog open={showGitSetup} onComplete={handleGitSetupComplete} />
       </div>
     );
   }
@@ -1533,9 +1442,7 @@ export const Index = () => {
     return (
       <RepoSelector
         onSelectRepo={handleOpenRepo}
-        onCancel={
-          tabs.length > 0 ? () => setIsSelectingRepo(false) : undefined
-        }
+        onCancel={tabs.length > 0 ? () => setIsSelectingRepo(false) : undefined}
       />
     );
   }
@@ -1565,9 +1472,7 @@ export const Index = () => {
       {/* Main Content */}
       {currentState && repoPath ? (
         <div className="flex flex-1 overflow-hidden relative">
-          {loadingRepos[repoPath] && (
-            <LoadingOverlay message="Loading repository data..." />
-          )}
+          {loadingRepos[repoPath] && <LoadingOverlay message="Loading repository data..." />}
 
           {/* Left Sidebar - Accordion */}
           <div className={cn("w-64", isLoading && "pointer-events-none")}>
@@ -1603,9 +1508,7 @@ export const Index = () => {
               lines={currentState.diffLines}
               fileStatus={
                 currentState.selectedFile
-                  ? currentState.files.find(
-                    (f) => f.path === currentState.selectedFile
-                  )?.status
+                  ? currentState.files.find((f) => f.path === currentState.selectedFile)?.status
                   : undefined
               }
               isLoading={loadingDiff}
@@ -1623,12 +1526,7 @@ export const Index = () => {
             />
           </div>
 
-          <div
-            className={cn(
-              "flex w-96 flex-col",
-              isLoading && "pointer-events-none"
-            )}
-          >
+          <div className={cn("flex w-96 flex-col", isLoading && "pointer-events-none")}>
             <div className="flex-1 min-h-0">
               <ChangedFilesSidebar
                 files={currentState.files}
@@ -1641,9 +1539,7 @@ export const Index = () => {
               />
             </div>
             <CommitPanel
-              stagedFilesCount={
-                currentState.files.filter((f) => f.hasStaged).length
-              }
+              stagedFilesCount={currentState.files.filter((f) => f.hasStaged).length}
               onCommit={handleCommit}
             />
           </div>

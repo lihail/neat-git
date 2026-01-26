@@ -35,18 +35,14 @@ export const BranchList = ({
                   "w-full rounded-md px-3 py-2 text-sm transition-colors relative overflow-hidden",
                   branch.current && "bg-secondary text-primary",
                   !branch.current &&
-                  deletingBranch !== branch.name &&
-                  "hover:bg-secondary cursor-pointer"
+                    deletingBranch !== branch.name &&
+                    "hover:bg-secondary cursor-pointer"
                 )}
-                onDoubleClick={() =>
-                  deletingBranch !== branch.name && onSelectBranch(branch.name)
-                }
+                onDoubleClick={() => deletingBranch !== branch.name && onSelectBranch(branch.name)}
               >
                 {deletingBranch === branch.name ? (
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs text-muted-foreground">
-                      Delete {branch.name}?
-                    </span>
+                    <span className="text-xs text-muted-foreground">Delete {branch.name}?</span>
                     <div className="flex items-center gap-1">
                       <Button
                         size="sm"
@@ -77,9 +73,7 @@ export const BranchList = ({
                       <Laptop className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
                     )}
                     <div className="flex-1 min-w-0 overflow-hidden">
-                      <div className="truncate font-mono text-sm">
-                        {branch.name}
-                      </div>
+                      <div className="truncate font-mono text-sm">{branch.name}</div>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
                       {branch.behind !== undefined && branch.behind > 0 && (

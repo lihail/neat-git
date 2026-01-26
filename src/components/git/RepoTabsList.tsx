@@ -4,11 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { RepoTab } from "./TopBar";
 
 interface RepoTabsListProps {
@@ -35,10 +31,7 @@ export const RepoTabsList = ({
   const [draggedTabId, setDraggedTabId] = useState<string | null>(null);
   const [dragOverTabId, setDragOverTabId] = useState<string | null>(null);
 
-  const handleDragStart = (
-    e: React.DragEvent<HTMLDivElement>,
-    tabId: string
-  ) => {
+  const handleDragStart = (e: React.DragEvent<HTMLDivElement>, tabId: string) => {
     setDraggedTabId(tabId);
     e.dataTransfer.effectAllowed = "move";
     e.dataTransfer.setData("text/html", tabId);
@@ -57,10 +50,7 @@ export const RepoTabsList = ({
     setDragOverTabId(null);
   };
 
-  const handleDrop = (
-    e: React.DragEvent<HTMLDivElement>,
-    dropTabId: string
-  ) => {
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>, dropTabId: string) => {
     e.preventDefault();
 
     if (!draggedTabId || draggedTabId === dropTabId) {
@@ -119,11 +109,7 @@ export const RepoTabsList = ({
                       ? "cursor-not-allowed opacity-50"
                       : "cursor-pointer"
                   )}
-                  onClick={() =>
-                    !isLoading &&
-                    !isAnyRemoteOperationActive &&
-                    onSelectTab(tab.id)
-                  }
+                  onClick={() => !isLoading && !isAnyRemoteOperationActive && onSelectTab(tab.id)}
                 >
                   <span
                     className={cn(
@@ -175,10 +161,7 @@ export const RepoTabsList = ({
           </TooltipContent>
         </Tooltip>
       </div>
-      <ScrollBar
-        orientation="horizontal"
-        className="absolute bottom-0 left-0 right-0"
-      />
+      <ScrollBar orientation="horizontal" className="absolute bottom-0 left-0 right-0" />
     </ScrollArea>
   );
 };

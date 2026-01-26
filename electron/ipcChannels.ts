@@ -1,6 +1,5 @@
 export const IPC_CHANNELS = {
-  DIALOG_OPEN_SELECT_GIT_REPOSITORY_FOLDER:
-    "dialog:openSelectGitRepositoryFolder",
+  DIALOG_OPEN_SELECT_GIT_REPOSITORY_FOLDER: "dialog:openSelectGitRepositoryFolder",
   DIALOG_OPEN_SELECT_PARENT_FOLDER: "dialog:openSelectParentFolder",
   GIT_GET_GLOBAL_CONFIG: "git:getGlobalConfig",
   GIT_SET_GLOBAL_CONFIG: "git:setGlobalConfig",

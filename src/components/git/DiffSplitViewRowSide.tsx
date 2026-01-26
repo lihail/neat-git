@@ -33,11 +33,7 @@ export const DiffSplitViewRowSide = ({
     >
       <span className="select-text whitespace-pre-wrap flex-1 min-w-0 leading-[22px]">
         {line && (
-          <HighlightedContent
-            content={line.content}
-            language={language}
-            wordWrap={wordWrap}
-          />
+          <HighlightedContent content={line.content} language={language} wordWrap={wordWrap} />
         )}
       </span>
     </DiffLineRow>

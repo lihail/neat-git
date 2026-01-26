@@ -44,37 +44,25 @@ export const registerGitHandlers = () => {
     }
   );
 
-  ipcMain.handle(
-    IPC_CHANNELS.GIT_GET_CURRENT_BRANCH,
-    async (_, repoPath: string) => {
-      return await getCurrentBranch(repoPath);
-    }
-  );
+  ipcMain.handle(IPC_CHANNELS.GIT_GET_CURRENT_BRANCH, async (_, repoPath: string) => {
+    return await getCurrentBranch(repoPath);
+  });
 
-  ipcMain.handle(
-    IPC_CHANNELS.GIT_LIST_BRANCHES,
-    async (_, repoPath: string) => {
-      return await listBranches(repoPath);
-    }
-  );
+  ipcMain.handle(IPC_CHANNELS.GIT_LIST_BRANCHES, async (_, repoPath: string) => {
+    return await listBranches(repoPath);
+  });
 
-  ipcMain.handle(
-    IPC_CHANNELS.GIT_LIST_REMOTE_BRANCHES,
-    async (_, repoPath: string) => {
-      return await listRemoteBranches(repoPath);
-    }
-  );
+  ipcMain.handle(IPC_CHANNELS.GIT_LIST_REMOTE_BRANCHES, async (_, repoPath: string) => {
+    return await listRemoteBranches(repoPath);
+  });
 
   ipcMain.handle(IPC_CHANNELS.GIT_GET_STATUS, async (_, repoPath: string) => {
     return await getStatus(repoPath);
   });
 
-  ipcMain.handle(
-    IPC_CHANNELS.GIT_STAGE_FILE,
-    async (_, repoPath: string, filepath: string) => {
-      return await stageFile(repoPath, filepath);
-    }
-  );
+  ipcMain.handle(IPC_CHANNELS.GIT_STAGE_FILE, async (_, repoPath: string, filepath: string) => {
+    return await stageFile(repoPath, filepath);
+  });
 
   ipcMain.handle(
     IPC_CHANNELS.GIT_UNSTAGE_CHANGE,
@@ -83,12 +71,9 @@ export const registerGitHandlers = () => {
     }
   );
 
-  ipcMain.handle(
-    IPC_CHANNELS.GIT_UNSTAGE_ALL_FILES,
-    async (_, repoPath: string) => {
-      return await unstageAllFiles(repoPath);
-    }
-  );
+  ipcMain.handle(IPC_CHANNELS.GIT_UNSTAGE_ALL_FILES, async (_, repoPath: string) => {
+    return await unstageAllFiles(repoPath);
+  });
 
   ipcMain.handle(
     IPC_CHANNELS.GIT_CREATE_BRANCH,
@@ -106,23 +91,14 @@ export const registerGitHandlers = () => {
 
   ipcMain.handle(
     IPC_CHANNELS.GIT_RENAME_BRANCH,
-    async (
-      _,
-      repoPath: string,
-      oldName: string,
-      newName: string,
-      alsoRenameRemote: boolean
-    ) => {
+    async (_, repoPath: string, oldName: string, newName: string, alsoRenameRemote: boolean) => {
       return await renameBranch(repoPath, oldName, newName, alsoRenameRemote);
     }
   );
 
-  ipcMain.handle(
-    IPC_CHANNELS.GIT_CHECKOUT,
-    async (_, repoPath: string, branchName: string) => {
-      return await checkout(repoPath, branchName);
-    }
-  );
+  ipcMain.handle(IPC_CHANNELS.GIT_CHECKOUT, async (_, repoPath: string, branchName: string) => {
+    return await checkout(repoPath, branchName);
+  });
 
   ipcMain.handle(
     IPC_CHANNELS.GIT_COMMIT,
@@ -131,12 +107,9 @@ export const registerGitHandlers = () => {
     }
   );
 
-  ipcMain.handle(
-    IPC_CHANNELS.GIT_LOG,
-    async (_, repoPath: string, limit: number = 50) => {
-      return await log(repoPath, limit);
-    }
-  );
+  ipcMain.handle(IPC_CHANNELS.GIT_LOG, async (_, repoPath: string, limit: number = 50) => {
+    return await log(repoPath, limit);
+  });
 
   ipcMain.handle(
     IPC_CHANNELS.GIT_GET_DIFF,
@@ -156,26 +129,17 @@ export const registerGitHandlers = () => {
     return await listStashes(repoPath);
   });
 
-  ipcMain.handle(
-    IPC_CHANNELS.GIT_STASH,
-    async (_, repoPath: string, message: string) => {
-      return await stash(repoPath, message);
-    }
-  );
+  ipcMain.handle(IPC_CHANNELS.GIT_STASH, async (_, repoPath: string, message: string) => {
+    return await stash(repoPath, message);
+  });
 
-  ipcMain.handle(
-    IPC_CHANNELS.GIT_POP_STASH,
-    async (_, repoPath: string, index: number) => {
-      return await popStash(repoPath, index);
-    }
-  );
+  ipcMain.handle(IPC_CHANNELS.GIT_POP_STASH, async (_, repoPath: string, index: number) => {
+    return await popStash(repoPath, index);
+  });
 
-  ipcMain.handle(
-    IPC_CHANNELS.GIT_DELETE_STASH,
-    async (_, repoPath: string, index: number) => {
-      return await deleteStash(repoPath, index);
-    }
-  );
+  ipcMain.handle(IPC_CHANNELS.GIT_DELETE_STASH, async (_, repoPath: string, index: number) => {
+    return await deleteStash(repoPath, index);
+  });
 
   ipcMain.handle(
     IPC_CHANNELS.GIT_STAGE_LINES,
@@ -222,12 +186,9 @@ export const registerGitHandlers = () => {
     }
   );
 
-  ipcMain.handle(
-    IPC_CHANNELS.GIT_GET_REMOTE_URL,
-    async (_, repoPath: string) => {
-      return await getRemoteUrl(repoPath);
-    }
-  );
+  ipcMain.handle(IPC_CHANNELS.GIT_GET_REMOTE_URL, async (_, repoPath: string) => {
+    return await getRemoteUrl(repoPath);
+  });
 
   ipcMain.handle(
     IPC_CHANNELS.GIT_FETCH,
@@ -278,13 +239,7 @@ export const registerGitHandlers = () => {
       password?: string | null,
       saveCredentials: boolean = true
     ) => {
-      return await pullNonCurrentBranch(
-        repoPath,
-        branchName,
-        username,
-        password,
-        saveCredentials
-      );
+      return await pullNonCurrentBranch(repoPath, branchName, username, password, saveCredentials);
     }
   );
 };

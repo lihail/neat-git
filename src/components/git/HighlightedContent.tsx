@@ -14,13 +14,7 @@ export const HighlightedContent = ({
 }: HighlightedContentProps) => {
   if (language === "text" || !content.trim()) {
     return (
-      <span
-        className={
-          wordWrap
-            ? "select-text whitespace-pre-wrap"
-            : "select-text whitespace-pre"
-        }
-      >
+      <span className={wordWrap ? "select-text whitespace-pre-wrap" : "select-text whitespace-pre"}>
         {content}
       </span>
     );

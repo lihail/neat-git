@@ -36,16 +36,13 @@ export const SshTrustHostDialog = ({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Trust SSH Host</DialogTitle>
-          <DialogDescription>
-            First time connecting to this host.
-          </DialogDescription>
+          <DialogDescription>First time connecting to this host.</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           <div className="p-4 bg-muted rounded-md">
             <p className="text-sm">
-              The authenticity of host{" "}
-              <code className="font-semibold">{hostname}</code> can't be
+              The authenticity of host <code className="font-semibold">{hostname}</code> can't be
               verified.
             </p>
             <p className="text-sm mt-2 text-muted-foreground">

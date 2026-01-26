@@ -49,9 +49,7 @@ export const ChangedFileList = ({
           onClick={() => onSelectFile(file.path, isStaged)}
           className={cn(
             "flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm transition-colors hover:bg-secondary group cursor-pointer",
-            selectedFile === file.path &&
-            selectedFileIsStaged === isStaged &&
-            "bg-secondary"
+            selectedFile === file.path && selectedFileIsStaged === isStaged && "bg-secondary"
           )}
         >
           <div className="flex items-center gap-2 flex-1 min-w-0">

@@ -78,10 +78,7 @@ export const GitSetupDialog = ({ open, onComplete }: GitSetupDialogProps) => {
 
     setIsSaving(true);
     try {
-      const result = await window.electronAPI.setGlobalConfig(
-        userName.trim(),
-        userEmail.trim()
-      );
+      const result = await window.electronAPI.setGlobalConfig(userName.trim(), userEmail.trim());
 
       if (result.success) {
         toast.success("Git configuration saved successfully");
@@ -98,7 +95,7 @@ export const GitSetupDialog = ({ open, onComplete }: GitSetupDialogProps) => {
   };
 
   return (
-    <Dialog open={open} onOpenChange={() => { }}>
+    <Dialog open={open} onOpenChange={() => {}}>
       <DialogContent className="sm:max-w-[500px]" hideClose>
         <DialogHeader>
           <div className="flex items-center gap-3 mb-2">
@@ -110,22 +107,20 @@ export const GitSetupDialog = ({ open, onComplete }: GitSetupDialogProps) => {
           <DialogDescription>
             {hasExistingConfig ? (
               <>
-                We've detected an existing Git configuration. Feel free to
-                review or update your details below if you'd like.
+                We've detected an existing Git configuration. Feel free to review or update your
+                details below if you'd like.
               </>
             ) : (
               <>
-                Welcome to NeatGit! To get started, please set your name and
-                email for Git commits on this machine.
+                Welcome to NeatGit! To get started, please set your name and email for Git commits
+                on this machine.
               </>
             )}
           </DialogDescription>
         </DialogHeader>
 
         {isLoading ? (
-          <div className="py-8 text-center text-muted-foreground">
-            Loading Git configuration...
-          </div>
+          <div className="py-8 text-center text-muted-foreground">Loading Git configuration...</div>
         ) : (
           <div className="space-y-4 py-4">
             <div className="space-y-2">
@@ -142,9 +137,7 @@ export const GitSetupDialog = ({ open, onComplete }: GitSetupDialogProps) => {
                 }}
                 className={errors.name ? "border-destructive" : ""}
               />
-              {errors.name && (
-                <p className="text-sm text-destructive">{errors.name}</p>
-              )}
+              {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
               <p className="text-xs text-muted-foreground">
                 This will appear in your commit history
               </p>
@@ -165,9 +158,7 @@ export const GitSetupDialog = ({ open, onComplete }: GitSetupDialogProps) => {
                 }}
                 className={errors.email ? "border-destructive" : ""}
               />
-              {errors.email && (
-                <p className="text-sm text-destructive">{errors.email}</p>
-              )}
+              {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
               <p className="text-xs text-muted-foreground">
                 Used to associate commits with your identity
               </p>
@@ -181,11 +172,7 @@ export const GitSetupDialog = ({ open, onComplete }: GitSetupDialogProps) => {
             disabled={isLoading || isSaving}
             className="w-full sm:w-auto"
           >
-            {isSaving
-              ? "Saving..."
-              : hasExistingConfig
-                ? "Confirm"
-                : "Continue"}
+            {isSaving ? "Saving..." : hasExistingConfig ? "Confirm" : "Continue"}
           </Button>
         </DialogFooter>
       </DialogContent>

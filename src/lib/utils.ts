@@ -16,21 +16,12 @@ type LanguageData = {
 
 export const detectLanguageFromPath = (filePath: string): string => {
   const filename = filePath.split("/").pop() || "";
-  const extension = filename.includes(".")
-    ? `.${filename.split(".").pop()?.toLowerCase()}`
-    : "";
+  const extension = filename.includes(".") ? `.${filename.split(".").pop()?.toLowerCase()}` : "";
 
   // Search through language-map for matching extension or filename
-  for (const [_langName, langData] of Object.entries(languageMap) as [
-    string,
-    LanguageData
-  ][]) {
+  for (const [_langName, langData] of Object.entries(languageMap) as [string, LanguageData][]) {
     // Check exact filenames first (for files like Dockerfile, Makefile, etc.)
-    if (
-      langData.filenames?.some(
-        (fn) => fn.toLowerCase() === filename.toLowerCase()
-      )
-    ) {
+    if (langData.filenames?.some((fn) => fn.toLowerCase() === filename.toLowerCase())) {
       return mapAceModeToPrism(langData.aceMode || "");
     }
 

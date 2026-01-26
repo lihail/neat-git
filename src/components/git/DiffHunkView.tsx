@@ -11,20 +11,13 @@ interface DiffHunkViewProps {
   wordWrap: boolean;
 }
 
-export const DiffHunkView = ({
-  hunks,
-  language,
-  wordWrap,
-}: DiffHunkViewProps) => {
+export const DiffHunkView = ({ hunks, language, wordWrap }: DiffHunkViewProps) => {
   return (
     <ScrollArea className="flex-1 bg-code-bg">
       <div className="font-mono text-xs w-fit min-w-full">
         {hunks.map((hunk) => (
           <div key={hunk.index}>
-            <DiffHunkSeparator
-              startLine={hunk.startLine}
-              endLine={hunk.endLine}
-            />
+            <DiffHunkSeparator startLine={hunk.startLine} endLine={hunk.endLine} />
 
             {/* Hunk lines */}
             {wordWrap ? (
@@ -66,8 +59,7 @@ export const DiffHunkView = ({
                       className={cn(
                         "pr-4 h-[22px]",
                         line.type === "add" && "bg-git-add/10 text-git-add",
-                        line.type === "delete" &&
-                        "bg-git-delete/10 text-git-delete",
+                        line.type === "delete" && "bg-git-delete/10 text-git-delete",
                         line.type === "context" && "text-foreground"
                       )}
                     >

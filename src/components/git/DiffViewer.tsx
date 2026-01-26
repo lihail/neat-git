@@ -3,10 +3,7 @@ import { Button } from "@/components/ui/button";
 import { cn, detectLanguageFromPath } from "@/lib/utils";
 import { groupLinesByHunks, pairSplitLines } from "@/lib/gitDiff";
 import { useMemo } from "react";
-import {
-  DiffViewerModeToggle,
-  type DiffViewerMode,
-} from "./DiffViewerModeToggle";
+import { DiffViewerModeToggle, type DiffViewerMode } from "./DiffViewerModeToggle";
 import { DiffSplitView } from "./DiffSplitView";
 import { DiffHunkView } from "./DiffHunkView";
 import { DiffFullView } from "./DiffFullView";
@@ -67,15 +64,12 @@ export const DiffViewer = ({
   if (!filePath) {
     return (
       <div className="flex h-full items-center justify-center">
-        <p className="text-sm text-muted-foreground">
-          Select a file to view changes
-        </p>
+        <p className="text-sm text-muted-foreground">Select a file to view changes</p>
       </div>
     );
   }
 
-  const isEmptyFile =
-    lines.length === 0 || lines.every((line) => line.content.trim() === "");
+  const isEmptyFile = lines.length === 0 || lines.every((line) => line.content.trim() === "");
 
   const isPureRename = oldFilePath && fileStatus === "added";
 
@@ -132,17 +126,9 @@ export const DiffViewer = ({
       ) : isEmptyFile ? (
         <DiffViewerEmptyState message="File is empty" />
       ) : effectiveViewMode === "hunks" && hunks ? (
-        <DiffHunkView
-          hunks={hunks}
-          language={language}
-          wordWrap={wordWrap}
-        />
+        <DiffHunkView hunks={hunks} language={language} wordWrap={wordWrap} />
       ) : effectiveViewMode === "split" && splitLines ? (
-        <DiffSplitView
-          splitLines={splitLines}
-          language={language}
-          wordWrap={wordWrap}
-        />
+        <DiffSplitView splitLines={splitLines} language={language} wordWrap={wordWrap} />
       ) : (
         <DiffFullView lines={lines} language={language} wordWrap={wordWrap} />
       )}

@@ -4,11 +4,7 @@ import {
   ContextMenuItem,
   ContextMenuSeparator,
 } from "@/components/ui/context-menu";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "@/components/ui/toaster";
 import type { Branch } from "@/types/git";
 
@@ -50,9 +46,7 @@ export const BranchContextMenu = ({
             <p>Cannot pull: branch is not tracking a remote branch</p>
           </TooltipContent>
         </Tooltip>
-      ) : branch.ahead !== undefined &&
-        branch.ahead > 0 &&
-        !branch.current ? (
+      ) : branch.ahead !== undefined && branch.ahead > 0 && !branch.current ? (
         <Tooltip delayDuration={0}>
           <TooltipTrigger asChild>
             <div className="relative flex select-none items-center gap-3 rounded-sm px-2 py-1.5 text-sm outline-none text-muted-foreground opacity-50">

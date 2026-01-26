@@ -1,11 +1,5 @@
 import { useState } from "react";
-import {
-  Download,
-  Upload,
-  RefreshCw,
-  Archive,
-  GitBranchPlus,
-} from "lucide-react";
+import { Download, Upload, RefreshCw, Archive, GitBranchPlus } from "lucide-react";
 import { GitActionButton } from "./GitActionButton";
 import { NewBranchDialog } from "./NewBranchDialog";
 
@@ -63,12 +57,7 @@ export const GitActionsPanel = ({
           iconClassName={isPushing ? "animate-pulse" : undefined}
         />
 
-        <GitActionButton
-          icon={Archive}
-          label="Stash"
-          onClick={onStash}
-          disabled={isLoading}
-        />
+        <GitActionButton icon={Archive} label="Stash" onClick={onStash} disabled={isLoading} />
 
         <GitActionButton
           icon={GitBranchPlus}

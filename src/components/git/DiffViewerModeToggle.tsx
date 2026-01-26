@@ -8,10 +8,7 @@ interface DiffViewerModeToggleProps {
   onChange: (value: DiffViewerMode) => void;
 }
 
-export const DiffViewerModeToggle = ({
-  value,
-  onChange,
-}: DiffViewerModeToggleProps) => {
+export const DiffViewerModeToggle = ({ value, onChange }: DiffViewerModeToggleProps) => {
   return (
     <ToggleGroup
       type="single"
@@ -23,27 +20,15 @@ export const DiffViewerModeToggle = ({
       }}
       className="gap-0"
     >
-      <ToggleGroupItem
-        value="full"
-        aria-label="Full view"
-        className="h-7 px-2 text-xs gap-1"
-      >
+      <ToggleGroupItem value="full" aria-label="Full view" className="h-7 px-2 text-xs gap-1">
         <FileText className="h-3.5 w-3.5" />
         Full
       </ToggleGroupItem>
-      <ToggleGroupItem
-        value="hunks"
-        aria-label="Hunks view"
-        className="h-7 px-2 text-xs gap-1"
-      >
+      <ToggleGroupItem value="hunks" aria-label="Hunks view" className="h-7 px-2 text-xs gap-1">
         <List className="h-3.5 w-3.5" />
         Hunks
       </ToggleGroupItem>
-      <ToggleGroupItem
-        value="split"
-        aria-label="Split view"
-        className="h-7 px-2 text-xs gap-1"
-      >
+      <ToggleGroupItem value="split" aria-label="Split view" className="h-7 px-2 text-xs gap-1">
         <Columns2 className="h-3.5 w-3.5" />
         Split
       </ToggleGroupItem>

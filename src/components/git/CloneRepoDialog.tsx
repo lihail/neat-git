@@ -59,9 +59,7 @@ export const CloneRepoDialog = ({
           <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center rounded-lg pointer-events-auto">
             <div className="flex flex-col items-center gap-3">
               <div className="h-8 w-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
-              <p className="text-sm text-muted-foreground">
-                Cloning repository...
-              </p>
+              <p className="text-sm text-muted-foreground">Cloning repository...</p>
             </div>
           </div>
         )}
@@ -69,8 +67,7 @@ export const CloneRepoDialog = ({
           <DialogHeader>
             <DialogTitle>Clone Repository</DialogTitle>
             <DialogDescription>
-              Enter the repository URL and select a destination folder to clone
-              into.
+              Enter the repository URL and select a destination folder to clone into.
             </DialogDescription>
           </DialogHeader>
 
@@ -86,9 +83,7 @@ export const CloneRepoDialog = ({
                 className={cloneUrlError ? "border-destructive" : ""}
                 autoFocus
               />
-              {cloneUrlError && (
-                <p className="text-sm text-destructive">{cloneUrlError}</p>
-              )}
+              {cloneUrlError && <p className="text-sm text-destructive">{cloneUrlError}</p>}
             </div>
 
             <div className="space-y-2">
@@ -101,11 +96,7 @@ export const CloneRepoDialog = ({
                   readOnly
                   className="flex-1"
                 />
-                <Button
-                  onClick={onSelectDestination}
-                  variant="outline"
-                  type="button"
-                >
+                <Button onClick={onSelectDestination} variant="outline" type="button">
                   <FolderOpen className="h-4 w-4" />
                 </Button>
               </div>
@@ -115,9 +106,7 @@ export const CloneRepoDialog = ({
               <div className="space-y-2">
                 <Label>Will clone to:</Label>
                 <div className="p-3 bg-muted rounded-md">
-                  <code className="text-sm text-foreground break-all">
-                    {fullClonePath}
-                  </code>
+                  <code className="text-sm text-foreground break-all">{fullClonePath}</code>
                 </div>
               </div>
             )}

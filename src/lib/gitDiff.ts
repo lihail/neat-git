@@ -21,10 +21,7 @@ export function groupLinesByHunks(lines: DiffLine[]): Hunk[] | null {
     }
     hunks[hunkIndex].lines.push(line);
     if (line.lineNumber) {
-      hunks[hunkIndex].endLine = Math.max(
-        hunks[hunkIndex].endLine,
-        line.lineNumber
-      );
+      hunks[hunkIndex].endLine = Math.max(hunks[hunkIndex].endLine, line.lineNumber);
     }
   });
 
@@ -84,17 +81,17 @@ export function pairSplitLines(lines: DiffLine[]): SplitLine[] | null {
         splitLines.push({
           leftLine: deleteLine
             ? {
-              content: deleteLine.content,
-              lineNumber: ++leftLineNumber,
-              type: "delete",
-            }
+                content: deleteLine.content,
+                lineNumber: ++leftLineNumber,
+                type: "delete",
+              }
             : undefined,
           rightLine: addLine
             ? {
-              content: addLine.content,
-              lineNumber: ++rightLineNumber,
-              type: "add",
-            }
+                content: addLine.content,
+                lineNumber: ++rightLineNumber,
+                type: "add",
+              }
             : undefined,
         });
       }

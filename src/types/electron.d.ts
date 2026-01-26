@@ -85,24 +85,13 @@ export interface ElectronAPI {
     newName: string,
     alsoRenameRemote: boolean
   ) => Promise<{ success: boolean; error?: string }>;
-  checkout: (
-    repoPath: string,
-    branchName: string
-  ) => Promise<{ success: boolean; error?: string }>;
+  checkout: (repoPath: string, branchName: string) => Promise<{ success: boolean; error?: string }>;
   getStatus: (repoPath: string) => Promise<FileStatus[]>;
   stageFile: (repoPath: string, filepath: string) => Promise<void>;
   unstageChange: (repoPath: string, filepath: string, oldFilePath?: string) => Promise<void>;
   unstageAllFiles: (repoPath: string) => Promise<void>;
-  stageLines: (
-    repoPath: string,
-    filepath: string,
-    lines: DiffLine[]
-  ) => Promise<void>;
-  unstageLines: (
-    repoPath: string,
-    filepath: string,
-    lines: DiffLine[]
-  ) => Promise<void>;
+  stageLines: (repoPath: string, filepath: string, lines: DiffLine[]) => Promise<void>;
+  unstageLines: (repoPath: string, filepath: string, lines: DiffLine[]) => Promise<void>;
   commit: (
     repoPath: string,
     message: string,
@@ -148,9 +137,7 @@ export interface ElectronAPI {
     needsSshTrust?: boolean;
     sshHostname?: string;
   }>;
-  getRemoteUrl: (
-    repoPath: string
-  ) => Promise<{ success: boolean; url?: string; error?: string }>;
+  getRemoteUrl: (repoPath: string) => Promise<{ success: boolean; url?: string; error?: string }>;
   fetch: (
     repoPath: string,
     username?: string | null,
@@ -193,9 +180,7 @@ export interface ElectronAPI {
     isTrusted?: boolean;
     error?: string;
   }>;
-  trustHost: (
-    hostname: string
-  ) => Promise<{ success: boolean; error?: string }>;
+  trustHost: (hostname: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 declare global {

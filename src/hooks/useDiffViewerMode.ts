@@ -6,11 +6,7 @@ export const useDiffViewerMode = () => {
   const [diffViewerMode, setDiffViewerMode] = useState<DiffViewerMode>(() => {
     if (typeof window !== "undefined") {
       const savedValue = getDiffViewerMode();
-      if (
-        savedValue === "full" ||
-        savedValue === "hunks" ||
-        savedValue === "split"
-      ) {
+      if (savedValue === "full" || savedValue === "hunks" || savedValue === "split") {
         return savedValue;
       }
     }

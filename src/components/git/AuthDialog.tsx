@@ -22,11 +22,7 @@ interface AuthDialogProps {
   title?: string;
   initialUsername?: string;
   initialPassword?: string;
-  onConfirm: (
-    username: string,
-    password: string,
-    saveCredentials: boolean
-  ) => Promise<void>;
+  onConfirm: (username: string, password: string, saveCredentials: boolean) => Promise<void>;
   error?: string | null;
 }
 
@@ -165,11 +161,7 @@ export const AuthDialog = ({
                   onClick={() => setShowPassword(!showPassword)}
                   tabIndex={-1}
                 >
-                  {showPassword ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </Button>
               </div>
             </div>
@@ -178,9 +170,7 @@ export const AuthDialog = ({
               <Checkbox
                 id="save-credentials"
                 checked={saveCredentials}
-                onCheckedChange={(checked) =>
-                  setSaveCredentials(checked as boolean)
-                }
+                onCheckedChange={(checked) => setSaveCredentials(checked as boolean)}
               />
               <label
                 htmlFor="save-credentials"
@@ -192,11 +182,7 @@ export const AuthDialog = ({
           </div>
 
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={handleCancel}
-              disabled={isLoading}
-            >
+            <Button variant="outline" onClick={handleCancel} disabled={isLoading}>
               Cancel
             </Button>
             <Button

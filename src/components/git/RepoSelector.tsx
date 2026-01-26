@@ -10,7 +10,14 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useState } from "react";
 import { toast } from "@/components/ui/toaster";
-import { validateRepoName, extractCredentialsFromUrl, extractHostFromUrl, isSshUrl, validateCloneUrl, getFullClonePath } from "@/lib/utils";
+import {
+  validateRepoName,
+  extractCredentialsFromUrl,
+  extractHostFromUrl,
+  isSshUrl,
+  validateCloneUrl,
+  getFullClonePath,
+} from "@/lib/utils";
 import packageJson from "../../../package.json";
 
 interface RepoSelectorProps {
@@ -41,9 +48,7 @@ export const RepoSelector = ({ onSelectRepo, onCancel }: RepoSelectorProps) => {
 
   // SSH setup state
   const [showSshDialog, setShowSshDialog] = useState(false);
-  const [sshStep, setSshStep] = useState<"check" | "generate" | "show-key">(
-    "check"
-  );
+  const [sshStep, setSshStep] = useState<"check" | "generate" | "show-key">("check");
   const [sshHasExistingKeys, setSshHasExistingKeys] = useState(false);
   const [sshPublicKey, setSshPublicKey] = useState("");
   const [sshIsGenerating, setSshIsGenerating] = useState(false);
@@ -57,8 +62,7 @@ export const RepoSelector = ({ onSelectRepo, onCancel }: RepoSelectorProps) => {
     if (typeof window !== "undefined" && window.electronAPI) {
       setIsLoading(true);
       try {
-        const result =
-          await window.electronAPI.openSelectGitRepositoryFolderDialog();
+        const result = await window.electronAPI.openSelectGitRepositoryFolderDialog();
         if (result.success) {
           onSelectRepo(result.path);
           toast.success(`Repository selected: ${result.path}`);
@@ -162,9 +166,7 @@ export const RepoSelector = ({ onSelectRepo, onCancel }: RepoSelectorProps) => {
         await handleSshSetup();
       } else if (result.needsAuth) {
         if (isAuthRetry) {
-          setAuthError(
-            "Authentication failed. Please check your credentials and try again."
-          );
+          setAuthError("Authentication failed. Please check your credentials and try again.");
         } else {
           // First time - show auth dialog
           const host = extractHostFromUrl(cloneUrl);
@@ -189,7 +191,7 @@ export const RepoSelector = ({ onSelectRepo, onCancel }: RepoSelectorProps) => {
         if (isAuthRetry) {
           setAuthError(
             result.error ||
-            "Failed to clone repository. Please check your credentials or verify the repository exists."
+              "Failed to clone repository. Please check your credentials or verify the repository exists."
           );
         } else {
           toast.error(result.error || "Failed to clone repository");
@@ -241,10 +243,7 @@ export const RepoSelector = ({ onSelectRepo, onCancel }: RepoSelectorProps) => {
     performClone();
   };
 
-  const handleConfirmAuth = async (
-    username: string,
-    password: string
-  ) => {
+  const handleConfirmAuth = async (username: string, password: string) => {
     // Retry clone with credentials
     await performClone(username, password);
   };
@@ -273,9 +272,7 @@ export const RepoSelector = ({ onSelectRepo, onCancel }: RepoSelectorProps) => {
         setSshHasExistingKeys(result.hasKeys);
         if (result.hasKeys && result.keys.length > 0) {
           // Found existing keys - pre-load the public key but stay on check screen
-          const publicKeyResult = await window.electronAPI.readPublicKey(
-            result.keys[0].publicPath
-          );
+          const publicKeyResult = await window.electronAPI.readPublicKey(result.keys[0].publicPath);
           if (publicKeyResult.success) {
             setSshPublicKey(publicKeyResult.content);
           }
@@ -298,9 +295,7 @@ export const RepoSelector = ({ onSelectRepo, onCancel }: RepoSelectorProps) => {
       const result = await window.electronAPI.generateKey();
       if (result.success) {
         // Read the public key
-        const publicKeyResult = await window.electronAPI.readPublicKey(
-          result.publicKeyPath
-        );
+        const publicKeyResult = await window.electronAPI.readPublicKey(result.publicKeyPath);
         if (publicKeyResult.success) {
           setSshPublicKey(publicKeyResult.content);
           setSshStep("show-key");
@@ -409,10 +404,7 @@ export const RepoSelector = ({ onSelectRepo, onCancel }: RepoSelectorProps) => {
 
     setIsLoading(true);
     try {
-      const result = await window.electronAPI.createRepository(
-        selectedParentPath,
-        trimmedName
-      );
+      const result = await window.electronAPI.createRepository(selectedParentPath, trimmedName);
 
       if (result.success) {
         toast.success(`Repository created: ${result.path}`);
@@ -454,9 +446,7 @@ export const RepoSelector = ({ onSelectRepo, onCancel }: RepoSelectorProps) => {
               <X className="h-5 w-5" />
             </Button>
           )}
-          <h1 className="mb-4 text-3xl font-bold text-foreground">
-            Welcome to NeatGit
-          </h1>
+          <h1 className="mb-4 text-3xl font-bold text-foreground">Welcome to NeatGit</h1>
           <p className="mb-12 text-muted-foreground">
             Choose how you'd like to get started with your repository
           </p>

@@ -29,10 +29,7 @@ export const ChangesFilesSection = ({
   onToggleStage,
 }: ChangesFilesSectionProps) => {
   return (
-    <div
-      className={`flex flex-1 flex-col min-h-0${isStaged ? "" : " border-b border-border"
-        }`}
-    >
+    <div className={`flex flex-1 flex-col min-h-0${isStaged ? "" : " border-b border-border"}`}>
       <div className="border-b border-border px-4 py-2 flex items-center justify-between">
         <h3 className="text-xs font-semibold uppercase text-muted-foreground">
           {isStaged ? "Staged Changes" : "Unstaged Changes"} ({files.length})

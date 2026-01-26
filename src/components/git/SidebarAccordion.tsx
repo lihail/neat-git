@@ -1,13 +1,4 @@
-import {
-  GitBranch,
-  GitCommit,
-  Plus,
-  Trash2,
-  Archive,
-  Upload,
-  Loader2,
-  Cloud,
-} from "lucide-react";
+import { GitBranch, GitCommit, Plus, Trash2, Archive, Upload, Loader2, Cloud } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Accordion,
@@ -15,11 +6,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Dialog,
   DialogContent,
@@ -46,11 +33,7 @@ interface SidebarAccordionProps {
   onSelectBranch: (branchName: string) => void;
   onSelectCommit: (sha: string) => void;
   onDeleteBranch: (branchName: string) => void;
-  onRenameBranch: (
-    oldName: string,
-    newName: string,
-    alsoRenameRemote: boolean
-  ) => void;
+  onRenameBranch: (oldName: string, newName: string, alsoRenameRemote: boolean) => void;
   onPullBranch: (branchName: string) => void;
   onPopStash: (index: number) => void;
   onDeleteStash: (index: number) => void;
@@ -77,9 +60,7 @@ export const SidebarAccordion = ({
   const [renamingBranch, setRenamingBranch] = useState<string | null>(null);
   const [renameBranchNewName, setRenameBranchNewName] = useState("");
   const [renameAlsoRemote, setRenameAlsoRemote] = useState(false);
-  const [renameBranchNameError, setRenameBranchNameError] = useState<
-    string | null
-  >(null);
+  const [renameBranchNameError, setRenameBranchNameError] = useState<string | null>(null);
   const [wasRenaming, setWasRenaming] = useState(false);
 
   // Close dialog after rename operation completes
@@ -131,10 +112,7 @@ export const SidebarAccordion = ({
         className="flex h-full flex-col overflow-hidden"
       >
         {/* Local Branches */}
-        <AccordionItem
-          value="local-branches"
-          className="border-b border-border"
-        >
+        <AccordionItem value="local-branches" className="border-b border-border">
           <AccordionTrigger className="px-4 py-3 hover:no-underline border-b border-border">
             <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
               <GitBranch className="h-4 w-4 text-primary" />
@@ -156,10 +134,7 @@ export const SidebarAccordion = ({
           </AccordionContent>
         </AccordionItem>
 
-        <AccordionItem
-          value="remote-branches"
-          className="border-b border-border"
-        >
+        <AccordionItem value="remote-branches" className="border-b border-border">
           <AccordionTrigger
             className={cn(
               "px-4 py-3 hover:no-underline border-b border-border",
@@ -186,9 +161,7 @@ export const SidebarAccordion = ({
                   >
                     <div className="flex items-center gap-2 w-full max-w-full">
                       <div className="flex-1 min-w-0 overflow-hidden">
-                        <div className="truncate font-mono text-sm">
-                          {branch.name}
-                        </div>
+                        <div className="truncate font-mono text-sm">{branch.name}</div>
                       </div>
                     </div>
                   </button>
@@ -199,10 +172,7 @@ export const SidebarAccordion = ({
         </AccordionItem>
 
         {/* Stashed Changes */}
-        <AccordionItem
-          value="stashed-changes"
-          className="border-b border-border"
-        >
+        <AccordionItem value="stashed-changes" className="border-b border-border">
           <AccordionTrigger
             className={cn(
               "px-4 py-3 hover:no-underline border-b border-border",
@@ -263,9 +233,7 @@ export const SidebarAccordion = ({
                             {stash.message}
                           </p>
                           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <span className="font-mono">
-                              stash@{"{" + stash.index + "}"}
-                            </span>
+                            <span className="font-mono">stash@{"{" + stash.index + "}"}</span>
                             <span>{stash.date}</span>
                           </div>
                         </div>
@@ -277,9 +245,7 @@ export const SidebarAccordion = ({
                             }}
                             className={cn(
                               "hover:bg-primary/20 rounded p-1 transition-all",
-                              hoveredStash === stash.index
-                                ? "opacity-100"
-                                : "opacity-0"
+                              hoveredStash === stash.index ? "opacity-100" : "opacity-0"
                             )}
                             title="Pop stash"
                           >
@@ -292,9 +258,7 @@ export const SidebarAccordion = ({
                             }}
                             className={cn(
                               "hover:bg-destructive/20 rounded p-1 transition-all",
-                              hoveredStash === stash.index
-                                ? "opacity-100"
-                                : "opacity-0"
+                              hoveredStash === stash.index ? "opacity-100" : "opacity-0"
                             )}
                             title="Delete stash"
                           >
@@ -311,10 +275,7 @@ export const SidebarAccordion = ({
         </AccordionItem>
 
         {/* Commit History */}
-        <AccordionItem
-          value="commit-history"
-          className="flex-1 border-b-0 min-h-0"
-        >
+        <AccordionItem value="commit-history" className="flex-1 border-b-0 min-h-0">
           <AccordionTrigger
             className={cn(
               "px-4 py-3 hover:no-underline border-b border-border",
@@ -342,9 +303,7 @@ export const SidebarAccordion = ({
                     <div className="mb-2 flex items-start gap-2">
                       <div className="mt-1 h-2 w-2 rounded-full bg-primary" />
                       <div className="flex-1 space-y-1">
-                        <p className="text-sm font-medium text-foreground">
-                          {commit.message}
-                        </p>
+                        <p className="text-sm font-medium text-foreground">{commit.message}</p>
                         <div className="flex items-center gap-3 text-xs text-muted-foreground">
                           <span>{commit.author}</span>
                           <span>{commit.date}</span>
@@ -397,20 +356,16 @@ export const SidebarAccordion = ({
                 }}
                 placeholder="Enter new branch name"
                 className={cn(
-                  renameBranchNameError &&
-                  "border-destructive focus-visible:ring-destructive"
+                  renameBranchNameError && "border-destructive focus-visible:ring-destructive"
                 )}
               />
               {renameBranchNameError && (
-                <p className="text-xs text-destructive">
-                  {renameBranchNameError}
-                </p>
+                <p className="text-xs text-destructive">{renameBranchNameError}</p>
               )}
             </div>
             {(() => {
               const branchHasUpstream =
-                branches.find((b) => b.name === renamingBranch)?.hasUpstream ??
-                false;
+                branches.find((b) => b.name === renamingBranch)?.hasUpstream ?? false;
               return (
                 <div className="flex items-center space-x-2">
                   <Tooltip delayDuration={0}>
@@ -419,9 +374,7 @@ export const SidebarAccordion = ({
                         <Checkbox
                           id="also-remote"
                           checked={renameAlsoRemote}
-                          onCheckedChange={(checked) =>
-                            setRenameAlsoRemote(checked as boolean)
-                          }
+                          onCheckedChange={(checked) => setRenameAlsoRemote(checked as boolean)}
                           disabled={!branchHasUpstream}
                         />
                         <Label

@@ -226,10 +226,7 @@ export const listBranches = async (repoPath: string) => {
     return branches;
   } catch (error) {
     console.error("Error listing branches:", error);
-    console.error(
-      "Error details:",
-      error instanceof Error ? error.stack : error
-    );
+    console.error("Error details:", error instanceof Error ? error.stack : error);
     throw error; // Re-throw so frontend can see the error
   }
 };
@@ -353,7 +350,13 @@ export const getStatus = async (repoPath: string) => {
           }
         }
 
-        fileMap.set(filePath, { path: filePath, status, hasStaged, hasUnstaged, unstagedStatus });
+        fileMap.set(filePath, {
+          path: filePath,
+          status,
+          hasStaged,
+          hasUnstaged,
+          unstagedStatus,
+        });
       } else if (line.startsWith("2 ")) {
         // Renamed entry: 2 <XY> <sub> <mH> <mI> <mW> <hH> <hI> <X><score> <path>\t<origPath>
         const parts = line.split(" ");
@@ -371,8 +374,7 @@ export const getStatus = async (repoPath: string) => {
         // - If similarity < 100%, the rename included content changes → "modified"
         // - Otherwise it's a pure rename → "added"
         const similarity = parseInt(renameInfo.slice(1), 10);
-        const status: "modified" | "added" | "deleted" =
-          similarity === 100 ? "added" : "modified";
+        const status: "modified" | "added" | "deleted" = similarity === 100 ? "added" : "modified";
 
         // Unstaged status: based on unstaged code (only if there are unstaged changes)
         let unstagedStatus: "modified" | "added" | "deleted" | undefined;
@@ -442,16 +444,10 @@ export const stageFile = async (repoPath: string, filepath: string) => {
   }
 };
 
-export const unstageChange = async (
-  repoPath: string,
-  filepath: string,
-  oldFilePath?: string
-) => {
+export const unstageChange = async (repoPath: string, filepath: string, oldFilePath?: string) => {
   try {
     const paths = oldFilePath ? [filepath, oldFilePath] : [filepath];
-    await Promise.all(
-      paths.map((path) => git.resetIndex({ fs, dir: repoPath, filepath: path }))
-    );
+    await Promise.all(paths.map((path) => git.resetIndex({ fs, dir: repoPath, filepath: path })));
     return { success: true };
   } catch (error) {
     console.error("Error unstaging change:", error);
@@ -610,9 +606,7 @@ export const renameBranch = async (
           : upstreamBranch;
 
         // Extract remote name (e.g., "origin")
-        const remoteName = upstreamBranch.includes("/")
-          ? upstreamBranch.split("/")[0]
-          : "origin";
+        const remoteName = upstreamBranch.includes("/") ? upstreamBranch.split("/")[0] : "origin";
 
         // Push the new branch to remote with upstream tracking
         const pushResult = await execGitCommand(["push", "-u", remoteName, newName], repoPath);
@@ -719,9 +713,7 @@ export const checkout = async (repoPath: string, branchName: string) => {
           console.log("Created tracking branch:", checkoutResult.output);
         } else {
           // Neither local nor remote branch exists
-          throw new Error(
-            `Branch '${branchName}' not found (checked both local and remote)`
-          );
+          throw new Error(`Branch '${branchName}' not found (checked both local and remote)`);
         }
       }
     } else {
@@ -738,11 +730,7 @@ export const checkout = async (repoPath: string, branchName: string) => {
   }
 };
 
-export const commit = async (
-  repoPath: string,
-  message: string,
-  description?: string
-) => {
+export const commit = async (repoPath: string, message: string, description?: string) => {
   try {
     // Check status matrix to see what's staged
     const statusMatrix = await git.statusMatrix({
@@ -768,12 +756,9 @@ export const commit = async (
     let authorEmail = "user@example.com";
 
     try {
-      authorName =
-        (await git.getConfig({ fs, dir: repoPath, path: "user.name" })) ||
-        "User";
+      authorName = (await git.getConfig({ fs, dir: repoPath, path: "user.name" })) || "User";
       authorEmail =
-        (await git.getConfig({ fs, dir: repoPath, path: "user.email" })) ||
-        "user@example.com";
+        (await git.getConfig({ fs, dir: repoPath, path: "user.email" })) || "user@example.com";
     } catch (error) {
       console.warn("Could not get git config, using defaults");
     }
@@ -1046,10 +1031,8 @@ export const listStashes = async (repoPath: string) => {
         const days = Math.floor(hours / 24);
 
         if (seconds < 60) dateStr = "just now";
-        else if (minutes < 60)
-          dateStr = `${minutes} minute${minutes !== 1 ? "s" : ""} ago`;
-        else if (hours < 24)
-          dateStr = `${hours} hour${hours !== 1 ? "s" : ""} ago`;
+        else if (minutes < 60) dateStr = `${minutes} minute${minutes !== 1 ? "s" : ""} ago`;
+        else if (hours < 24) dateStr = `${hours} hour${hours !== 1 ? "s" : ""} ago`;
         else if (days === 1) dateStr = "1 day ago";
         else dateStr = `${days} days ago`;
       }
@@ -1130,9 +1113,7 @@ export const stash = async (repoPath: string, message: string) => {
         // Get previous stash SHA for proper chaining
         let prevSha = "0000000000000000000000000000000000000000";
         if (lines.length > 1) {
-          const prevMatch = lines[lines.length - 2].match(
-            /^[a-f0-9]+ ([a-f0-9]+)/
-          );
+          const prevMatch = lines[lines.length - 2].match(/^[a-f0-9]+ ([a-f0-9]+)/);
           if (prevMatch) {
             prevSha = prevMatch[1];
           }
@@ -1140,9 +1121,7 @@ export const stash = async (repoPath: string, message: string) => {
 
         // Fix the last entry: proper chaining + author format with angle brackets
         // Format: <old-sha> <new-sha> <author> <timestamp> <tz>\t<message>
-        const match = lastLine.match(
-          /^[a-f0-9]+ ([a-f0-9]+) (.+?) (\d+ [+-]\d+)\t(.+)$/
-        );
+        const match = lastLine.match(/^[a-f0-9]+ ([a-f0-9]+) (.+?) (\d+ [+-]\d+)\t(.+)$/);
         if (match) {
           const [, newSha, author, timestamp, msg] = match;
           // Fix author format: "User user@example.com" -> "User <user@example.com>"
@@ -1246,19 +1225,14 @@ export const stageLines = async (
     if (line.type === "add") {
       // For additions, we need to show where to insert
       const startIdx = Math.max(0, targetLineIdx - contextBefore);
-      const endIdx = Math.min(
-        workdirLines.length,
-        targetLineIdx + contextAfter + 1
-      );
+      const endIdx = Math.min(workdirLines.length, targetLineIdx + contextAfter + 1);
 
       const oldStart = startIdx + 1;
       const oldLines = endIdx - startIdx - 1; // Don't count the new line
       const newStart = startIdx + 1;
       const newLines = endIdx - startIdx;
 
-      patchLines.push(
-        `@@ -${oldStart},${oldLines} +${newStart},${newLines} @@`
-      );
+      patchLines.push(`@@ -${oldStart},${oldLines} +${newStart},${newLines} @@`);
 
       for (let i = startIdx; i < endIdx; i++) {
         if (i === targetLineIdx) {
@@ -1272,19 +1246,14 @@ export const stageLines = async (
     } else if (line.type === "delete") {
       // For deletions, we show the line being removed
       const startIdx = Math.max(0, targetLineIdx - contextBefore);
-      const endIdx = Math.min(
-        headLines.length,
-        targetLineIdx + contextAfter + 1
-      );
+      const endIdx = Math.min(headLines.length, targetLineIdx + contextAfter + 1);
 
       const oldStart = startIdx + 1;
       const oldLines = endIdx - startIdx;
       const newStart = startIdx + 1;
       const newLines = endIdx - startIdx - 1; // One less due to deletion
 
-      patchLines.push(
-        `@@ -${oldStart},${oldLines} +${newStart},${newLines} @@`
-      );
+      patchLines.push(`@@ -${oldStart},${oldLines} +${newStart},${newLines} @@`);
 
       for (let i = startIdx; i < endIdx; i++) {
         if (i === targetLineIdx) {
@@ -1301,9 +1270,7 @@ export const stageLines = async (
 
     const applyResult = await execGitCommand(["apply", "--cached", tempPatchPath], repoPath);
     if (!applyResult.success) {
-      console.error(
-        "Patch application failed, falling back to full file staging"
-      );
+      console.error("Patch application failed, falling back to full file staging");
       // Fallback: stage the whole file
       await git.add({ fs, dir: repoPath, filepath });
     }
@@ -1337,10 +1304,7 @@ export const unstageLines = async (
   }
 };
 
-export const createRepository = async (
-  parentPath: string,
-  repoName: string
-) => {
+export const createRepository = async (parentPath: string, repoName: string) => {
   try {
     // Create the full path for the new repository
     const repoPath = path.join(parentPath, repoName);
@@ -1441,8 +1405,7 @@ export const clone = async (
       lowerError.includes("403") ||
       lowerError.includes("404") ||
       lowerError.includes("not found") ||
-      (lowerError.includes("repository") &&
-        lowerError.includes("does not exist")) ||
+      (lowerError.includes("repository") && lowerError.includes("does not exist")) ||
       lowerError.includes("authentication required") ||
       lowerError.includes("could not read username") ||
       lowerError.includes("could not read password")
@@ -1452,12 +1415,8 @@ export const clone = async (
       isAuthError = true;
     }
     // Permission denied
-    else if (
-      lowerError.includes("permission denied") ||
-      lowerError.includes("access denied")
-    ) {
-      cleanError =
-        "Permission denied. You don't have access to this repository.";
+    else if (lowerError.includes("permission denied") || lowerError.includes("access denied")) {
+      cleanError = "Permission denied. You don't have access to this repository.";
     }
     // Network errors
     else if (
@@ -1482,9 +1441,7 @@ export const clone = async (
     else {
       // Extract just the fatal/error line from git output
       const lines = errorMessage.split("\n");
-      const fatalLine = lines.find(
-        (line) => line.includes("fatal:") || line.includes("error:")
-      );
+      const fatalLine = lines.find((line) => line.includes("fatal:") || line.includes("error:"));
       if (fatalLine) {
         let extracted = fatalLine.replace(/^.*?(fatal:|error:)\s*/i, "");
         // Capitalize first letter
@@ -1514,10 +1471,7 @@ export const clone = async (
     }
 
     // Check for SSH permission denied errors
-    if (
-      lowerError.includes("permission denied") &&
-      lowerError.includes("publickey")
-    ) {
+    if (lowerError.includes("permission denied") && lowerError.includes("publickey")) {
       return {
         success: false,
         error: cleanError,
@@ -1593,8 +1547,7 @@ export const fetch = async (
     remoteUrl = remoteResult.output.trim();
     originalRemoteUrl = remoteUrl;
 
-    const isHttpsUrl =
-      remoteUrl.startsWith("https://") || remoteUrl.startsWith("http://");
+    const isHttpsUrl = remoteUrl.startsWith("https://") || remoteUrl.startsWith("http://");
 
     // Build fetch args
     const fetchArgs = ["fetch", "--all", "--prune"];
@@ -1661,9 +1614,10 @@ export const fetch = async (
       }
     } else {
       // No credentials or SSH URL - fetch normally
-      const noCredFetchArgs = !saveCredentials && isHttpsUrl
-        ? ["-c", "credential.helper=", ...fetchArgs]
-        : [...fetchArgs];
+      const noCredFetchArgs =
+        !saveCredentials && isHttpsUrl
+          ? ["-c", "credential.helper=", ...fetchArgs]
+          : [...fetchArgs];
 
       const fetchResult = await execGitCommand(noCredFetchArgs, repoPath);
       if (!fetchResult.success) {
@@ -1771,8 +1725,7 @@ export const push = async (
     remoteUrl = remoteResult.output.trim();
     originalRemoteUrl = remoteUrl;
 
-    const isHttpsUrl =
-      remoteUrl.startsWith("https://") || remoteUrl.startsWith("http://");
+    const isHttpsUrl = remoteUrl.startsWith("https://") || remoteUrl.startsWith("http://");
 
     // Check if credentials are provided (not null, undefined, or empty)
     if (username && password && isHttpsUrl) {
@@ -1784,9 +1737,7 @@ export const push = async (
         const authenticatedUrl = urlObj.toString();
 
         // Build push args with credential helper config if not saving
-        const authPushArgs = saveCredentials
-          ? ["push"]
-          : ["-c", "credential.helper=", "push"];
+        const authPushArgs = saveCredentials ? ["push"] : ["-c", "credential.helper=", "push"];
 
         // Temporarily update the remote URL, push, then restore it
         await execGitCommand(["remote", "set-url", "origin", authenticatedUrl], repoPath);
@@ -1836,9 +1787,8 @@ export const push = async (
       }
     } else {
       // No credentials or SSH URL - push normally
-      const noCredPushArgs = !saveCredentials && isHttpsUrl
-        ? ["-c", "credential.helper=", "push"]
-        : ["push"];
+      const noCredPushArgs =
+        !saveCredentials && isHttpsUrl ? ["-c", "credential.helper=", "push"] : ["push"];
 
       const pushResult = await execGitCommand(noCredPushArgs, repoPath);
       if (!pushResult.success) {
@@ -1881,26 +1831,17 @@ export const push = async (
       isAuthError = true;
     } else if (lowerError.includes("permission denied")) {
       cleanError = "Permission denied. Please check your access rights.";
-    } else if (
-      lowerError.includes("failed to push") ||
-      lowerError.includes("rejected")
-    ) {
+    } else if (lowerError.includes("failed to push") || lowerError.includes("rejected")) {
       // Check for common push rejection scenarios
       if (lowerError.includes("non-fast-forward")) {
         cleanError = "Push rejected: Remote has changes. Please pull first.";
       } else if (lowerError.includes("fetch first")) {
-        cleanError =
-          "Push rejected: Remote has changes. Please fetch/pull first.";
+        cleanError = "Push rejected: Remote has changes. Please fetch/pull first.";
       } else {
-        cleanError =
-          "Push rejected. The remote may have changes or you may need to pull first.";
+        cleanError = "Push rejected. The remote may have changes or you may need to pull first.";
       }
-    } else if (
-      lowerError.includes("no upstream") ||
-      lowerError.includes("no tracking")
-    ) {
-      cleanError =
-        "No upstream branch configured. Use 'git push --set-upstream' first.";
+    } else if (lowerError.includes("no upstream") || lowerError.includes("no tracking")) {
+      cleanError = "No upstream branch configured. Use 'git push --set-upstream' first.";
     } else {
       // Extract the actual error message
       const lines = errorMessage.split("\n");
@@ -1967,8 +1908,7 @@ const pull = async (
     remoteUrl = remoteResult.output.trim();
     originalRemoteUrl = remoteUrl;
 
-    const isHttpsUrl =
-      remoteUrl.startsWith("https://") || remoteUrl.startsWith("http://");
+    const isHttpsUrl = remoteUrl.startsWith("https://") || remoteUrl.startsWith("http://");
 
     // If branchName is provided, use fetch to update specific branch without checking it out
     // Otherwise, use pull to update and merge current branch
@@ -2007,7 +1947,10 @@ const pull = async (
         }
 
         if (!operationResult.success) {
-          throw { stderr: operationResult.error, message: operationResult.error };
+          throw {
+            stderr: operationResult.error,
+            message: operationResult.error,
+          };
         }
       } catch (error: any) {
         // If URL parsing or remote setting fails, return a clean error
@@ -2038,9 +1981,10 @@ const pull = async (
       }
     } else {
       // No credentials or SSH URL - execute git operation normally
-      const noCredOperationArgs = !saveCredentials && isHttpsUrl
-        ? ["-c", "credential.helper=", ...operationArgs]
-        : [...operationArgs];
+      const noCredOperationArgs =
+        !saveCredentials && isHttpsUrl
+          ? ["-c", "credential.helper=", ...operationArgs]
+          : [...operationArgs];
 
       const operationResult = await execGitCommand(noCredOperationArgs, repoPath);
       if (!operationResult.success) {
@@ -2050,10 +1994,7 @@ const pull = async (
 
     return { success: true };
   } catch (error: any) {
-    console.error(
-      branchName ? "Error pulling branch:" : "Error pulling from remote:",
-      error
-    );
+    console.error(branchName ? "Error pulling branch:" : "Error pulling from remote:", error);
 
     // Ensure we always return a serializable object
     const errorMessage = String(error.stderr || error.message || error);
@@ -2088,10 +2029,7 @@ const pull = async (
       cleanError = "Permission denied. Please check your access rights.";
     } else if (branchName) {
       // Error handling specific to pulling non-current branch
-      if (
-        lowerError.includes("rejected") ||
-        lowerError.includes("non-fast-forward")
-      ) {
+      if (lowerError.includes("rejected") || lowerError.includes("non-fast-forward")) {
         cleanError =
           "Cannot pull: branch has diverged. Switch to this branch and resolve conflicts manually.";
       } else if (
@@ -2119,20 +2057,17 @@ const pull = async (
         lowerError.includes("conflict") ||
         lowerError.includes("automatic merge failed")
       ) {
-        cleanError =
-          "Pull resulted in merge conflicts. Please resolve conflicts manually.";
+        cleanError = "Pull resulted in merge conflicts. Please resolve conflicts manually.";
       } else if (
         lowerError.includes("uncommitted changes") ||
         lowerError.includes("overwritten by merge")
       ) {
-        cleanError =
-          "You have uncommitted changes. Please commit or stash them before pulling.";
+        cleanError = "You have uncommitted changes. Please commit or stash them before pulling.";
       } else if (
         lowerError.includes("no tracking information") ||
         lowerError.includes("no upstream")
       ) {
-        cleanError =
-          "No upstream branch configured. Please set up tracking first.";
+        cleanError = "No upstream branch configured. Please set up tracking first.";
       } else {
         // Extract the actual error message
         const lines = errorMessage.split("\n");

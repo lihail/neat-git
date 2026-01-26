@@ -79,9 +79,7 @@ export const NewBranchDialog = ({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Create New Branch</DialogTitle>
-          <DialogDescription>
-            Create a new branch from the current commit
-          </DialogDescription>
+          <DialogDescription>Create a new branch from the current commit</DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
           <div className="space-y-2">
@@ -93,24 +91,15 @@ export const NewBranchDialog = ({
               value={newBranchName}
               onChange={handleBranchNameChange}
               onKeyDown={(e) => {
-                if (
-                  e.key === "Enter" &&
-                  !branchNameError &&
-                  newBranchName.trim()
-                ) {
+                if (e.key === "Enter" && !branchNameError && newBranchName.trim()) {
                   handleCreateBranch();
                 } else if (e.key === "Escape") {
                   handleOpenChange(false);
                 }
               }}
-              className={cn(
-                branchNameError &&
-                "border-destructive focus-visible:ring-destructive"
-              )}
+              className={cn(branchNameError && "border-destructive focus-visible:ring-destructive")}
             />
-            {branchNameError && (
-              <p className="text-sm text-destructive">{branchNameError}</p>
-            )}
+            {branchNameError && <p className="text-sm text-destructive">{branchNameError}</p>}
           </div>
         </div>
         <DialogFooter>

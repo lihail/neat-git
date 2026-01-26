@@ -10,11 +10,7 @@ interface DiffFullViewProps {
   wordWrap: boolean;
 }
 
-export const DiffFullView = ({
-  lines,
-  language,
-  wordWrap,
-}: DiffFullViewProps) => {
+export const DiffFullView = ({ lines, language, wordWrap }: DiffFullViewProps) => {
   return (
     <ScrollArea className="flex-1 bg-code-bg">
       <div className={cn("font-mono text-xs", !wordWrap && "flex")}>
@@ -40,8 +36,7 @@ export const DiffFullView = ({
                   className={cn(
                     "pr-4 h-[22px]",
                     line.type === "add" && "bg-git-add/10 text-git-add",
-                    line.type === "delete" &&
-                    "bg-git-delete/10 text-git-delete",
+                    line.type === "delete" && "bg-git-delete/10 text-git-delete",
                     line.type === "context" && "text-foreground"
                   )}
                 >

@@ -43,7 +43,9 @@ export const CommitHistory = ({ commits, selectedCommit, onSelectCommit }: Commi
                       {commit.date}
                     </span>
                   </div>
-                  <p className="font-mono text-xs text-muted-foreground">{commit.sha.slice(0, 7)}</p>
+                  <p className="font-mono text-xs text-muted-foreground">
+                    {commit.sha.slice(0, 7)}
+                  </p>
                 </div>
               </div>
             </button>

@@ -65,9 +65,7 @@ export const CreateRepoDialog = ({
               className={repoNameError ? "border-destructive" : ""}
               autoFocus
             />
-            {repoNameError && (
-              <p className="text-sm text-destructive">{repoNameError}</p>
-            )}
+            {repoNameError && <p className="text-sm text-destructive">{repoNameError}</p>}
           </div>
         </div>
         <DialogFooter>

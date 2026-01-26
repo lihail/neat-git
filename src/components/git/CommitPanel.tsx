@@ -8,10 +8,7 @@ interface CommitPanelProps {
   onCommit: (message: string, description?: string) => void;
 }
 
-export const CommitPanel = ({
-  stagedFilesCount,
-  onCommit,
-}: CommitPanelProps) => {
+export const CommitPanel = ({ stagedFilesCount, onCommit }: CommitPanelProps) => {
   const [message, setMessage] = useState("");
 
   const handleCommit = () => {

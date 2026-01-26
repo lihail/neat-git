@@ -4,7 +4,7 @@ import path from "path";
 
 // https://vitejs.dev/config/
 export default defineConfig(() => ({
-  base: process.env.ELECTRON ? './' : '/',
+  base: process.env.ELECTRON ? "./" : "/",
   server: {
     host: "::",
     port: 8080,
@@ -17,7 +17,7 @@ export default defineConfig(() => ({
     },
   },
   build: {
-    outDir: 'dist',
+    outDir: "dist",
     emptyOutDir: true,
   },
 }));

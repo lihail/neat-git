@@ -9,11 +9,7 @@ interface DiffSplitViewProps {
   wordWrap: boolean;
 }
 
-export const DiffSplitView = ({
-  splitLines,
-  language,
-  wordWrap,
-}: DiffSplitViewProps) => {
+export const DiffSplitView = ({ splitLines, language, wordWrap }: DiffSplitViewProps) => {
   return (
     <div className="flex flex-col font-mono text-xs h-full">
       <div className="flex border-b border-border">

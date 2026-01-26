@@ -11,9 +11,7 @@ const isDev = process.env.NODE_ENV === "development" || !app.isPackaged;
 
 // In production (packaged app), __dirname will be inside app.asar
 // We need to properly resolve paths whether in asar or not
-const APP_ROOT = isDev
-  ? path.join(__dirname, "../")
-  : path.join(__dirname, "../");
+const APP_ROOT = isDev ? path.join(__dirname, "../") : path.join(__dirname, "../");
 
 const RENDERER_DIST = path.join(APP_ROOT, "dist");
 

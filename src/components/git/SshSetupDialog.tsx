@@ -63,8 +63,8 @@ export const SshSetupDialog = ({
                         SSH keys found, but authentication failed.
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        Your public key might not be added to the Git service
-                        yet, or you may need to generate a new key.
+                        Your public key might not be added to the Git service yet, or you may need
+                        to generate a new key.
                       </p>
                     </div>
 
@@ -104,13 +104,10 @@ export const SshSetupDialog = ({
             <>
               <div className="space-y-2">
                 <p className="text-sm font-medium">
-                  {sshHasExistingKeys
-                    ? "Your existing SSH public key:"
-                    : "SSH key created!"}
+                  {sshHasExistingKeys ? "Your existing SSH public key:" : "SSH key created!"}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  Add this public key to your Git service (GitHub, GitLab,
-                  Bitbucket, etc.):
+                  Add this public key to your Git service (GitHub, GitLab, Bitbucket, etc.):
                 </p>
               </div>
 
@@ -123,11 +120,7 @@ export const SshSetupDialog = ({
                     className="w-full h-32 p-3 text-xs font-mono bg-muted border rounded-md resize-none"
                   />
                 </div>
-                <Button
-                  onClick={onCopySshKey}
-                  variant="outline"
-                  className="w-full"
-                >
+                <Button onClick={onCopySshKey} variant="outline" className="w-full">
                   Copy to Clipboard
                 </Button>
               </div>
@@ -150,11 +143,7 @@ export const SshSetupDialog = ({
         </div>
 
         <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={onCancel}
-            disabled={sshIsGenerating}
-          >
+          <Button variant="outline" onClick={onCancel} disabled={sshIsGenerating}>
             Cancel
           </Button>
           {sshStep === "check" && !sshHasExistingKeys && (

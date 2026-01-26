@@ -76,10 +76,9 @@ export const generateKey = async () => {
     }
 
     // Generate key with empty passphrase
-    await execAsync(
-      `ssh-keygen -t ed25519 -f "${keyPath}" -N "" -C "neatgit-generated-key"`,
-      { encoding: "utf8" }
-    );
+    await execAsync(`ssh-keygen -t ed25519 -f "${keyPath}" -N "" -C "neatgit-generated-key"`, {
+      encoding: "utf8",
+    });
 
     return {
       success: true,

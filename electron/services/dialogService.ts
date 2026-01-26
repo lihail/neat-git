@@ -29,9 +29,7 @@ const openFolderDialog = async (
   return { success: true, path: selectedPath };
 };
 
-export const openSelectGitRepositoryFolderDialog = async (
-  win: BrowserWindow
-) => {
+export const openSelectGitRepositoryFolderDialog = async (win: BrowserWindow) => {
   return await openFolderDialog(win, "Select Git Repository", true);
 };
 
