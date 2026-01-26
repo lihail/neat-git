@@ -403,7 +403,7 @@ export const Index = () => {
     return () => {
       window.removeEventListener("focus", handleFocus);
     };
-  }, [repoPath, currentState?.selectedFile]);
+  }, [repoPath, currentState?.selectedFile, currentState?.selectedFileIsStaged, diffViewerMode]);
 
   // Tab management functions
   const handleOpenRepo = (path: string) => {
