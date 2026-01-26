@@ -70,7 +70,7 @@ export const validateBranchName = (name: string): string | null => {
   if (name.includes("@{")) {
     return "Branch name cannot contain @{";
   }
-  if (/[\s~^:?*\[\]\\]/.test(name)) {
+  if (/[\s~^:?*[\]\\]/.test(name)) {
     return "Branch name cannot contain spaces or special characters (~^:?*[]\\)";
   }
   if (name.startsWith("/")) {
@@ -103,7 +103,7 @@ export const validateRepoName = (name: string): string | null => {
   if (name.includes("..")) {
     return "Repository name cannot contain consecutive dots";
   }
-  if (/[\s~^:?*\[\]\\]/.test(name)) {
+  if (/[\s~^:?*[\]\\]/.test(name)) {
     return "Repository name cannot contain spaces or special characters (~^:?*[]\\)";
   }
   if (name.includes("/")) {
@@ -119,7 +119,7 @@ export const validateRepoName = (name: string): string | null => {
 const extractRepoNameFromUrl = (url: string): string => {
   try {
     // Remove trailing slashes and .git extension
-    let repoPath = url
+    const repoPath = url
       .trim()
       .replace(/\.git$/, "")
       .replace(/\/$/, "");

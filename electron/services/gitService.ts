@@ -807,10 +807,9 @@ export const commit = async (repoPath: string, message: string, description?: st
 export const log = async (repoPath: string, limit: number = 50) => {
   try {
     // Check if there are any commits by trying to resolve HEAD
-    let headRef;
     try {
-      headRef = await git.resolveRef({ fs, dir: repoPath, ref: "HEAD" });
-    } catch (error) {
+      await git.resolveRef({ fs, dir: repoPath, ref: "HEAD" });
+    } catch {
       // No commits yet or HEAD doesn't exist
       return [];
     }
@@ -1026,7 +1025,7 @@ export const listStashes = async (repoPath: string) => {
     const gitDir = path.join(repoPath, ".git");
     const reflogPath = path.join(gitDir, "logs", "refs", "stash");
 
-    let reflogEntries: Array<{ sha: string; timestamp: number }> = [];
+    const reflogEntries: Array<{ sha: string; timestamp: number }> = [];
     if (fs.existsSync(reflogPath)) {
       const reflogContent = fs.readFileSync(reflogPath, "utf8");
       const lines = reflogContent.trim().split("\n").filter(Boolean);
@@ -1418,7 +1417,7 @@ export const clone = async (
     }
 
     return { success: true, path: destination };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error cloning repository:", error);
 
     const errorMessage = error.stderr || error.message || String(error);
@@ -1474,7 +1473,7 @@ export const clone = async (
       const lines = errorMessage.split("\n");
       const fatalLine = lines.find((line) => line.includes("fatal:") || line.includes("error:"));
       if (fatalLine) {
-        let extracted = fatalLine.replace(/^.*?(fatal:|error:)\s*/i, "");
+        const extracted = fatalLine.replace(/^.*?(fatal:|error:)\s*/i, "");
         // Capitalize first letter
         cleanError = extracted.charAt(0).toUpperCase() + extracted.slice(1);
       } else {
@@ -1526,7 +1525,7 @@ export const getRemoteUrl = async (repoPath: string) => {
       return { success: false, error: result.error };
     }
     return { success: true, url: result.output.trim() };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error getting remote URL:", error);
     const errorMessage = String(error.message || error);
     return {
@@ -1616,7 +1615,7 @@ export const fetch = async (
         if (!fetchResult.success) {
           throw { stderr: fetchResult.error, message: fetchResult.error };
         }
-      } catch (error: any) {
+      } catch (error) {
         // If URL parsing or remote setting fails, return a clean error
         const errorMessage = error.stderr || error.message || String(error);
         const lowerError = errorMessage.toLowerCase();
@@ -1657,7 +1656,7 @@ export const fetch = async (
     }
 
     return { success: true };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error fetching from remote:", error);
 
     // Ensure we always return a serializable object
@@ -1789,7 +1788,7 @@ export const push = async (
         if (!pushResult.success) {
           throw { stderr: pushResult.error, message: pushResult.error };
         }
-      } catch (error: any) {
+      } catch (error) {
         // If URL parsing or remote setting fails, return a clean error
         const errorMessage = error.stderr || error.message || String(error);
         const lowerError = errorMessage.toLowerCase();
@@ -1828,7 +1827,7 @@ export const push = async (
     }
 
     return { success: true };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error pushing to remote:", error);
 
     // Ensure we always return a serializable object
@@ -1983,7 +1982,7 @@ const pull = async (
             message: operationResult.error,
           };
         }
-      } catch (error: any) {
+      } catch (error) {
         // If URL parsing or remote setting fails, return a clean error
         const errorMessage = error.stderr || error.message || String(error);
         const lowerError = errorMessage.toLowerCase();
@@ -2024,7 +2023,7 @@ const pull = async (
     }
 
     return { success: true };
-  } catch (error: any) {
+  } catch (error) {
     console.error(branchName ? "Error pulling branch:" : "Error pulling from remote:", error);
 
     // Ensure we always return a serializable object

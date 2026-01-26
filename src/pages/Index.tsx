@@ -194,6 +194,7 @@ export const Index = () => {
         clearInterval(fetchIntervalId);
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTabId, tabs]);
 
   // Get current repo path and state
@@ -284,6 +285,7 @@ export const Index = () => {
       };
       loadGitData();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [repoPath]);
 
   // Memoize the selected file's oldPath for renamed files
@@ -330,6 +332,7 @@ export const Index = () => {
       updateRepoState(repoPath, { diffLines: [] });
       setLoadingDiff(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [repoPath, currentState?.selectedFile, diffViewerMode, selectedFileOldPath]);
 
   // Refresh git data when window regains focus
