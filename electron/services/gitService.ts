@@ -2,6 +2,7 @@ import path from "node:path";
 import fs from "node:fs";
 import * as git from "isomorphic-git";
 import { execGitCommand } from "./dugiteService";
+import { listFilesRecursively } from "../utils/files";
 
 type FileStatus = {
   path: string;
@@ -397,14 +398,30 @@ export const getStatus = async (repoPath: string) => {
           unstagedStatus,
         });
       } else if (line.startsWith("? ")) {
-        // Untracked file
+        // Untracked file or directory
         const filePath = line.slice(2);
-        fileMap.set(filePath, {
-          path: filePath,
-          status: "added",
-          hasStaged: false,
-          hasUnstaged: true,
-        });
+
+        // Check if this is a directory (ends with /)
+        if (filePath.endsWith("/")) {
+          // Recursively list all files within it
+          const dirPath = path.join(repoPath, filePath);
+          const untrackedFiles = listFilesRecursively(dirPath, filePath);
+          for (const untrackedFile of untrackedFiles) {
+            fileMap.set(untrackedFile, {
+              path: untrackedFile,
+              status: "added",
+              hasStaged: false,
+              hasUnstaged: true,
+            });
+          }
+        } else {
+          fileMap.set(filePath, {
+            path: filePath,
+            status: "added",
+            hasStaged: false,
+            hasUnstaged: true,
+          });
+        }
       }
     }
 
