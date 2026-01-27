@@ -464,7 +464,7 @@ export const RepoSelector = ({ onSelectRepo, onCancel }: RepoSelectorProps) => {
             <RepoActionCard
               icon={GitBranch}
               title="Clone Repository"
-              description="Clone a remote Git repository from GitHub, GitLab, or other sources"
+              description="Clone a remote Git repository from GitHub, GitLab, Bitbucket, or other sources"
               buttonText="Clone"
               onClick={handleCloneRepo}
             />

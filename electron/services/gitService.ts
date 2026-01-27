@@ -640,7 +640,7 @@ export const renameBranch = async (
           // Check if the error is due to trying to delete the default branch
           if (deleteResult.error.includes("refusing to delete the current branch")) {
             throw new Error(
-              `Local branch renamed to "${newName}" and pushed to remote, but could not delete old branch "${remoteBranchName}" because it is the default branch on the remote. Please change the default branch on GitHub/GitLab first, then delete "${remoteBranchName}" manually.`
+              `Local branch renamed to "${newName}" and pushed to remote, but could not delete old branch "${remoteBranchName}" because it is the default branch on the remote. Please change the default branch on your Git hosting service first, then delete "${remoteBranchName}" manually.`
             );
           }
           throw new Error(`Failed to delete remote branch during rename: ${deleteResult.error}`);
