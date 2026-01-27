@@ -1021,37 +1021,30 @@ export const getDiff = async (
     const oldHadTrailingNewline = !oldFileHadNoNewline;
     const newHasTrailingNewline = !newFileHasNoNewline;
 
-    if (hasDeletedLines && oldHadTrailingNewline) {
-      // Only add if file is deleted OR new file lost the trailing newline
-      if (!hasAddedLines || !newHasTrailingNewline) {
-        oldLineNumber++;
-        diffLines.push({
-          type: "delete",
-          content: "",
-          lineNumber: oldLineNumber,
-          oldLineNumber,
-          hunkIndex,
-          hunkHeader: currentHunkHeader,
-        });
-      }
+    // Show deleted empty line only if trailing newline was removed
+    if (oldHadTrailingNewline && !newHasTrailingNewline) {
+      oldLineNumber++;
+      diffLines.push({
+        type: "delete",
+        content: "",
+        lineNumber: oldLineNumber,
+        oldLineNumber,
+        hunkIndex,
+        hunkHeader: currentHunkHeader,
+      });
     }
 
-    // Add empty added line if:
-    // - File was completely added (no deleted lines) and new file has trailing newline
-    // - OR trailing newline was added (old didn't have it, new does)
-    if (hasAddedLines && newHasTrailingNewline) {
-      // Only add if file is new OR old file didn't have trailing newline
-      if (!hasDeletedLines || !oldHadTrailingNewline) {
-        newLineNumber++;
-        diffLines.push({
-          type: "add",
-          content: "",
-          lineNumber: newLineNumber,
-          newLineNumber,
-          hunkIndex,
-          hunkHeader: currentHunkHeader,
-        });
-      }
+    // Show added empty line only if trailing newline was added
+    if (!oldHadTrailingNewline && newHasTrailingNewline) {
+      newLineNumber++;
+      diffLines.push({
+        type: "add",
+        content: "",
+        lineNumber: newLineNumber,
+        newLineNumber,
+        hunkIndex,
+        hunkHeader: currentHunkHeader,
+      });
     }
 
     return diffLines;
