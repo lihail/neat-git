@@ -25,7 +25,8 @@ export const DiffHunkView = ({ hunks, language, wordWrap }: DiffHunkViewProps) =
                 {hunk.lines.map((line, lineIdx) => (
                   <DiffLineRow
                     key={`${hunk.index}-${lineIdx}`}
-                    lineNumber={line.lineNumber}
+                    oldLineNumber={line.oldLineNumber}
+                    newLineNumber={line.newLineNumber}
                     type={line.type}
                     shrink
                     className="pl-4 pr-4 min-h-[22px] leading-[22px]"
@@ -46,7 +47,8 @@ export const DiffHunkView = ({ hunks, language, wordWrap }: DiffHunkViewProps) =
                   {hunk.lines.map((line, i) => (
                     <DiffLineRow
                       key={`${hunk.index}-ln-${i}`}
-                      lineNumber={line.lineNumber}
+                      oldLineNumber={line.oldLineNumber}
+                      newLineNumber={line.newLineNumber}
                       type={line.type}
                       className="items-center pl-4 h-[22px] leading-[22px]"
                     />

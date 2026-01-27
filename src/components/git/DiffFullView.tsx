@@ -21,7 +21,8 @@ export const DiffFullView = ({ lines, language, wordWrap }: DiffFullViewProps) =
               {lines.map((line, index) => (
                 <DiffLineRow
                   key={index}
-                  lineNumber={line.lineNumber}
+                  oldLineNumber={line.oldLineNumber}
+                  newLineNumber={line.newLineNumber}
                   type={line.type}
                   className="items-center pl-4 h-[22px] leading-[22px]"
                 />
@@ -57,7 +58,8 @@ export const DiffFullView = ({ lines, language, wordWrap }: DiffFullViewProps) =
             {lines.map((line, index) => (
               <DiffLineRow
                 key={index}
-                lineNumber={line.lineNumber}
+                oldLineNumber={line.oldLineNumber}
+                newLineNumber={line.newLineNumber}
                 type={line.type}
                 shrink
                 className="pl-4 pr-4 min-h-[22px] leading-[22px]"

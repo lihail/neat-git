@@ -28,7 +28,9 @@ export const DiffSplitViewSidePane = ({
           return (
             <DiffLineRow
               key={`${side}-ln-${index}`}
-              lineNumber={line?.lineNumber}
+              oldLineNumber={isLeft ? line?.lineNumber : undefined}
+              newLineNumber={isLeft ? undefined : line?.lineNumber}
+              singleColumn
               type={line?.type}
               className="items-center pl-4 h-[22px] leading-[22px]"
             />

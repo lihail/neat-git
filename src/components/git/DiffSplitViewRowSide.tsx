@@ -23,7 +23,9 @@ export const DiffSplitViewRowSide = ({
 
   return (
     <DiffLineRow
-      lineNumber={line?.lineNumber}
+      oldLineNumber={isLeft ? line?.lineNumber : undefined}
+      newLineNumber={isLeft ? undefined : line?.lineNumber}
+      singleColumn
       type={line?.type}
       shrink
       className={cn(
