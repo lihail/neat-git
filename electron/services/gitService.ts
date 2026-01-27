@@ -284,7 +284,11 @@ export const getStatus = async (repoPath: string) => {
 
     // Use git status --porcelain=v2 for rename detection
     // -M flag enables rename detection with default 50% similarity threshold
-    const statusResult = await execGitCommand(["status", "--porcelain=v2", "-M"], repoPath);
+    // -c core.fileMode=false ignores permission-only changes
+    const statusResult = await execGitCommand(
+      ["-c", "core.fileMode=false", "status", "--porcelain=v2", "-M"],
+      repoPath
+    );
     if (!statusResult.success) {
       throw new Error(`git status failed: ${statusResult.error}`);
     }
@@ -304,25 +308,12 @@ export const getStatus = async (repoPath: string) => {
         // Ordinary changed entry: 1 <XY> <sub> <mH> <mI> <mW> <hH> <hI> <path>
         const parts = line.split(" ");
         const xy = parts[1];
-        const hashHead = parts[6]; // Content hash in HEAD
-        const hashIndex = parts[7]; // Content hash in index (staged)
         const filePath = parts.slice(8).join(" ");
 
         const stagedCode = xy[0];
         const unstagedCode = xy[1];
-
-        // Check if staged change is mode-only (no content change)
-        // If hashes match but staged code shows change, it's mode-only
-        const isModeOnlyStaged = stagedCode !== "." && hashHead === hashIndex;
-
-        // Filter out mode-only staged changes
-        const hasStaged = stagedCode !== "." && !isModeOnlyStaged;
+        const hasStaged = stagedCode !== ".";
         const hasUnstaged = unstagedCode !== ".";
-
-        // Skip entirely if only mode changed and no unstaged changes
-        if (isModeOnlyStaged && !hasUnstaged) {
-          continue;
-        }
 
         // Determine staged status based on staged code
         let status: "modified" | "added" | "deleted";
