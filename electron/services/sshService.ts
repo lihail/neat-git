@@ -1,9 +1,7 @@
 import path from "node:path";
 import fs from "node:fs";
-import { exec } from "node:child_process";
-import { promisify } from "node:util";
-
-const execAsync = promisify(exec);
+import { isValidHostname } from "../utils/validation";
+import { spawnAsync } from "../utils/process";
 
 export const findKeys = async () => {
   try {
@@ -76,9 +74,16 @@ export const generateKey = async () => {
     }
 
     // Generate key with empty passphrase
-    await execAsync(`ssh-keygen -t ed25519 -f "${keyPath}" -N "" -C "neatgit-generated-key"`, {
-      encoding: "utf8",
-    });
+    await spawnAsync("ssh-keygen", [
+      "-t",
+      "ed25519",
+      "-f",
+      keyPath,
+      "-N",
+      "",
+      "-C",
+      "neatgit-generated-key",
+    ]);
 
     return {
       success: true,
@@ -109,6 +114,13 @@ export const readPublicKey = async (keyPath: string) => {
 
 export const isHostTrusted = async (hostname: string) => {
   try {
+    if (!isValidHostname(hostname)) {
+      return {
+        success: false,
+        error: "Invalid hostname format",
+      };
+    }
+
     const homeDir = process.env.HOME || process.env.USERPROFILE || "";
     const sshDir = path.join(homeDir, ".ssh");
     const knownHostsPath = path.join(sshDir, "known_hosts");
@@ -119,11 +131,8 @@ export const isHostTrusted = async (hostname: string) => {
     }
 
     // Check if hostname exists in known_hosts
-    // Use ssh-keygen to check (more reliable than parsing the file)
     try {
-      await execAsync(`ssh-keygen -F ${hostname}`, {
-        encoding: "utf8",
-      });
+      await spawnAsync("ssh-keygen", ["-F", hostname]);
       // If no error, host is found
       return { success: true, isTrusted: true };
     } catch {
@@ -141,6 +150,13 @@ export const isHostTrusted = async (hostname: string) => {
 
 export const trustHost = async (hostname: string) => {
   try {
+    if (!isValidHostname(hostname)) {
+      return {
+        success: false,
+        error: "Invalid hostname format",
+      };
+    }
+
     const homeDir = process.env.HOME || process.env.USERPROFILE || "";
     const sshDir = path.join(homeDir, ".ssh");
     const knownHostsPath = path.join(sshDir, "known_hosts");
@@ -150,9 +166,7 @@ export const trustHost = async (hostname: string) => {
     }
 
     // Run ssh-keyscan to get the host key
-    const { stdout } = await execAsync(`ssh-keyscan -H ${hostname}`, {
-      encoding: "utf8",
-    });
+    const { stdout } = await spawnAsync("ssh-keyscan", ["-H", hostname]);
 
     fs.appendFileSync(knownHostsPath, stdout);
 

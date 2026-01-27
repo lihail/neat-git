@@ -185,19 +185,35 @@ export const isSshUrl = (url: string): boolean => {
 
 export const validateCloneUrl = (url: string): string | null => {
   const trimmedUrl = url.trim();
+  const invalidUrlError = "Please enter a valid Git repository URL (https://, git@, or git://)";
 
-  // If empty, don't show error (button will be disabled)
   if (!trimmedUrl) {
     return null;
   }
 
-  // Check for common Git URL patterns
   const isHttpUrl = /^https?:\/\/.+/.test(trimmedUrl);
   const isSshUrl = /^git@.+:.+/.test(trimmedUrl);
   const isGitUrl = /^git:\/\/.+/.test(trimmedUrl);
 
   if (!isHttpUrl && !isSshUrl && !isGitUrl) {
-    return "Please enter a valid Git repository URL (https://, git@, or git://)";
+    return invalidUrlError;
+  }
+
+  const hostname = extractHostFromUrl(trimmedUrl);
+  if (hostname && hostname !== "remote server") {
+    const isValidHostname =
+      // IPv6 address
+      /^(\[)?[a-fA-F0-9:]+(\])?$/.test(hostname) ||
+      // IPv4 address
+      /^(\d{1,3}\.){3}\d{1,3}$/.test(hostname) ||
+      // RFC 1123 hostname: alphanumeric, hyphens, and dots only
+      /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/.test(
+        hostname
+      );
+
+    if (!isValidHostname) {
+      return invalidUrlError;
+    }
   }
 
   return null;
