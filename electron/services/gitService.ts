@@ -917,6 +917,9 @@ export const getDiff = async (
     let inHunk = false;
     let hunkIndex = -1;
     let currentHunkHeader = "";
+    let lastLineType: "add" | "delete" | "context" | null = null;
+    let oldFileHadNoNewline = false;
+    let newFileHasNoNewline = false;
 
     for (const line of lines) {
       // Skip diff headers
@@ -945,6 +948,18 @@ export const getDiff = async (
 
       if (!inHunk) continue;
 
+      // Handle "\ No newline at end of file" marker
+      if (line.startsWith("\\")) {
+        // The marker applies to the previous line type
+        if (lastLineType === "delete" || lastLineType === "context") {
+          oldFileHadNoNewline = true;
+        }
+        if (lastLineType === "add" || lastLineType === "context") {
+          newFileHasNoNewline = true;
+        }
+        continue;
+      }
+
       // Parse diff lines
       if (line.startsWith("+")) {
         // Added line - increment and use new line number
@@ -957,6 +972,7 @@ export const getDiff = async (
           hunkIndex,
           hunkHeader: currentHunkHeader,
         });
+        lastLineType = "add";
       } else if (line.startsWith("-")) {
         // Deleted line - increment and use old line number
         oldLineNumber++;
@@ -968,6 +984,7 @@ export const getDiff = async (
           hunkIndex,
           hunkHeader: currentHunkHeader,
         });
+        lastLineType = "delete";
       } else if (line.startsWith(" ")) {
         // Context line (unchanged) - increment both
         oldLineNumber++;
@@ -981,15 +998,49 @@ export const getDiff = async (
           hunkIndex,
           hunkHeader: currentHunkHeader,
         });
-      } else if (line === "") {
-        // Empty line in context - increment both
+        lastLineType = "context";
+      }
+      // Note: Empty strings from split("\n") are ignored - actual empty lines
+      // in the file have a space prefix in unified diff format
+    }
+
+    // Handle trailing newline representation
+    // Only show empty line for trailing newline if it was actually added/removed
+    const hasDeletedLines = diffLines.some((l) => l.type === "delete");
+    const hasAddedLines = diffLines.some((l) => l.type === "add");
+
+    // Add empty deleted line if:
+    // - File was completely deleted (no added lines) and old file had trailing newline
+    // - OR trailing newline was removed (old had it, new doesn't)
+    const oldHadTrailingNewline = !oldFileHadNoNewline;
+    const newHasTrailingNewline = !newFileHasNoNewline;
+
+    if (hasDeletedLines && oldHadTrailingNewline) {
+      // Only add if file is deleted OR new file lost the trailing newline
+      if (!hasAddedLines || !newHasTrailingNewline) {
         oldLineNumber++;
+        diffLines.push({
+          type: "delete",
+          content: "",
+          lineNumber: oldLineNumber,
+          oldLineNumber,
+          hunkIndex,
+          hunkHeader: currentHunkHeader,
+        });
+      }
+    }
+
+    // Add empty added line if:
+    // - File was completely added (no deleted lines) and new file has trailing newline
+    // - OR trailing newline was added (old didn't have it, new does)
+    if (hasAddedLines && newHasTrailingNewline) {
+      // Only add if file is new OR old file didn't have trailing newline
+      if (!hasDeletedLines || !oldHadTrailingNewline) {
         newLineNumber++;
         diffLines.push({
-          type: "context",
+          type: "add",
           content: "",
           lineNumber: newLineNumber,
-          oldLineNumber,
           newLineNumber,
           hunkIndex,
           hunkHeader: currentHunkHeader,
