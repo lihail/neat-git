@@ -1011,6 +1011,34 @@ export const getDiff = async (
       // in the file have a space prefix in unified diff format
     }
 
+    // Handle trailing newline-only changes: when git shows -line/+line with identical
+    // content, it means only the trailing newline status changed. Convert to context line.
+    // This can happen anywhere in the diff when a file's trailing newline changes.
+    for (let i = 0; i < diffLines.length - 1; i++) {
+      const currentLine = diffLines[i];
+      const nextLine = diffLines[i + 1];
+
+      if (
+        currentLine.type === "delete" &&
+        nextLine.type === "add" &&
+        currentLine.content === nextLine.content
+      ) {
+        // This is a trailing newline-only change - convert to context
+        const contextLine = {
+          type: "context" as const,
+          content: nextLine.content,
+          lineNumber: nextLine.newLineNumber!,
+          oldLineNumber: currentLine.oldLineNumber,
+          newLineNumber: nextLine.newLineNumber,
+          hunkIndex: nextLine.hunkIndex,
+          hunkHeader: nextLine.hunkHeader,
+        };
+        // Replace the delete+add pair with a single context line
+        diffLines.splice(i, 2, contextLine);
+        // Don't increment i since we replaced 2 items with 1
+      }
+    }
+
     // Handle trailing newline representation to match editor line count
     const oldHadTrailingNewline = !oldFileHadNoNewline;
     const newHasTrailingNewline = !newFileHasNoNewline;
@@ -1045,18 +1073,28 @@ export const getDiff = async (
     }
     // Case 3: Modified file - handle based on what changed
     else {
+      // Check if the diff ends with additions - if so, the old trailing newline
+      // is preserved as the line terminator for the original last line
+      const lastDiffLine = diffLines[diffLines.length - 1];
+      const endsWithAdditions = lastDiffLine?.type === "add";
+
       // If old had trailing newline, show it (as delete if removed, or context if kept)
       if (oldHadTrailingNewline && !newHasTrailingNewline) {
-        // Trailing newline was removed - show deleted empty line
-        oldLineNumber++;
-        diffLines.push({
-          type: "delete",
-          content: "",
-          lineNumber: oldLineNumber,
-          oldLineNumber,
-          hunkIndex,
-          hunkHeader: currentHunkHeader,
-        });
+        // Only show deleted empty line if no new content was added at the end
+        // If content was added, the old trailing newline is preserved as part of
+        // the existing file structure
+        if (!endsWithAdditions) {
+          // Trailing newline was removed without adding new content - show deleted empty line
+          oldLineNumber++;
+          diffLines.push({
+            type: "delete",
+            content: "",
+            lineNumber: oldLineNumber,
+            oldLineNumber,
+            hunkIndex,
+            hunkHeader: currentHunkHeader,
+          });
+        }
       } else if (!oldHadTrailingNewline && newHasTrailingNewline) {
         // Trailing newline was added - show added empty line
         newLineNumber++;
