@@ -19,7 +19,7 @@ export const listFilesRecursively = (dirPath: string, relativePath: string): str
 
       if (entry.isDirectory()) {
         // Recursively list files in subdirectory
-        const subFiles = listFilesRecursively(entryFullPath, entryRelativePath + "/");
+        const subFiles = listFilesRecursively(entryFullPath, `${entryRelativePath}/`);
         files.push(...subFiles);
       } else if (entry.isFile()) {
         files.push(entryRelativePath);

@@ -133,7 +133,9 @@ export const GitSetupDialog = ({ open, onComplete }: GitSetupDialogProps) => {
                 value={userName}
                 onChange={(e) => {
                   setUserName(e.target.value);
-                  if (errors.name) setErrors({ ...errors, name: "" });
+                  if (errors.name) {
+                    setErrors({ ...errors, name: "" });
+                  }
                 }}
                 className={errors.name ? "border-destructive" : ""}
               />
@@ -154,7 +156,9 @@ export const GitSetupDialog = ({ open, onComplete }: GitSetupDialogProps) => {
                 value={userEmail}
                 onChange={(e) => {
                   setUserEmail(e.target.value);
-                  if (errors.email) setErrors({ ...errors, email: "" });
+                  if (errors.email) {
+                    setErrors({ ...errors, email: "" });
+                  }
                 }}
                 className={errors.email ? "border-destructive" : ""}
               />

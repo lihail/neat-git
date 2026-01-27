@@ -23,10 +23,14 @@ process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL
   : RENDERER_DIST;
 
 // Disable GPU Acceleration for Windows 7
-if (process.platform === "win32") app.disableHardwareAcceleration();
+if (process.platform === "win32") {
+  app.disableHardwareAcceleration();
+}
 
 // Set application name for Windows 10+ notifications
-if (process.platform === "win32") app.setAppUserModelId(app.getName());
+if (process.platform === "win32") {
+  app.setAppUserModelId(app.getName());
+}
 
 if (!app.requestSingleInstanceLock()) {
   app.quit();
@@ -88,13 +92,17 @@ app.whenReady().then(() => {
 
 app.on("window-all-closed", () => {
   win = null;
-  if (process.platform !== "darwin") app.quit();
+  if (process.platform !== "darwin") {
+    app.quit();
+  }
 });
 
 app.on("second-instance", () => {
   if (win) {
     // Focus on the main window if the user tried to open another
-    if (win.isMinimized()) win.restore();
+    if (win.isMinimized()) {
+      win.restore();
+    }
     win.focus();
   }
 });

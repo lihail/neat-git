@@ -99,9 +99,15 @@ export const SidebarAccordion = ({
   const categorizedBranches = categorizeBranches();
 
   const defaultOpenSections = ["local-branches"];
-  if (remoteBranches.length > 0) defaultOpenSections.push("remote-branches");
-  if (stashes.length > 0) defaultOpenSections.push("stashed-changes");
-  if (commits.length > 0) defaultOpenSections.push("commit-history");
+  if (remoteBranches.length > 0) {
+    defaultOpenSections.push("remote-branches");
+  }
+  if (stashes.length > 0) {
+    defaultOpenSections.push("stashed-changes");
+  }
+  if (commits.length > 0) {
+    defaultOpenSections.push("commit-history");
+  }
 
   return (
     <div className="flex h-full flex-col border-r border-border">
@@ -201,7 +207,7 @@ export const SidebarAccordion = ({
                     {deletingStash === stash.index ? (
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-xs text-muted-foreground">
-                          Delete stash@{"{" + stash.index + "}"}?
+                          Delete stash@{`{${stash.index}}`}?
                         </span>
                         <div className="flex items-center gap-1">
                           <Button
@@ -233,7 +239,7 @@ export const SidebarAccordion = ({
                             {stash.message}
                           </p>
                           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <span className="font-mono">stash@{"{" + stash.index + "}"}</span>
+                            <span className="font-mono">stash@{`{${stash.index}}`}</span>
                             <span>{stash.date}</span>
                           </div>
                         </div>

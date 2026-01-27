@@ -122,7 +122,9 @@ export const RepoTabsList = ({
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (!isLoading) onCloseTab(tab.id);
+                      if (!isLoading) {
+                        onCloseTab(tab.id);
+                      }
                     }}
                     disabled={isLoading}
                     className="rounded-full p-1 transition-all hover:bg-destructive/20 hover:text-destructive ml-auto flex-shrink-0 opacity-0 group-hover:opacity-70 group-hover:hover:opacity-100 disabled:opacity-30 disabled:cursor-not-allowed"

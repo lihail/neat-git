@@ -192,7 +192,9 @@ export const listBranches = async (repoPath: string) => {
                 });
                 // Count commits until we hit the merge base
                 ahead = aheadCommits.findIndex((c) => c.oid === mergeBase[0]);
-                if (ahead === -1) ahead = aheadCommits.length;
+                if (ahead === -1) {
+                  ahead = aheadCommits.length;
+                }
               }
 
               // Calculate behind: commits from merge base to remote
@@ -204,7 +206,9 @@ export const listBranches = async (repoPath: string) => {
                 });
                 // Count commits until we hit the merge base
                 behind = behindCommits.findIndex((c) => c.oid === mergeBase[0]);
-                if (behind === -1) behind = behindCommits.length;
+                if (behind === -1) {
+                  behind = behindCommits.length;
+                }
               }
             }
           } catch (remoteError) {
@@ -946,7 +950,9 @@ export const getDiff = async (
         continue;
       }
 
-      if (!inHunk) continue;
+      if (!inHunk) {
+        continue;
+      }
 
       // Handle "\ No newline at end of file" marker
       if (line.startsWith("\\")) {
@@ -1111,11 +1117,17 @@ export const listStashes = async (repoPath: string) => {
         const hours = Math.floor(minutes / 60);
         const days = Math.floor(hours / 24);
 
-        if (seconds < 60) dateStr = "just now";
-        else if (minutes < 60) dateStr = `${minutes} minute${minutes !== 1 ? "s" : ""} ago`;
-        else if (hours < 24) dateStr = `${hours} hour${hours !== 1 ? "s" : ""} ago`;
-        else if (days === 1) dateStr = "1 day ago";
-        else dateStr = `${days} days ago`;
+        if (seconds < 60) {
+          dateStr = "just now";
+        } else if (minutes < 60) {
+          dateStr = `${minutes} minute${minutes !== 1 ? "s" : ""} ago`;
+        } else if (hours < 24) {
+          dateStr = `${hours} hour${hours !== 1 ? "s" : ""} ago`;
+        } else if (days === 1) {
+          dateStr = "1 day ago";
+        } else {
+          dateStr = `${days} days ago`;
+        }
       }
 
       const message = entry.message || entry.reflogId || "Stash";
@@ -1211,7 +1223,7 @@ export const stash = async (repoPath: string, message: string) => {
             : author.replace(/^(.+?) (.+@.+)$/, "$1 <$2>");
           const fixedLine = `${prevSha} ${newSha} ${fixedAuthor} ${timestamp}\t${msg}`;
           lines[lines.length - 1] = fixedLine;
-          fs.writeFileSync(reflogPath, lines.join("\n") + "\n");
+          fs.writeFileSync(reflogPath, `${lines.join("\n")}\n`);
         }
       }
     }
@@ -1345,7 +1357,7 @@ export const stageLines = async (
       }
     }
 
-    const patchContent = patchLines.join("\n") + "\n";
+    const patchContent = `${patchLines.join("\n")}\n`;
     const tempPatchPath = path.join(repoPath, ".git", "temp_stage.patch");
     fs.writeFileSync(tempPatchPath, patchContent);
 
