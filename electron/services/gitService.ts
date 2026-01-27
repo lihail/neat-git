@@ -924,8 +924,18 @@ export const getDiff = async (
     let lastLineType: "add" | "delete" | "context" | null = null;
     let oldFileHadNoNewline = false;
     let newFileHasNoNewline = false;
+    let isNewFile = false;
+    let isDeletedFile = false;
 
     for (const line of lines) {
+      // Check for new/deleted file indicators before skipping headers
+      if (line === "--- /dev/null") {
+        isNewFile = true;
+      }
+      if (line === "+++ /dev/null") {
+        isDeletedFile = true;
+      }
+
       // Skip diff headers
       if (
         line.startsWith("diff --git") ||
@@ -1010,41 +1020,78 @@ export const getDiff = async (
       // in the file have a space prefix in unified diff format
     }
 
-    // Handle trailing newline representation
-    // Only show empty line for trailing newline if it was actually added/removed
-    const hasDeletedLines = diffLines.some((l) => l.type === "delete");
-    const hasAddedLines = diffLines.some((l) => l.type === "add");
-
-    // Add empty deleted line if:
-    // - File was completely deleted (no added lines) and old file had trailing newline
-    // - OR trailing newline was removed (old had it, new doesn't)
+    // Handle trailing newline representation to match editor line count
     const oldHadTrailingNewline = !oldFileHadNoNewline;
     const newHasTrailingNewline = !newFileHasNoNewline;
 
-    // Show deleted empty line only if trailing newline was removed
-    if (oldHadTrailingNewline && !newHasTrailingNewline) {
-      oldLineNumber++;
-      diffLines.push({
-        type: "delete",
-        content: "",
-        lineNumber: oldLineNumber,
-        oldLineNumber,
-        hunkIndex,
-        hunkHeader: currentHunkHeader,
-      });
+    // Case 1: Deleted file - show trailing empty line if old file had one
+    if (isDeletedFile) {
+      if (oldHadTrailingNewline) {
+        oldLineNumber++;
+        diffLines.push({
+          type: "delete",
+          content: "",
+          lineNumber: oldLineNumber,
+          oldLineNumber,
+          hunkIndex,
+          hunkHeader: currentHunkHeader,
+        });
+      }
     }
-
-    // Show added empty line only if trailing newline was added
-    if (!oldHadTrailingNewline && newHasTrailingNewline) {
-      newLineNumber++;
-      diffLines.push({
-        type: "add",
-        content: "",
-        lineNumber: newLineNumber,
-        newLineNumber,
-        hunkIndex,
-        hunkHeader: currentHunkHeader,
-      });
+    // Case 2: New file - show trailing empty line if new file has one
+    else if (isNewFile) {
+      if (newHasTrailingNewline) {
+        newLineNumber++;
+        diffLines.push({
+          type: "add",
+          content: "",
+          lineNumber: newLineNumber,
+          newLineNumber,
+          hunkIndex,
+          hunkHeader: currentHunkHeader,
+        });
+      }
+    }
+    // Case 3: Modified file - handle based on what changed
+    else {
+      // If old had trailing newline, show it (as delete if removed, or context if kept)
+      if (oldHadTrailingNewline && !newHasTrailingNewline) {
+        // Trailing newline was removed - show deleted empty line
+        oldLineNumber++;
+        diffLines.push({
+          type: "delete",
+          content: "",
+          lineNumber: oldLineNumber,
+          oldLineNumber,
+          hunkIndex,
+          hunkHeader: currentHunkHeader,
+        });
+      } else if (!oldHadTrailingNewline && newHasTrailingNewline) {
+        // Trailing newline was added - show added empty line
+        newLineNumber++;
+        diffLines.push({
+          type: "add",
+          content: "",
+          lineNumber: newLineNumber,
+          newLineNumber,
+          hunkIndex,
+          hunkHeader: currentHunkHeader,
+        });
+      } else if (oldHadTrailingNewline && newHasTrailingNewline) {
+        // Both have trailing newline - show context empty line to match editor line count
+        oldLineNumber++;
+        newLineNumber++;
+        diffLines.push({
+          type: "context",
+          content: "",
+          lineNumber: newLineNumber,
+          oldLineNumber,
+          newLineNumber,
+          hunkIndex,
+          hunkHeader: currentHunkHeader,
+        });
+      }
+      // If neither has trailing newline, no extra line needed
     }
 
     return diffLines;
