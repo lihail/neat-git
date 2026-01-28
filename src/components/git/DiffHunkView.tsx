@@ -17,7 +17,11 @@ export const DiffHunkView = ({ hunks, language, wordWrap }: DiffHunkViewProps) =
       <div className="font-mono text-xs w-fit min-w-full">
         {hunks.map((hunk) => (
           <div key={hunk.index}>
-            <DiffHunkSeparator startLine={hunk.startLine} endLine={hunk.endLine} />
+            <DiffHunkSeparator
+              startLine={hunk.startLine}
+              endLine={hunk.endLine}
+              stickyHorizontal={!wordWrap}
+            />
 
             {/* Hunk lines */}
             {wordWrap ? (

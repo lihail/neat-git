@@ -12,11 +12,11 @@ interface DiffSplitViewProps {
 export const DiffSplitView = ({ splitLines, language, wordWrap }: DiffSplitViewProps) => {
   return (
     <div className="flex flex-col font-mono text-xs h-full">
-      <div className="flex border-b border-border">
-        <div className="w-1/2 bg-muted/30 px-4 py-2 text-xs font-semibold text-muted-foreground border-r border-border">
+      <div className="flex border-y border-border">
+        <div className="w-1/2 bg-card px-4 py-2 text-xs text-muted-foreground border-r border-border text-center">
           Old
         </div>
-        <div className="w-1/2 bg-muted/30 px-4 py-2 text-xs font-semibold text-muted-foreground">
+        <div className="w-1/2 bg-card px-4 py-2 text-xs text-muted-foreground text-center">
           New
         </div>
       </div>
