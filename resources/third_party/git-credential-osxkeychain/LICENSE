@@ -1,0 +1,9 @@
+git-credential-osxkeychain - GPLv2 License
+
+This binary (git-credential-osxkeychain) is part of Git and is distributed
+under the GNU General Public License version 2 (GPLv2).
+
+Source code is available at: https://github.com/git/git
+Specifically: https://github.com/git/git/blob/master/contrib/credential/osxkeychain/git-credential-osxkeychain.c
+
+For the full GPLv2 license text, see: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html

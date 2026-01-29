@@ -117,7 +117,12 @@
     "files": [
       "dist/**/*",
       "dist-electron/**/*",
+      "resources/**/*",
       "package.json"
+    ],
+    "asarUnpack": [
+      "node_modules/dugite/**",
+      "resources/third_party/**"
     ],
     "win": {
       "target": [
