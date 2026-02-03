@@ -1,7 +1,7 @@
 import type { DiffLine } from "./git";
 import type { SplitLine, Hunk } from "@/types/git";
 
-export function groupLinesByHunks(lines: DiffLine[]): Hunk[] | null {
+export const groupLinesByHunks = (lines: DiffLine[]): Hunk[] | null => {
   if (lines.length === 0) {
     return null;
   }
@@ -26,9 +26,9 @@ export function groupLinesByHunks(lines: DiffLine[]): Hunk[] | null {
   });
 
   return hunks.filter((h) => h); // Remove any undefined entries
-}
+};
 
-export function pairSplitLines(lines: DiffLine[]): SplitLine[] | null {
+export const pairSplitLines = (lines: DiffLine[]): SplitLine[] | null => {
   if (lines.length === 0) {
     return null;
   }
@@ -112,4 +112,4 @@ export function pairSplitLines(lines: DiffLine[]): SplitLine[] | null {
   }
 
   return splitLines;
-}
+};

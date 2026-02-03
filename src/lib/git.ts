@@ -45,7 +45,7 @@ export interface Stash {
 /**
  * Get the current branch name
  */
-export async function getCurrentBranch(repoPath: string): Promise<string> {
+export const getCurrentBranch = async (repoPath: string): Promise<string> => {
   if (typeof window === "undefined" || !window.electronAPI) {
     console.warn("Electron API not available");
     return "main";
@@ -58,12 +58,12 @@ export async function getCurrentBranch(repoPath: string): Promise<string> {
     console.error("Error getting current branch:", error);
     throw error;
   }
-}
+};
 
 /**
  * List all local branches
  */
-export async function listBranches(repoPath: string): Promise<Branch[]> {
+export const listBranches = async (repoPath: string): Promise<Branch[]> => {
   if (typeof window === "undefined" || !window.electronAPI) {
     console.warn("Electron API not available");
     return [];
@@ -76,12 +76,12 @@ export async function listBranches(repoPath: string): Promise<Branch[]> {
     console.error("Error listing branches:", error);
     throw error;
   }
-}
+};
 
 /**
  * Get git status - list all changed files with their staging status
  */
-export async function getStatus(repoPath: string): Promise<FileStatus[]> {
+export const getStatus = async (repoPath: string): Promise<FileStatus[]> => {
   if (typeof window === "undefined" || !window.electronAPI) {
     console.warn("Electron API not available");
     return [];
@@ -94,12 +94,12 @@ export async function getStatus(repoPath: string): Promise<FileStatus[]> {
     console.error("Error getting git status:", error);
     throw error;
   }
-}
+};
 
 /**
  * Stage a file
  */
-export async function stageFile(repoPath: string, filepath: string): Promise<void> {
+export const stageFile = async (repoPath: string, filepath: string): Promise<void> => {
   if (typeof window === "undefined" || !window.electronAPI) {
     console.warn("Electron API not available");
     return;
@@ -111,16 +111,16 @@ export async function stageFile(repoPath: string, filepath: string): Promise<voi
     console.error("Error staging file:", error);
     throw error;
   }
-}
+};
 
 /**
  * Unstage a change
  */
-export async function unstageChange(
+export const unstageChange = async (
   repoPath: string,
   filepath: string,
   oldFilePath?: string
-): Promise<void> {
+): Promise<void> => {
   if (typeof window === "undefined" || !window.electronAPI) {
     console.warn("Electron API not available");
     return;
@@ -134,12 +134,12 @@ export async function unstageChange(
     console.error("Error unstaging change:", error);
     throw error;
   }
-}
+};
 
 /**
  * List remote branches
  */
-export async function listRemoteBranches(repoPath: string): Promise<Branch[]> {
+export const listRemoteBranches = async (repoPath: string): Promise<Branch[]> => {
   if (typeof window === "undefined" || !window.electronAPI) {
     console.warn("Electron API not available");
     return [];
@@ -152,20 +152,20 @@ export async function listRemoteBranches(repoPath: string): Promise<Branch[]> {
     console.error("Error listing remote branches:", error);
     return [];
   }
-}
+};
 
 /**
  * Get diff for a file
  * @param staged - If true, shows staged changes (HEAD vs staging area). If false, shows unstaged changes (staging area vs working directory)
  * @param contextLines - Number of context lines to show around changes (999999 for full file, 3 for hunks)
  */
-export async function getDiff(
+export const getDiff = async (
   repoPath: string,
   filepath: string,
   staged: boolean = false,
   contextLines: number = 999999,
   oldFilePath?: string
-): Promise<DiffLine[]> {
+): Promise<DiffLine[]> => {
   if (typeof window === "undefined" || !window.electronAPI) {
     console.warn("Electron API not available");
     return [];
@@ -186,12 +186,12 @@ export async function getDiff(
     console.error("Error getting diff:", error);
     throw error;
   }
-}
+};
 
 /**
  * Create a new branch and checkout to it
  */
-export async function createBranch(repoPath: string, branchName: string): Promise<void> {
+export const createBranch = async (repoPath: string, branchName: string): Promise<void> => {
   if (typeof window === "undefined" || !window.electronAPI) {
     console.warn("Electron API not available");
     return;
@@ -203,12 +203,12 @@ export async function createBranch(repoPath: string, branchName: string): Promis
     console.error("Error creating branch:", error);
     throw error;
   }
-}
+};
 
 /**
  * Checkout an existing branch
  */
-export async function checkoutBranch(repoPath: string, branchName: string): Promise<void> {
+export const checkoutBranch = async (repoPath: string, branchName: string): Promise<void> => {
   if (typeof window === "undefined" || !window.electronAPI) {
     console.warn("Electron API not available");
     return;
@@ -220,12 +220,12 @@ export async function checkoutBranch(repoPath: string, branchName: string): Prom
     console.error("Error checking out branch:", error);
     throw error;
   }
-}
+};
 
 /**
  * Delete a branch
  */
-export async function deleteBranch(repoPath: string, branchName: string): Promise<void> {
+export const deleteBranch = async (repoPath: string, branchName: string): Promise<void> => {
   if (typeof window === "undefined" || !window.electronAPI) {
     console.warn("Electron API not available");
     return;
@@ -237,17 +237,17 @@ export async function deleteBranch(repoPath: string, branchName: string): Promis
     console.error("Error deleting branch:", error);
     throw error;
   }
-}
+};
 
 /**
  * Rename a branch
  */
-export async function renameBranch(
+export const renameBranch = async (
   repoPath: string,
   oldName: string,
   newName: string,
   alsoRenameRemote: boolean
-): Promise<void> {
+): Promise<void> => {
   if (typeof window === "undefined" || !window.electronAPI) {
     console.warn("Electron API not available");
     return;
@@ -259,12 +259,12 @@ export async function renameBranch(
     console.error("Error renaming branch:", error);
     throw error;
   }
-}
+};
 
 /**
  * Stage all files
  */
-export async function stageAll(repoPath: string): Promise<void> {
+export const stageAll = async (repoPath: string): Promise<void> => {
   if (typeof window === "undefined" || !window.electronAPI) {
     console.warn("Electron API not available");
     return;
@@ -276,12 +276,12 @@ export async function stageAll(repoPath: string): Promise<void> {
     console.error("Error staging all files:", error);
     throw error;
   }
-}
+};
 
 /**
  * Unstage all files
  */
-export async function unstageAll(repoPath: string): Promise<void> {
+export const unstageAll = async (repoPath: string): Promise<void> => {
   if (typeof window === "undefined" || !window.electronAPI) {
     console.warn("Electron API not available");
     return;
@@ -293,12 +293,12 @@ export async function unstageAll(repoPath: string): Promise<void> {
     console.error("Error unstaging all files:", error);
     throw error;
   }
-}
+};
 
 /**
  * Get commit history
  */
-export async function getCommitHistory(repoPath: string, limit: number = 50): Promise<Commit[]> {
+export const getCommitHistory = async (repoPath: string, limit: number = 50): Promise<Commit[]> => {
   if (typeof window === "undefined" || !window.electronAPI) {
     console.warn("Electron API not available");
     return [];
@@ -311,16 +311,16 @@ export async function getCommitHistory(repoPath: string, limit: number = 50): Pr
     console.error("Error getting commit history:", error);
     throw error;
   }
-}
+};
 
 /**
  * Commit staged changes
  */
-export async function commit(
+export const commit = async (
   repoPath: string,
   message: string,
   description?: string
-): Promise<{ success: boolean; sha: string }> {
+): Promise<{ success: boolean; sha: string }> => {
   if (typeof window === "undefined" || !window.electronAPI) {
     console.warn("Electron API not available");
     return { success: false, sha: "" };
@@ -334,15 +334,15 @@ export async function commit(
     console.error("Error committing:", error);
     throw error;
   }
-}
+};
 
 /**
  * Stash all changes (staged and unstaged)
  */
-export async function stash(
+export const stash = async (
   repoPath: string,
   message: string
-): Promise<{ success: boolean; message: string }> {
+): Promise<{ success: boolean; message: string }> => {
   if (typeof window === "undefined" || !window.electronAPI) {
     console.warn("Electron API not available");
     return { success: false, message: "Electron API not available" };
@@ -354,12 +354,12 @@ export async function stash(
     console.error("Error stashing changes:", error);
     throw error;
   }
-}
+};
 
 /**
  * List all stashes
  */
-export async function listStashes(repoPath: string): Promise<Stash[]> {
+export const listStashes = async (repoPath: string): Promise<Stash[]> => {
   if (typeof window === "undefined" || !window.electronAPI) {
     console.warn("Electron API not available");
     return [];
@@ -372,15 +372,15 @@ export async function listStashes(repoPath: string): Promise<Stash[]> {
     console.error("Error listing stashes:", error);
     throw error;
   }
-}
+};
 
 /**
  * Pop a stash (restore and delete)
  */
-export async function popStash(
+export const popStash = async (
   repoPath: string,
   index: number
-): Promise<{ success: boolean; message: string }> {
+): Promise<{ success: boolean; message: string }> => {
   if (typeof window === "undefined" || !window.electronAPI) {
     console.warn("Electron API not available");
     return { success: false, message: "Electron API not available" };
@@ -392,15 +392,15 @@ export async function popStash(
     console.error("Error popping stash:", error);
     throw error;
   }
-}
+};
 
 /**
  * Delete a stash
  */
-export async function deleteStash(
+export const deleteStash = async (
   repoPath: string,
   index: number
-): Promise<{ success: boolean; message: string }> {
+): Promise<{ success: boolean; message: string }> => {
   if (typeof window === "undefined" || !window.electronAPI) {
     console.warn("Electron API not available");
     return { success: false, message: "Electron API not available" };
@@ -412,16 +412,16 @@ export async function deleteStash(
     console.error("Error deleting stash:", error);
     throw error;
   }
-}
+};
 
 /**
  * Stage specific lines from a file
  */
-export async function stageLines(
+export const stageLines = async (
   repoPath: string,
   filepath: string,
   lines: DiffLine[]
-): Promise<void> {
+): Promise<void> => {
   if (typeof window === "undefined" || !window.electronAPI) {
     console.warn("Electron API not available");
     return;
@@ -433,16 +433,16 @@ export async function stageLines(
     console.error("Error staging lines:", error);
     throw error;
   }
-}
+};
 
 /**
  * Unstage specific lines from a file
  */
-export async function unstageLines(
+export const unstageLines = async (
   repoPath: string,
   filepath: string,
   lines: DiffLine[]
-): Promise<void> {
+): Promise<void> => {
   if (typeof window === "undefined" || !window.electronAPI) {
     console.warn("Electron API not available");
     return;
@@ -454,17 +454,17 @@ export async function unstageLines(
     console.error("Error unstaging lines:", error);
     throw error;
   }
-}
+};
 
 /**
  * Fetch from remote repository
  */
-export async function fetchFromRemote(
+export const fetchFromRemote = async (
   repoPath: string,
   username?: string,
   password?: string,
   saveCredentials?: boolean
-): Promise<{ success: boolean; error?: string; needsAuth?: boolean }> {
+): Promise<{ success: boolean; error?: string; needsAuth?: boolean }> => {
   if (typeof window === "undefined" || !window.electronAPI) {
     console.warn("Electron API not available");
     return { success: false, error: "Electron API not available" };
@@ -489,17 +489,17 @@ export async function fetchFromRemote(
       needsAuth: false,
     };
   }
-}
+};
 
 /**
  * Push to remote repository
  */
-export async function pushToRemote(
+export const pushToRemote = async (
   repoPath: string,
   username?: string,
   password?: string,
   saveCredentials?: boolean
-): Promise<{ success: boolean; error?: string; needsAuth?: boolean }> {
+): Promise<{ success: boolean; error?: string; needsAuth?: boolean }> => {
   if (typeof window === "undefined" || !window.electronAPI) {
     console.warn("Electron API not available");
     return { success: false, error: "Electron API not available" };
@@ -519,17 +519,17 @@ export async function pushToRemote(
       needsAuth: false,
     };
   }
-}
+};
 
 /**
  * Pull from remote repository
  */
-export async function pullFromRemote(
+export const pullFromRemote = async (
   repoPath: string,
   username?: string,
   password?: string,
   saveCredentials?: boolean
-): Promise<{ success: boolean; error?: string; needsAuth?: boolean }> {
+): Promise<{ success: boolean; error?: string; needsAuth?: boolean }> => {
   if (typeof window === "undefined" || !window.electronAPI) {
     console.warn("Electron API not available");
     return { success: false, error: "Electron API not available" };
@@ -554,19 +554,19 @@ export async function pullFromRemote(
       needsAuth: false,
     };
   }
-}
+};
 
 /**
  * Pull a specific branch without checking it out
  * This fetches the branch and updates the local ref without affecting the working directory
  */
-export async function pullNonCurrentBranch(
+export const pullNonCurrentBranch = async (
   repoPath: string,
   branchName: string,
   username?: string,
   password?: string,
   saveCredentials?: boolean
-): Promise<{ success: boolean; error?: string; needsAuth?: boolean }> {
+): Promise<{ success: boolean; error?: string; needsAuth?: boolean }> => {
   if (typeof window === "undefined" || !window.electronAPI) {
     console.warn("Electron API not available");
     return { success: false, error: "Electron API not available" };
@@ -592,4 +592,4 @@ export async function pullNonCurrentBranch(
       needsAuth: false,
     };
   }
-}
+};
