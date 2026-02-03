@@ -207,7 +207,7 @@ export const RepoSelector = ({ onSelectRepo, onCancel }: RepoSelectorProps) => {
     }
   };
 
-  const handleConfirmClone = async () => {
+  const handleConfirmClone = async (saveCredentials: boolean) => {
     const trimmedUrl = cloneUrl.trim();
 
     // Validate URL format (empty check not needed, button will be disabled)
@@ -235,8 +235,7 @@ export const RepoSelector = ({ onSelectRepo, onCancel }: RepoSelectorProps) => {
       }
     }
 
-    // Attempt clone without auth first
-    performClone();
+    performClone(undefined, undefined, saveCredentials);
   };
 
   const handleConfirmAuth = async (

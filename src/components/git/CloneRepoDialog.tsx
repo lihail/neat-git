@@ -1,4 +1,6 @@
+import { useState, useEffect } from "react";
 import { FolderOpen } from "lucide-react";
+import { extractCredentialsFromUrl } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -10,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface CloneRepoDialogProps {
   open: boolean;
@@ -21,7 +24,7 @@ interface CloneRepoDialogProps {
   fullClonePath: string;
   onCloneUrlChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onSelectDestination: () => void;
-  onConfirm: () => void;
+  onConfirm: (saveCredentials: boolean) => void;
   onCancel: () => void;
 }
 
@@ -38,6 +41,17 @@ export const CloneRepoDialog = ({
   onConfirm,
   onCancel,
 }: CloneRepoDialogProps) => {
+  const [saveCredentials, setSaveCredentials] = useState(true);
+
+  const hasEmbeddedCredentials = extractCredentialsFromUrl(cloneUrl) !== null;
+
+  // Reset when dialog closes
+  useEffect(() => {
+    if (!open) {
+      setSaveCredentials(true);
+    }
+  }, [open]);
+
   const handleOpenChange = (newOpen: boolean) => {
     if (!isLoading) {
       onOpenChange(newOpen);
@@ -46,10 +60,14 @@ export const CloneRepoDialog = ({
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && !cloneUrlError && !isLoading) {
-      onConfirm();
+      onConfirm(hasEmbeddedCredentials && saveCredentials);
     } else if (e.key === "Escape" && !isLoading) {
       onCancel();
     }
+  };
+
+  const handleConfirm = () => {
+    onConfirm(hasEmbeddedCredentials && saveCredentials);
   };
 
   return (
@@ -110,6 +128,22 @@ export const CloneRepoDialog = ({
                 </div>
               </div>
             )}
+
+            {hasEmbeddedCredentials && (
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="save-credentials"
+                  checked={saveCredentials}
+                  onCheckedChange={(checked) => setSaveCredentials(checked as boolean)}
+                />
+                <label
+                  htmlFor="save-credentials"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                >
+                  Save my credentials on this device
+                </label>
+              </div>
+            )}
           </div>
 
           <DialogFooter>
@@ -117,7 +151,7 @@ export const CloneRepoDialog = ({
               Cancel
             </Button>
             <Button
-              onClick={onConfirm}
+              onClick={handleConfirm}
               disabled={isLoading || !cloneUrl.trim() || !cloneDestination}
             >
               {isLoading ? "Cloning..." : "Clone Repository"}
