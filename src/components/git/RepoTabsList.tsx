@@ -159,7 +159,7 @@ export const RepoTabsList = ({
             </Button>
           </TooltipTrigger>
           <TooltipContent side="bottom">
-            <p>Open Repository</p>
+            <p>Add Repository</p>
           </TooltipContent>
         </Tooltip>
       </div>
