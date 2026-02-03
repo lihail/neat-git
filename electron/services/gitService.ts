@@ -7,6 +7,7 @@ import {
   GIT_CREDENTIAL_OSXKEYCHAIN_PATH,
   INLINE_CREDENTIAL_HELPER,
   createCredentialEnv,
+  storeCredentialsToOsxkeychain,
 } from "../utils/gitCredentialOsxkeychain";
 
 type FileStatus = {
@@ -1532,8 +1533,7 @@ export const clone = async (
       if (username && password) {
         cloneArgs.push("-c", `credential.helper=${INLINE_CREDENTIAL_HELPER}`);
         credentialEnv = createCredentialEnv(username, password);
-      }
-      if (saveCredentials) {
+      } else {
         cloneArgs.push("-c", `credential.helper=${GIT_CREDENTIAL_OSXKEYCHAIN_PATH}`);
       }
     }
@@ -1555,9 +1555,18 @@ export const clone = async (
     cloneArgs.push("clone", cloneUrl, destination);
 
     // Execute git clone with credential environment if provided
-    const result = await execGitCommand(cloneArgs, process.cwd(), credentialEnv);
-    if (!result.success) {
-      throw { stderr: result.error.message, message: result.error.message };
+    const cloneResult = await execGitCommand(cloneArgs, process.cwd(), credentialEnv);
+
+    if (cloneResult.success && isHttpsUrl && username && password && saveCredentials) {
+      try {
+        await storeCredentialsToOsxkeychain(cloneUrl, destination, username, password);
+      } catch (error) {
+        console.error("Failed to store credentials to keychain:", error);
+      }
+    }
+
+    if (!cloneResult.success) {
+      throw { stderr: cloneResult.error.message, message: cloneResult.error.message };
     }
 
     return { success: true, path: destination };
@@ -1722,24 +1731,26 @@ export const fetch = async (
     const fetchArgs: string[] = [];
     let credentialEnv: Record<string, string> | undefined;
 
-    if (username && password && isHttpsUrl) {
-      fetchArgs.push("-c", `credential.helper=${INLINE_CREDENTIAL_HELPER}`);
-      credentialEnv = createCredentialEnv(username, password);
-
-      if (saveCredentials) {
-        fetchArgs.push("-c", `credential.helper=${GIT_CREDENTIAL_OSXKEYCHAIN_PATH}`);
-      }
-    } else if (isHttpsUrl) {
-      if (saveCredentials) {
-        fetchArgs.push("-c", `credential.helper=${GIT_CREDENTIAL_OSXKEYCHAIN_PATH}`);
+    if (isHttpsUrl) {
+      if (username && password) {
+        fetchArgs.push("-c", `credential.helper=${INLINE_CREDENTIAL_HELPER}`);
+        credentialEnv = createCredentialEnv(username, password);
       } else {
-        fetchArgs.push("-c", "credential.helper=");
+        fetchArgs.push("-c", `credential.helper=${GIT_CREDENTIAL_OSXKEYCHAIN_PATH}`);
       }
     }
 
     fetchArgs.push("fetch", "--all", "--prune");
 
     const fetchResult = await execGitCommand(fetchArgs, repoPath, credentialEnv);
+
+    if (fetchResult.success && isHttpsUrl && username && password && saveCredentials) {
+      try {
+        await storeCredentialsToOsxkeychain(remoteUrl, repoPath, username, password);
+      } catch (error) {
+        console.error("Failed to store credentials to keychain:", error);
+      }
+    }
 
     if (!fetchResult.success) {
       const errorMessage = fetchResult.error.message || "";
@@ -1865,24 +1876,26 @@ export const push = async (
     const pushArgs: string[] = [];
     let credentialEnv: Record<string, string> | undefined;
 
-    if (username && password && isHttpsUrl) {
-      pushArgs.push("-c", `credential.helper=${INLINE_CREDENTIAL_HELPER}`);
-      credentialEnv = createCredentialEnv(username, password);
-
-      if (saveCredentials) {
-        pushArgs.push("-c", `credential.helper=${GIT_CREDENTIAL_OSXKEYCHAIN_PATH}`);
-      }
-    } else if (isHttpsUrl) {
-      if (saveCredentials) {
-        pushArgs.push("-c", `credential.helper=${GIT_CREDENTIAL_OSXKEYCHAIN_PATH}`);
+    if (isHttpsUrl) {
+      if (username && password) {
+        pushArgs.push("-c", `credential.helper=${INLINE_CREDENTIAL_HELPER}`);
+        credentialEnv = createCredentialEnv(username, password);
       } else {
-        pushArgs.push("-c", "credential.helper=");
+        pushArgs.push("-c", `credential.helper=${GIT_CREDENTIAL_OSXKEYCHAIN_PATH}`);
       }
     }
 
     pushArgs.push("push");
 
     const pushResult = await execGitCommand(pushArgs, repoPath, credentialEnv);
+
+    if (pushResult.success && isHttpsUrl && username && password && saveCredentials) {
+      try {
+        await storeCredentialsToOsxkeychain(remoteUrl, repoPath, username, password);
+      } catch (error) {
+        console.error("Failed to store credentials to keychain:", error);
+      }
+    }
 
     if (!pushResult.success) {
       const errorMessage = pushResult.error.message || "";
@@ -2026,24 +2039,26 @@ const pull = async (
     const operationArgs: string[] = [];
     let credentialEnv: Record<string, string> | undefined;
 
-    if (username && password && isHttpsUrl) {
-      operationArgs.push("-c", `credential.helper=${INLINE_CREDENTIAL_HELPER}`);
-      credentialEnv = createCredentialEnv(username, password);
-
-      if (saveCredentials) {
-        operationArgs.push("-c", `credential.helper=${GIT_CREDENTIAL_OSXKEYCHAIN_PATH}`);
-      }
-    } else if (isHttpsUrl) {
-      if (saveCredentials) {
-        operationArgs.push("-c", `credential.helper=${GIT_CREDENTIAL_OSXKEYCHAIN_PATH}`);
+    if (isHttpsUrl) {
+      if (username && password) {
+        operationArgs.push("-c", `credential.helper=${INLINE_CREDENTIAL_HELPER}`);
+        credentialEnv = createCredentialEnv(username, password);
       } else {
-        operationArgs.push("-c", "credential.helper=");
+        operationArgs.push("-c", `credential.helper=${GIT_CREDENTIAL_OSXKEYCHAIN_PATH}`);
       }
     }
 
     operationArgs.push(...baseOperationArgs);
 
     const operationResult = await execGitCommand(operationArgs, repoPath, credentialEnv);
+
+    if (operationResult.success && isHttpsUrl && username && password && saveCredentials) {
+      try {
+        await storeCredentialsToOsxkeychain(remoteUrl, repoPath, username, password);
+      } catch (error) {
+        console.error("Failed to store credentials to keychain:", error);
+      }
+    }
 
     if (!operationResult.success) {
       const errorMessage = operationResult.error.message || "";

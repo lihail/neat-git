@@ -31,7 +31,8 @@ const FAIL_AUTH_FAST_ENV = {
 export const execGitCommand = async (
   args: string[],
   cwd: string = process.cwd(),
-  customEnv?: Record<string, string>
+  customEnv?: Record<string, string>,
+  stdin?: string
 ): Promise<GitCommandResult> => {
   const command = args[0];
   const timeoutMs = command === "clone" ? CLONE_TIMEOUT_MS : DEFAULT_COMMAND_TIMEOUT_MS;
@@ -42,6 +43,7 @@ export const execGitCommand = async (
     const result = await dugiteExec(args, cwd, {
       signal: abortController.signal,
       env: { ...process.env, ...FAIL_AUTH_FAST_ENV, ...customEnv },
+      stdin,
     });
 
     // git diff returns exit code 1 when there are differences, which is normal
