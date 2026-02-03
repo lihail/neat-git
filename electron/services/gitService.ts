@@ -3,7 +3,11 @@ import fs from "node:fs";
 import * as git from "isomorphic-git";
 import { execGitCommand } from "./dugiteService";
 import { listFilesRecursively } from "../utils/files";
-import { GIT_CREDENTIAL_OSXKEYCHAIN_PATH } from "../utils/gitCredentialOsxkeychain";
+import {
+  GIT_CREDENTIAL_OSXKEYCHAIN_PATH,
+  INLINE_CREDENTIAL_HELPER,
+  createCredentialEnv,
+} from "../utils/gitCredentialOsxkeychain";
 
 type FileStatus = {
   path: string;
@@ -73,7 +77,7 @@ export const getCurrentBranch = async (repoPath: string) => {
     return branch || "main";
   } catch (error) {
     console.error("Error getting current branch:", error);
-    throw error; // Re-throw so frontend can see the error
+    throw error;
   }
 };
 
@@ -233,7 +237,7 @@ export const listBranches = async (repoPath: string) => {
   } catch (error) {
     console.error("Error listing branches:", error);
     console.error("Error details:", error instanceof Error ? error.stack : error);
-    throw error; // Re-throw so frontend can see the error
+    throw error;
   }
 };
 
@@ -267,7 +271,6 @@ export const listRemoteBranches = async (repoPath: string) => {
     return remoteBranches;
   } catch (error) {
     console.error("Error listing remote branches:", error);
-    // Return empty array if there are no remotes configured
     return [];
   }
 };
@@ -1520,41 +1523,39 @@ export const clone = async (
   saveCredentials: boolean = true
 ) => {
   try {
-    // Build the clone URL with credentials if provided
-    let cloneUrl = url;
     const isHttpsUrl = url.startsWith("https://") || url.startsWith("http://");
 
-    if (username && password && isHttpsUrl) {
-      // Only inject credentials for HTTPS/HTTP URLs
-      // SSH URLs use keys, not username/password
-
-      // Parse URL and STRIP any existing credentials to avoid double-injection
-      const urlObj = new URL(url);
-      urlObj.username = encodeURIComponent(username);
-      urlObj.password = encodeURIComponent(password);
-      cloneUrl = urlObj.toString();
-    } else if (isHttpsUrl) {
-      // No credentials provided, but URL might have embedded credentials
-      // Just use the URL as-is (embedded credentials will be used by git)
-      cloneUrl = url;
-    }
-
-    // Build git args with credential helper config
-    // Only HTTPS URLs use credential helpers - SSH uses keys
     const cloneArgs: string[] = [];
+    let credentialEnv: Record<string, string> | undefined;
+
     if (isHttpsUrl) {
+      if (username && password) {
+        cloneArgs.push("-c", `credential.helper=${INLINE_CREDENTIAL_HELPER}`);
+        credentialEnv = createCredentialEnv(username, password);
+      }
       if (saveCredentials) {
-        // Use macOS Keychain to save credentials
         cloneArgs.push("-c", `credential.helper=${GIT_CREDENTIAL_OSXKEYCHAIN_PATH}`);
-      } else {
-        // Disable credential helper - don't save
-        cloneArgs.push("-c", "credential.helper=");
       }
     }
+
+    // Strip any existing credentials from URL to avoid double-injection or plaintext exposure
+    let cloneUrl = url;
+    if (isHttpsUrl) {
+      try {
+        const urlObj = new URL(url);
+        urlObj.username = "";
+        urlObj.password = "";
+        cloneUrl = urlObj.toString();
+      } catch {
+        // If URL parsing fails, use as-is
+        cloneUrl = url;
+      }
+    }
+
     cloneArgs.push("clone", cloneUrl, destination);
 
-    // Execute git clone
-    const result = await execGitCommand(cloneArgs, process.cwd());
+    // Execute git clone with credential environment if provided
+    const result = await execGitCommand(cloneArgs, process.cwd(), credentialEnv);
     if (!result.success) {
       throw { stderr: result.error.message, message: result.error.message };
     }
@@ -1686,8 +1687,6 @@ export const fetch = async (
 ) => {
   // Wrap entire handler to ensure we NEVER throw across IPC boundary
   try {
-    let originalRemoteUrl: string | null = null;
-
     // Verify the repo path exists
     if (!fs.existsSync(repoPath)) {
       return {
@@ -1707,7 +1706,6 @@ export const fetch = async (
     }
 
     // Get remote URL to check if it's HTTPS
-    let remoteUrl = "";
     const remoteResult = await execGitCommand(["remote", "get-url", "origin"], repoPath);
     if (!remoteResult.success) {
       // No remote configured
@@ -1717,87 +1715,53 @@ export const fetch = async (
         needsAuth: false,
       };
     }
-    remoteUrl = remoteResult.output.trim();
-    originalRemoteUrl = remoteUrl;
+    const remoteUrl = remoteResult.output.trim();
 
     const isHttpsUrl = remoteUrl.startsWith("https://") || remoteUrl.startsWith("http://");
 
-    // Build fetch args
-    const fetchArgs = ["fetch", "--all", "--prune"];
+    const fetchArgs: string[] = [];
+    let credentialEnv: Record<string, string> | undefined;
 
-    // Check if credentials are provided (not null, undefined, or empty)
     if (username && password && isHttpsUrl) {
-      // For HTTPS URLs with credentials, temporarily set the remote URL with embedded credentials
-      try {
-        const urlObj = new URL(remoteUrl);
-        urlObj.username = encodeURIComponent(username);
-        urlObj.password = encodeURIComponent(password);
-        const authenticatedUrl = urlObj.toString();
+      fetchArgs.push("-c", `credential.helper=${INLINE_CREDENTIAL_HELPER}`);
+      credentialEnv = createCredentialEnv(username, password);
 
-        // Build fetch args with credential helper config
-        const authFetchArgs = saveCredentials
-          ? ["-c", `credential.helper=${GIT_CREDENTIAL_OSXKEYCHAIN_PATH}`, ...fetchArgs]
-          : ["-c", "credential.helper=", ...fetchArgs];
+      if (saveCredentials) {
+        fetchArgs.push("-c", `credential.helper=${GIT_CREDENTIAL_OSXKEYCHAIN_PATH}`);
+      }
+    } else if (isHttpsUrl) {
+      if (saveCredentials) {
+        fetchArgs.push("-c", `credential.helper=${GIT_CREDENTIAL_OSXKEYCHAIN_PATH}`);
+      } else {
+        fetchArgs.push("-c", "credential.helper=");
+      }
+    }
 
-        // Temporarily update the remote URL, fetch, then restore it
-        await execGitCommand(["remote", "set-url", "origin", authenticatedUrl], repoPath);
+    fetchArgs.push("fetch", "--all", "--prune");
 
-        const fetchResult = await execGitCommand(authFetchArgs, repoPath);
+    const fetchResult = await execGitCommand(fetchArgs, repoPath, credentialEnv);
 
-        // Restore original URL
-        if (originalRemoteUrl) {
-          const restoreResult = await execGitCommand(
-            ["remote", "set-url", "origin", originalRemoteUrl],
-            repoPath
-          );
-          if (!restoreResult.success) {
-            console.error("Failed to restore original remote URL:", restoreResult.error.message);
-          }
-        }
+    if (!fetchResult.success) {
+      const errorMessage = fetchResult.error.message || "";
+      const lowerError = errorMessage.toLowerCase();
 
-        if (!fetchResult.success) {
-          throw { stderr: fetchResult.error.message, message: fetchResult.error.message };
-        }
-      } catch (error) {
-        // If URL parsing or remote setting fails, return a clean error
-        const errorMessage = error.stderr || error.message || String(error);
-        const lowerError = errorMessage.toLowerCase();
-
-        // Check if this is an authentication error
-        if (
-          lowerError.includes("authentication failed") ||
-          lowerError.includes("invalid username") ||
-          lowerError.includes("invalid credentials") ||
-          lowerError.includes("remote: invalid") ||
-          lowerError.includes("401") ||
-          lowerError.includes("403")
-        ) {
-          return {
-            success: false,
-            error: "Invalid username, password, or token",
-            needsAuth: false,
-          };
-        }
-
+      // Check if this is an authentication error
+      if (
+        lowerError.includes("authentication failed") ||
+        lowerError.includes("invalid username") ||
+        lowerError.includes("invalid credentials") ||
+        lowerError.includes("remote: invalid") ||
+        lowerError.includes("401") ||
+        lowerError.includes("403")
+      ) {
         return {
           success: false,
-          error: `Failed to configure authentication: ${errorMessage}`,
+          error: "Invalid username, password, or token",
           needsAuth: false,
         };
       }
-    } else {
-      // No credentials or SSH URL - fetch normally
-      // For HTTPS without credentials, still configure credential helper based on saveCredentials
-      const noCredFetchArgs = isHttpsUrl
-        ? saveCredentials
-          ? ["-c", `credential.helper=${GIT_CREDENTIAL_OSXKEYCHAIN_PATH}`, ...fetchArgs]
-          : ["-c", "credential.helper=", ...fetchArgs]
-        : [...fetchArgs];
 
-      const fetchResult = await execGitCommand(noCredFetchArgs, repoPath);
-      if (!fetchResult.success) {
-        throw { stderr: fetchResult.error.message, message: fetchResult.error.message };
-      }
+      throw { stderr: errorMessage, message: errorMessage };
     }
 
     return { success: true };
@@ -1866,8 +1830,6 @@ export const push = async (
 ) => {
   // Wrap entire handler to ensure we NEVER throw across IPC boundary
   try {
-    let originalRemoteUrl: string | null = null;
-
     // Verify the repo path exists
     if (!fs.existsSync(repoPath)) {
       return {
@@ -1887,7 +1849,6 @@ export const push = async (
     }
 
     // Get remote URL to check if it's HTTPS
-    let remoteUrl = "";
     const remoteResult = await execGitCommand(["remote", "get-url", "origin"], repoPath);
     if (!remoteResult.success) {
       // No remote configured
@@ -1897,84 +1858,53 @@ export const push = async (
         needsAuth: false,
       };
     }
-    remoteUrl = remoteResult.output.trim();
-    originalRemoteUrl = remoteUrl;
+    const remoteUrl = remoteResult.output.trim();
 
     const isHttpsUrl = remoteUrl.startsWith("https://") || remoteUrl.startsWith("http://");
 
-    // Check if credentials are provided (not null, undefined, or empty)
+    const pushArgs: string[] = [];
+    let credentialEnv: Record<string, string> | undefined;
+
     if (username && password && isHttpsUrl) {
-      // For HTTPS URLs with credentials, temporarily set the remote URL with embedded credentials
-      try {
-        const urlObj = new URL(remoteUrl);
-        urlObj.username = encodeURIComponent(username);
-        urlObj.password = encodeURIComponent(password);
-        const authenticatedUrl = urlObj.toString();
+      pushArgs.push("-c", `credential.helper=${INLINE_CREDENTIAL_HELPER}`);
+      credentialEnv = createCredentialEnv(username, password);
 
-        // Build push args with credential helper config
-        const authPushArgs = saveCredentials
-          ? ["-c", `credential.helper=${GIT_CREDENTIAL_OSXKEYCHAIN_PATH}`, "push"]
-          : ["-c", "credential.helper=", "push"];
+      if (saveCredentials) {
+        pushArgs.push("-c", `credential.helper=${GIT_CREDENTIAL_OSXKEYCHAIN_PATH}`);
+      }
+    } else if (isHttpsUrl) {
+      if (saveCredentials) {
+        pushArgs.push("-c", `credential.helper=${GIT_CREDENTIAL_OSXKEYCHAIN_PATH}`);
+      } else {
+        pushArgs.push("-c", "credential.helper=");
+      }
+    }
 
-        // Temporarily update the remote URL, push, then restore it
-        await execGitCommand(["remote", "set-url", "origin", authenticatedUrl], repoPath);
+    pushArgs.push("push");
 
-        const pushResult = await execGitCommand(authPushArgs, repoPath);
+    const pushResult = await execGitCommand(pushArgs, repoPath, credentialEnv);
 
-        // Restore original URL
-        if (originalRemoteUrl) {
-          const restoreResult = await execGitCommand(
-            ["remote", "set-url", "origin", originalRemoteUrl],
-            repoPath
-          );
-          if (!restoreResult.success) {
-            console.error("Failed to restore original remote URL:", restoreResult.error.message);
-          }
-        }
+    if (!pushResult.success) {
+      const errorMessage = pushResult.error.message || "";
+      const lowerError = errorMessage.toLowerCase();
 
-        if (!pushResult.success) {
-          throw { stderr: pushResult.error.message, message: pushResult.error.message };
-        }
-      } catch (error) {
-        // If URL parsing or remote setting fails, return a clean error
-        const errorMessage = error.stderr || error.message || String(error);
-        const lowerError = errorMessage.toLowerCase();
-
-        // Check if this is an authentication error
-        if (
-          lowerError.includes("authentication failed") ||
-          lowerError.includes("invalid username") ||
-          lowerError.includes("invalid credentials") ||
-          lowerError.includes("remote: invalid") ||
-          lowerError.includes("401") ||
-          lowerError.includes("403")
-        ) {
-          return {
-            success: false,
-            error: "Invalid username, password, or token",
-            needsAuth: false,
-          };
-        }
-
+      // Check if this is an authentication error
+      if (
+        lowerError.includes("authentication failed") ||
+        lowerError.includes("invalid username") ||
+        lowerError.includes("invalid credentials") ||
+        lowerError.includes("remote: invalid") ||
+        lowerError.includes("401") ||
+        lowerError.includes("403")
+      ) {
         return {
           success: false,
-          error: `Failed to configure authentication: ${errorMessage}`,
+          error: "Invalid username, password, or token",
           needsAuth: false,
         };
       }
-    } else {
-      // No credentials or SSH URL - push normally
-      // For HTTPS without credentials, still configure credential helper based on saveCredentials
-      const noCredPushArgs = isHttpsUrl
-        ? saveCredentials
-          ? ["-c", `credential.helper=${GIT_CREDENTIAL_OSXKEYCHAIN_PATH}`, "push"]
-          : ["-c", "credential.helper=", "push"]
-        : ["push"];
 
-      const pushResult = await execGitCommand(noCredPushArgs, repoPath);
-      if (!pushResult.success) {
-        throw { stderr: pushResult.error.message, message: pushResult.error.message };
-      }
+      throw { stderr: errorMessage, message: errorMessage };
     }
 
     return { success: true };
@@ -2055,8 +1985,6 @@ const pull = async (
 ) => {
   // Wrap entire handler to ensure we NEVER throw across IPC boundary
   try {
-    let originalRemoteUrl: string | null = null;
-
     // Verify the repo path exists
     if (!fs.existsSync(repoPath)) {
       return {
@@ -2076,7 +2004,6 @@ const pull = async (
     }
 
     // Get remote URL to check if it's HTTPS
-    let remoteUrl = "";
     const remoteResult = await execGitCommand(["remote", "get-url", "origin"], repoPath);
     if (!remoteResult.success) {
       // No remote configured
@@ -2086,93 +2013,59 @@ const pull = async (
         needsAuth: false,
       };
     }
-    remoteUrl = remoteResult.output.trim();
-    originalRemoteUrl = remoteUrl;
+    const remoteUrl = remoteResult.output.trim();
 
     const isHttpsUrl = remoteUrl.startsWith("https://") || remoteUrl.startsWith("http://");
 
     // If branchName is provided, use fetch to update specific branch without checking it out
     // Otherwise, use pull to update and merge current branch
-    const operationArgs = branchName
+    const baseOperationArgs = branchName
       ? ["fetch", "origin", `${branchName}:${branchName}`]
       : ["pull"];
 
-    // Check if credentials are provided (not null, undefined, or empty)
+    const operationArgs: string[] = [];
+    let credentialEnv: Record<string, string> | undefined;
+
     if (username && password && isHttpsUrl) {
-      // For HTTPS URLs with credentials, temporarily set the remote URL with embedded credentials
-      try {
-        const urlObj = new URL(remoteUrl);
-        urlObj.username = encodeURIComponent(username);
-        urlObj.password = encodeURIComponent(password);
-        const authenticatedUrl = urlObj.toString();
+      operationArgs.push("-c", `credential.helper=${INLINE_CREDENTIAL_HELPER}`);
+      credentialEnv = createCredentialEnv(username, password);
 
-        // Build args with credential helper config
-        const authOperationArgs = saveCredentials
-          ? ["-c", `credential.helper=${GIT_CREDENTIAL_OSXKEYCHAIN_PATH}`, ...operationArgs]
-          : ["-c", "credential.helper=", ...operationArgs];
+      if (saveCredentials) {
+        operationArgs.push("-c", `credential.helper=${GIT_CREDENTIAL_OSXKEYCHAIN_PATH}`);
+      }
+    } else if (isHttpsUrl) {
+      if (saveCredentials) {
+        operationArgs.push("-c", `credential.helper=${GIT_CREDENTIAL_OSXKEYCHAIN_PATH}`);
+      } else {
+        operationArgs.push("-c", "credential.helper=");
+      }
+    }
 
-        // Temporarily update the remote URL, execute git operation, then restore it
-        await execGitCommand(["remote", "set-url", "origin", authenticatedUrl], repoPath);
+    operationArgs.push(...baseOperationArgs);
 
-        const operationResult = await execGitCommand(authOperationArgs, repoPath);
+    const operationResult = await execGitCommand(operationArgs, repoPath, credentialEnv);
 
-        // Restore original URL
-        if (originalRemoteUrl) {
-          const restoreResult = await execGitCommand(
-            ["remote", "set-url", "origin", originalRemoteUrl],
-            repoPath
-          );
-          if (!restoreResult.success) {
-            console.error("Failed to restore original remote URL:", restoreResult.error.message);
-          }
-        }
+    if (!operationResult.success) {
+      const errorMessage = operationResult.error.message || "";
+      const lowerError = errorMessage.toLowerCase();
 
-        if (!operationResult.success) {
-          throw {
-            stderr: operationResult.error.message,
-            message: operationResult.error.message,
-          };
-        }
-      } catch (error) {
-        // If URL parsing or remote setting fails, return a clean error
-        const errorMessage = error.stderr || error.message || String(error);
-        const lowerError = errorMessage.toLowerCase();
-
-        // Check if this is an authentication error
-        if (
-          lowerError.includes("authentication failed") ||
-          lowerError.includes("invalid username") ||
-          lowerError.includes("invalid credentials") ||
-          lowerError.includes("remote: invalid") ||
-          lowerError.includes("401") ||
-          lowerError.includes("403")
-        ) {
-          return {
-            success: false,
-            error: "Invalid username, password, or token",
-            needsAuth: false,
-          };
-        }
-
+      // Check if this is an authentication error
+      if (
+        lowerError.includes("authentication failed") ||
+        lowerError.includes("invalid username") ||
+        lowerError.includes("invalid credentials") ||
+        lowerError.includes("remote: invalid") ||
+        lowerError.includes("401") ||
+        lowerError.includes("403")
+      ) {
         return {
           success: false,
-          error: `Failed to configure authentication: ${errorMessage}`,
+          error: "Invalid username, password, or token",
           needsAuth: false,
         };
       }
-    } else {
-      // No credentials or SSH URL - execute git operation normally
-      // For HTTPS without credentials, still configure credential helper based on saveCredentials
-      const noCredOperationArgs = isHttpsUrl
-        ? saveCredentials
-          ? ["-c", `credential.helper=${GIT_CREDENTIAL_OSXKEYCHAIN_PATH}`, ...operationArgs]
-          : ["-c", "credential.helper=", ...operationArgs]
-        : [...operationArgs];
 
-      const operationResult = await execGitCommand(noCredOperationArgs, repoPath);
-      if (!operationResult.success) {
-        throw { stderr: operationResult.error.message, message: operationResult.error.message };
-      }
+      throw { stderr: errorMessage, message: errorMessage };
     }
 
     return { success: true };

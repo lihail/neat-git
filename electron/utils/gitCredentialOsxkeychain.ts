@@ -13,3 +13,14 @@ const getGitCredentialOsxkeychainPath = (): string => {
 };
 
 export const GIT_CREDENTIAL_OSXKEYCHAIN_PATH = getGitCredentialOsxkeychainPath();
+export const INLINE_CREDENTIAL_HELPER =
+  '!f() { echo "username=$GIT_CRED_USERNAME"; echo "password=$GIT_CRED_PASSWORD"; }; f';
+
+// Create environment variables for the inline credential helper
+export const createCredentialEnv = (
+  username: string,
+  password: string
+): Record<string, string> => ({
+  GIT_CRED_USERNAME: username,
+  GIT_CRED_PASSWORD: password,
+});
