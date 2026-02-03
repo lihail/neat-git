@@ -127,7 +127,9 @@ export async function unstageChange(
   }
 
   try {
-    await window.electronAPI.unstageChange(repoPath, filepath, oldFilePath);
+    // Ensure all parameters are serializable primitives
+    const safeOldFilePath = oldFilePath !== undefined ? String(oldFilePath) : null;
+    await window.electronAPI.unstageChange(repoPath, filepath, safeOldFilePath);
   } catch (error) {
     console.error("Error unstaging change:", error);
     throw error;
@@ -170,12 +172,14 @@ export async function getDiff(
   }
 
   try {
+    // Ensure all parameters are serializable primitives
+    const safeOldFilePath = oldFilePath !== undefined ? String(oldFilePath) : null;
     const diff = await window.electronAPI.getDiff(
       repoPath,
       filepath,
       staged,
       contextLines,
-      oldFilePath
+      safeOldFilePath
     );
     return diff || [];
   } catch (error) {
@@ -323,8 +327,9 @@ export async function commit(
   }
 
   try {
-    const result = await window.electronAPI.commit(repoPath, message, description);
-    return result;
+    // Ensure all parameters are serializable primitives
+    const safeDescription = description !== undefined ? String(description) : null;
+    return await window.electronAPI.commit(repoPath, message, safeDescription);
   } catch (error) {
     console.error("Error committing:", error);
     throw error;
@@ -344,8 +349,7 @@ export async function stash(
   }
 
   try {
-    const result = await window.electronAPI.stash(repoPath, message);
-    return result;
+    return await window.electronAPI.stash(repoPath, message);
   } catch (error) {
     console.error("Error stashing changes:", error);
     throw error;
@@ -383,8 +387,7 @@ export async function popStash(
   }
 
   try {
-    const result = await window.electronAPI.popStash(repoPath, index);
-    return result;
+    return await window.electronAPI.popStash(repoPath, index);
   } catch (error) {
     console.error("Error popping stash:", error);
     throw error;
@@ -404,8 +407,7 @@ export async function deleteStash(
   }
 
   try {
-    const result = await window.electronAPI.deleteStash(repoPath, index);
-    return result;
+    return await window.electronAPI.deleteStash(repoPath, index);
   } catch (error) {
     console.error("Error deleting stash:", error);
     throw error;
@@ -469,7 +471,16 @@ export async function fetchFromRemote(
   }
 
   try {
-    return await window.electronAPI.fetch(repoPath, username, password, saveCredentials);
+    // Ensure all parameters are serializable primitives
+    const safeUsername = username !== undefined ? String(username) : null;
+    const safePassword = password !== undefined ? String(password) : null;
+    const safeSaveCredentials = Boolean(saveCredentials);
+    return await window.electronAPI.fetch(
+      repoPath,
+      safeUsername,
+      safePassword,
+      safeSaveCredentials
+    );
   } catch (error) {
     console.error("Error fetching from remote:", error);
     return {
@@ -495,7 +506,11 @@ export async function pushToRemote(
   }
 
   try {
-    return await window.electronAPI.push(repoPath, username, password, saveCredentials);
+    // Ensure all parameters are serializable primitives
+    const safeUsername = username !== undefined ? String(username) : null;
+    const safePassword = password !== undefined ? String(password) : null;
+    const safeSaveCredentials = Boolean(saveCredentials);
+    return await window.electronAPI.push(repoPath, safeUsername, safePassword, safeSaveCredentials);
   } catch (error) {
     console.error("Error pushing to remote:", error);
     return {
@@ -521,11 +536,15 @@ export async function pullFromRemote(
   }
 
   try {
+    // Ensure all parameters are serializable primitives
+    const safeUsername = username !== undefined ? String(username) : null;
+    const safePassword = password !== undefined ? String(password) : null;
+    const safeSaveCredentials = Boolean(saveCredentials);
     return await window.electronAPI.pullCurrentBranch(
       repoPath,
-      username,
-      password,
-      saveCredentials
+      safeUsername,
+      safePassword,
+      safeSaveCredentials
     );
   } catch (error) {
     console.error("Error pulling from remote:", error);
@@ -554,12 +573,16 @@ export async function pullNonCurrentBranch(
   }
 
   try {
+    // Ensure all parameters are serializable primitives
+    const safeUsername = username !== undefined ? String(username) : null;
+    const safePassword = password !== undefined ? String(password) : null;
+    const safeSaveCredentials = Boolean(saveCredentials);
     return await window.electronAPI.pullNonCurrentBranch(
       repoPath,
       branchName,
-      username,
-      password,
-      saveCredentials
+      safeUsername,
+      safePassword,
+      safeSaveCredentials
     );
   } catch (error) {
     console.error("Error pulling branch:", error);

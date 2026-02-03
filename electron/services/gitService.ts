@@ -461,7 +461,11 @@ export const stageFile = async (repoPath: string, filepath: string) => {
   }
 };
 
-export const unstageChange = async (repoPath: string, filepath: string, oldFilePath?: string) => {
+export const unstageChange = async (
+  repoPath: string,
+  filepath: string,
+  oldFilePath: string | null
+) => {
   try {
     const paths = oldFilePath ? [filepath, oldFilePath] : [filepath];
     await Promise.all(paths.map((path) => git.resetIndex({ fs, dir: repoPath, filepath: path })));
@@ -752,7 +756,7 @@ export const checkout = async (repoPath: string, branchName: string) => {
   }
 };
 
-export const commit = async (repoPath: string, message: string, description?: string) => {
+export const commit = async (repoPath: string, message: string, description: string | null) => {
   try {
     // Check status matrix to see what's staged
     const statusMatrix = await git.statusMatrix({
@@ -849,7 +853,7 @@ export const getDiff = async (
   filepath: string,
   staged: boolean = false,
   contextLines: number = 999999,
-  oldFilePath?: string
+  oldFilePath: string | null
 ) => {
   try {
     let diffArgs: string[];
@@ -1519,9 +1523,9 @@ export const createRepository = async (parentPath: string, repoName: string) => 
 export const clone = async (
   url: string,
   destination: string,
-  username?: string,
-  password?: string,
-  saveCredentials?: boolean
+  username: string | null,
+  password: string | null,
+  saveCredentials: boolean
 ) => {
   try {
     const isHttpsUrl = url.startsWith("https://") || url.startsWith("http://");
@@ -1690,9 +1694,9 @@ export const getRemoteUrl = async (repoPath: string) => {
 
 export const fetch = async (
   repoPath: string,
-  username?: string,
-  password?: string,
-  saveCredentials?: boolean
+  username: string | null,
+  password: string | null,
+  saveCredentials: boolean
 ) => {
   // Wrap entire handler to ensure we NEVER throw across IPC boundary
   try {
@@ -1835,9 +1839,9 @@ export const fetch = async (
 
 export const push = async (
   repoPath: string,
-  username?: string,
-  password?: string,
-  saveCredentials?: boolean
+  username: string | null,
+  password: string | null,
+  saveCredentials: boolean
 ) => {
   // Wrap entire handler to ensure we NEVER throw across IPC boundary
   try {
@@ -1991,9 +1995,9 @@ export const push = async (
 
 const pull = async (
   repoPath: string,
-  username?: string,
-  password?: string,
-  saveCredentials?: boolean,
+  username: string | null,
+  password: string | null,
+  saveCredentials: boolean,
   branchName?: string
 ) => {
   // Wrap entire handler to ensure we NEVER throw across IPC boundary
@@ -2185,9 +2189,9 @@ const pull = async (
 
 export const pullCurrentBranch = async (
   repoPath: string,
-  username?: string,
-  password?: string,
-  saveCredentials?: boolean
+  username: string | null,
+  password: string | null,
+  saveCredentials: boolean
 ) => {
   return pull(repoPath, username, password, saveCredentials);
 };
@@ -2195,9 +2199,9 @@ export const pullCurrentBranch = async (
 export const pullNonCurrentBranch = async (
   repoPath: string,
   branchName: string,
-  username?: string,
-  password?: string,
-  saveCredentials?: boolean
+  username: string | null,
+  password: string | null,
+  saveCredentials: boolean
 ) => {
   return pull(repoPath, username, password, saveCredentials, branchName);
 };
