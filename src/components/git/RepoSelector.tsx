@@ -239,9 +239,12 @@ export const RepoSelector = ({ onSelectRepo, onCancel }: RepoSelectorProps) => {
     performClone();
   };
 
-  const handleConfirmAuth = async (username: string, password: string) => {
-    // Retry clone with credentials
-    await performClone(username, password);
+  const handleConfirmAuth = async (
+    username?: string,
+    password?: string,
+    saveCredentials?: boolean
+  ) => {
+    await performClone(username, password, saveCredentials);
   };
 
   const handleCancelClone = () => {
@@ -321,7 +324,6 @@ export const RepoSelector = ({ onSelectRepo, onCancel }: RepoSelectorProps) => {
 
   const handleRetryClone = () => {
     setShowSshDialog(false);
-    // Retry the clone operation
     performClone();
   };
 
@@ -341,7 +343,6 @@ export const RepoSelector = ({ onSelectRepo, onCancel }: RepoSelectorProps) => {
       if (result.success) {
         toast.success(`Host ${sshTrustHostname} added to known hosts`);
         setShowSshTrustDialog(false);
-        // Retry clone
         performClone();
       } else {
         toast.error(result.error || "Failed to trust host");
