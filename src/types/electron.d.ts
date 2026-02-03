@@ -140,27 +140,27 @@ export interface ElectronAPI {
   getRemoteUrl: (repoPath: string) => Promise<{ success: boolean; url?: string; error?: string }>;
   fetch: (
     repoPath: string,
-    username?: string | null,
-    password?: string | null,
+    username?: string,
+    password?: string,
     saveCredentials?: boolean
   ) => Promise<{ success: boolean; error?: string; needsAuth?: boolean }>;
   push: (
     repoPath: string,
-    username?: string | null,
-    password?: string | null,
+    username?: string,
+    password?: string,
     saveCredentials?: boolean
   ) => Promise<{ success: boolean; error?: string; needsAuth?: boolean }>;
   pullCurrentBranch: (
     repoPath: string,
-    username?: string | null,
-    password?: string | null,
+    username?: string,
+    password?: string,
     saveCredentials?: boolean
   ) => Promise<{ success: boolean; error?: string; needsAuth?: boolean }>;
   pullNonCurrentBranch: (
     repoPath: string,
     branchName: string,
-    username?: string | null,
-    password?: string | null,
+    username?: string,
+    password?: string,
     saveCredentials?: boolean
   ) => Promise<{ success: boolean; error?: string; needsAuth?: boolean }>;
   findKeys: () => Promise<SSHKeyInfo>;

@@ -1521,7 +1521,7 @@ export const clone = async (
   destination: string,
   username?: string,
   password?: string,
-  saveCredentials: boolean = true
+  saveCredentials?: boolean
 ) => {
   try {
     const isHttpsUrl = url.startsWith("https://") || url.startsWith("http://");
@@ -1690,9 +1690,9 @@ export const getRemoteUrl = async (repoPath: string) => {
 
 export const fetch = async (
   repoPath: string,
-  username?: string | null,
-  password?: string | null,
-  saveCredentials: boolean = true
+  username?: string,
+  password?: string,
+  saveCredentials?: boolean
 ) => {
   // Wrap entire handler to ensure we NEVER throw across IPC boundary
   try {
@@ -1835,9 +1835,9 @@ export const fetch = async (
 
 export const push = async (
   repoPath: string,
-  username?: string | null,
-  password?: string | null,
-  saveCredentials: boolean = true
+  username?: string,
+  password?: string,
+  saveCredentials?: boolean
 ) => {
   // Wrap entire handler to ensure we NEVER throw across IPC boundary
   try {
@@ -1991,9 +1991,9 @@ export const push = async (
 
 const pull = async (
   repoPath: string,
-  username?: string | null,
-  password?: string | null,
-  saveCredentials: boolean = true,
+  username?: string,
+  password?: string,
+  saveCredentials?: boolean,
   branchName?: string
 ) => {
   // Wrap entire handler to ensure we NEVER throw across IPC boundary
@@ -2185,9 +2185,9 @@ const pull = async (
 
 export const pullCurrentBranch = async (
   repoPath: string,
-  username?: string | null,
-  password?: string | null,
-  saveCredentials: boolean = true
+  username?: string,
+  password?: string,
+  saveCredentials?: boolean
 ) => {
   return pull(repoPath, username, password, saveCredentials);
 };
@@ -2195,9 +2195,9 @@ export const pullCurrentBranch = async (
 export const pullNonCurrentBranch = async (
   repoPath: string,
   branchName: string,
-  username?: string | null,
-  password?: string | null,
-  saveCredentials: boolean = true
+  username?: string,
+  password?: string,
+  saveCredentials?: boolean
 ) => {
   return pull(repoPath, username, password, saveCredentials, branchName);
 };

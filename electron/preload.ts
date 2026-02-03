@@ -94,20 +94,20 @@ contextBridge.exposeInMainWorld("electronAPI", {
   getRemoteUrl: (repoPath: string) => ipcRenderer.invoke(IPC_CHANNELS.GIT_GET_REMOTE_URL, repoPath),
   fetch: (
     repoPath: string,
-    username?: string | null,
-    password?: string | null,
+    username?: string,
+    password?: string,
     saveCredentials?: boolean
   ) => ipcRenderer.invoke(IPC_CHANNELS.GIT_FETCH, repoPath, username, password, saveCredentials),
   push: (
     repoPath: string,
-    username?: string | null,
-    password?: string | null,
+    username?: string,
+    password?: string,
     saveCredentials?: boolean
   ) => ipcRenderer.invoke(IPC_CHANNELS.GIT_PUSH, repoPath, username, password, saveCredentials),
   pullCurrentBranch: (
     repoPath: string,
-    username?: string | null,
-    password?: string | null,
+    username?: string,
+    password?: string,
     saveCredentials?: boolean
   ) =>
     ipcRenderer.invoke(
@@ -120,8 +120,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
   pullNonCurrentBranch: (
     repoPath: string,
     branchName: string,
-    username?: string | null,
-    password?: string | null,
+    username?: string,
+    password?: string,
     saveCredentials?: boolean
   ) =>
     ipcRenderer.invoke(

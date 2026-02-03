@@ -180,7 +180,7 @@ export const registerGitHandlers = () => {
       destination: string,
       username?: string,
       password?: string,
-      saveCredentials: boolean = true
+      saveCredentials?: boolean
     ) => {
       return await clone(url, destination, username, password, saveCredentials);
     }
@@ -195,9 +195,9 @@ export const registerGitHandlers = () => {
     async (
       _,
       repoPath: string,
-      username?: string | null,
-      password?: string | null,
-      saveCredentials: boolean = true
+      username?: string,
+      password?: string,
+      saveCredentials?: boolean
     ) => {
       return await fetch(repoPath, username, password, saveCredentials);
     }
@@ -208,9 +208,9 @@ export const registerGitHandlers = () => {
     async (
       _,
       repoPath: string,
-      username?: string | null,
-      password?: string | null,
-      saveCredentials: boolean = true
+      username?: string,
+      password?: string,
+      saveCredentials?: boolean
     ) => {
       return await push(repoPath, username, password, saveCredentials);
     }
@@ -221,9 +221,9 @@ export const registerGitHandlers = () => {
     async (
       _,
       repoPath: string,
-      username?: string | null,
-      password?: string | null,
-      saveCredentials: boolean = true
+      username?: string,
+      password?: string,
+      saveCredentials?: boolean
     ) => {
       return await pullCurrentBranch(repoPath, username, password, saveCredentials);
     }
@@ -235,9 +235,9 @@ export const registerGitHandlers = () => {
       _,
       repoPath: string,
       branchName: string,
-      username?: string | null,
-      password?: string | null,
-      saveCredentials: boolean = true
+      username?: string,
+      password?: string,
+      saveCredentials?: boolean
     ) => {
       return await pullNonCurrentBranch(repoPath, branchName, username, password, saveCredentials);
     }

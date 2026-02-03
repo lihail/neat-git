@@ -461,7 +461,7 @@ export async function fetchFromRemote(
   repoPath: string,
   username?: string,
   password?: string,
-  saveCredentials: boolean = true
+  saveCredentials?: boolean
 ): Promise<{ success: boolean; error?: string; needsAuth?: boolean }> {
   if (typeof window === "undefined" || !window.electronAPI) {
     console.warn("Electron API not available");
@@ -469,20 +469,7 @@ export async function fetchFromRemote(
   }
 
   try {
-    // Ensure all parameters are serializable primitives
-    // Convert undefined to null as Electron's structured clone may have issues with undefined
-    const safeRepoPath = String(repoPath);
-    const safeUsername = username !== undefined ? String(username) : null;
-    const safePassword = password !== undefined ? String(password) : null;
-    const safeSaveCredentials = Boolean(saveCredentials);
-
-    const result = await window.electronAPI.fetch(
-      safeRepoPath,
-      safeUsername,
-      safePassword,
-      safeSaveCredentials
-    );
-    return result;
+    return await window.electronAPI.fetch(repoPath, username, password, saveCredentials);
   } catch (error) {
     console.error("Error fetching from remote:", error);
     return {
@@ -500,7 +487,7 @@ export async function pushToRemote(
   repoPath: string,
   username?: string,
   password?: string,
-  saveCredentials: boolean = true
+  saveCredentials?: boolean
 ): Promise<{ success: boolean; error?: string; needsAuth?: boolean }> {
   if (typeof window === "undefined" || !window.electronAPI) {
     console.warn("Electron API not available");
@@ -508,20 +495,7 @@ export async function pushToRemote(
   }
 
   try {
-    // Ensure all parameters are serializable primitives
-    // Convert undefined to null as Electron's structured clone may have issues with undefined
-    const safeRepoPath = String(repoPath);
-    const safeUsername = username !== undefined ? String(username) : null;
-    const safePassword = password !== undefined ? String(password) : null;
-    const safeSaveCredentials = Boolean(saveCredentials);
-
-    const result = await window.electronAPI.push(
-      safeRepoPath,
-      safeUsername,
-      safePassword,
-      safeSaveCredentials
-    );
-    return result;
+    return await window.electronAPI.push(repoPath, username, password, saveCredentials);
   } catch (error) {
     console.error("Error pushing to remote:", error);
     return {
@@ -539,7 +513,7 @@ export async function pullFromRemote(
   repoPath: string,
   username?: string,
   password?: string,
-  saveCredentials: boolean = true
+  saveCredentials?: boolean
 ): Promise<{ success: boolean; error?: string; needsAuth?: boolean }> {
   if (typeof window === "undefined" || !window.electronAPI) {
     console.warn("Electron API not available");
@@ -547,20 +521,12 @@ export async function pullFromRemote(
   }
 
   try {
-    // Ensure all parameters are serializable primitives
-    // Convert undefined to null as Electron's structured clone may have issues with undefined
-    const safeRepoPath = String(repoPath);
-    const safeUsername = username !== undefined ? String(username) : null;
-    const safePassword = password !== undefined ? String(password) : null;
-    const safeSaveCredentials = Boolean(saveCredentials);
-
-    const result = await window.electronAPI.pullCurrentBranch(
-      safeRepoPath,
-      safeUsername,
-      safePassword,
-      safeSaveCredentials
+    return await window.electronAPI.pullCurrentBranch(
+      repoPath,
+      username,
+      password,
+      saveCredentials
     );
-    return result;
   } catch (error) {
     console.error("Error pulling from remote:", error);
     return {
@@ -580,7 +546,7 @@ export async function pullNonCurrentBranch(
   branchName: string,
   username?: string,
   password?: string,
-  saveCredentials: boolean = true
+  saveCredentials?: boolean
 ): Promise<{ success: boolean; error?: string; needsAuth?: boolean }> {
   if (typeof window === "undefined" || !window.electronAPI) {
     console.warn("Electron API not available");
@@ -588,21 +554,13 @@ export async function pullNonCurrentBranch(
   }
 
   try {
-    // Ensure all parameters are serializable primitives
-    const safeRepoPath = String(repoPath);
-    const safeBranchName = String(branchName);
-    const safeUsername = username !== undefined ? String(username) : null;
-    const safePassword = password !== undefined ? String(password) : null;
-    const safeSaveCredentials = Boolean(saveCredentials);
-
-    const result = await window.electronAPI.pullNonCurrentBranch(
-      safeRepoPath,
-      safeBranchName,
-      safeUsername,
-      safePassword,
-      safeSaveCredentials
+    return await window.electronAPI.pullNonCurrentBranch(
+      repoPath,
+      branchName,
+      username,
+      password,
+      saveCredentials
     );
-    return result;
   } catch (error) {
     console.error("Error pulling branch:", error);
     return {

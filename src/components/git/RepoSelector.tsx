@@ -112,11 +112,7 @@ export const RepoSelector = ({ onSelectRepo, onCancel }: RepoSelectorProps) => {
     }
   };
 
-  const performClone = async (
-    username?: string,
-    password?: string,
-    saveCredentials: boolean = true
-  ) => {
+  const performClone = async (username?: string, password?: string, saveCredentials?: boolean) => {
     setIsLoading(true);
     setIsCloning(true);
     const isAuthRetry = !!username || !!password;
