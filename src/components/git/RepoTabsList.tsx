@@ -122,11 +122,11 @@ export const RepoTabsList = ({
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (!isLoading) {
+                      if (!isLoading && !isAnyRemoteOperationActive) {
                         onCloseTab(tab.id);
                       }
                     }}
-                    disabled={isLoading}
+                    disabled={isLoading || isAnyRemoteOperationActive}
                     className="rounded-full p-1 transition-all hover:bg-destructive/20 hover:text-destructive ml-auto flex-shrink-0 opacity-0 group-hover:opacity-70 group-hover:hover:opacity-100 disabled:opacity-30 disabled:cursor-not-allowed"
                   >
                     <X className="h-3.5 w-3.5" />
@@ -152,7 +152,7 @@ export const RepoTabsList = ({
               variant="ghost"
               size="icon"
               onClick={onOpenNewRepo}
-              disabled={isLoading}
+              disabled={isLoading || isAnyRemoteOperationActive}
               className="flex-shrink-0 h-10 w-10 text-muted-foreground hover:text-foreground"
             >
               <Plus className="h-5 w-5" />
