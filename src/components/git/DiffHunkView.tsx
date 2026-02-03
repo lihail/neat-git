@@ -14,7 +14,7 @@ interface DiffHunkViewProps {
 export const DiffHunkView = ({ hunks, language, wordWrap }: DiffHunkViewProps) => {
   return (
     <ScrollArea className="flex-1 bg-code-bg">
-      <div className="font-mono text-xs w-fit min-w-full">
+      <div className="font-mono text-xs w-fit min-w-full isolate">
         {hunks.map((hunk) => (
           <div key={hunk.index}>
             <DiffHunkSeparator
