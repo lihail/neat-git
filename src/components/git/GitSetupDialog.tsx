@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/toaster";
 import { GitBranch } from "lucide-react";
 import { validateEmail } from "@/lib/utils";
+import { getGlobalConfig, setGlobalConfig } from "@/lib/git";
 
 interface GitSetupDialogProps {
   open: boolean;
@@ -34,13 +35,9 @@ export const GitSetupDialog = ({ open, onComplete }: GitSetupDialogProps) => {
   }, [open]);
 
   const loadGitConfig = async () => {
-    if (typeof window === "undefined" || !window.electronAPI) {
-      return;
-    }
-
     setIsLoading(true);
     try {
-      const result = await window.electronAPI.getGlobalConfig();
+      const result = await getGlobalConfig();
       if (result.success) {
         setUserName(result.userName || "");
         setUserEmail(result.userEmail || "");
@@ -78,7 +75,7 @@ export const GitSetupDialog = ({ open, onComplete }: GitSetupDialogProps) => {
 
     setIsSaving(true);
     try {
-      const result = await window.electronAPI.setGlobalConfig(userName.trim(), userEmail.trim());
+      const result = await setGlobalConfig(userName.trim(), userEmail.trim());
 
       if (result.success) {
         toast.success("Git configuration saved successfully");

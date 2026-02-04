@@ -18,6 +18,17 @@ import {
   validateCloneUrl,
   getFullClonePath,
 } from "@/lib/utils";
+import {
+  openSelectGitRepositoryFolderDialog,
+  openSelectParentFolderDialog,
+  clone,
+  isHostTrusted,
+  trustHost,
+  findSshKeys,
+  readSshPublicKey,
+  generateSshKey,
+  createRepository,
+} from "@/lib/git";
 import packageJson from "../../../package.json";
 
 interface RepoSelectorProps {
@@ -33,52 +44,43 @@ export const RepoSelector = ({ onSelectRepo, onCancel }: RepoSelectorProps) => {
   const [repoName, setRepoName] = useState("");
   const [repoNameError, setRepoNameError] = useState<string | null>(null);
 
-  // Clone repository state
   const [showCloneDialog, setShowCloneDialog] = useState(false);
   const [cloneUrl, setCloneUrl] = useState("");
   const [cloneDestination, setCloneDestination] = useState("");
   const [cloneUrlError, setCloneUrlError] = useState<string | null>(null);
 
-  // Authentication state
   const [showAuthDialog, setShowAuthDialog] = useState(false);
   const [authHost, setAuthHost] = useState("");
   const [authError, setAuthError] = useState<string | null>(null);
   const [initialUsername, setInitialUsername] = useState("");
   const [initialPassword, setInitialPassword] = useState("");
 
-  // SSH setup state
   const [showSshDialog, setShowSshDialog] = useState(false);
   const [sshStep, setSshStep] = useState<"check" | "generate" | "show-key">("check");
   const [sshHasExistingKeys, setSshHasExistingKeys] = useState(false);
   const [sshPublicKey, setSshPublicKey] = useState("");
   const [sshIsGenerating, setSshIsGenerating] = useState(false);
 
-  // SSH trust host state
   const [showSshTrustDialog, setShowSshTrustDialog] = useState(false);
   const [sshTrustHostname, setSshTrustHostname] = useState("");
   const [sshIsTrusting, setSshIsTrusting] = useState(false);
 
   const handleSelectRepo = async () => {
-    if (typeof window !== "undefined" && window.electronAPI) {
-      setIsLoading(true);
-      try {
-        const result = await window.electronAPI.openSelectGitRepositoryFolderDialog();
-        if (result.success) {
-          onSelectRepo(result.path);
-          toast.success(`Repository selected: ${result.path}`);
-        } else if (result.success === false && result.error) {
-          toast.error(result.error);
-        }
-        // If error is null, user canceled - no need to show anything
-      } catch (error) {
-        console.error("Error selecting folder:", error);
-        toast.error("Failed to select repository folder");
-      } finally {
-        setIsLoading(false);
+    setIsLoading(true);
+    try {
+      const result = await openSelectGitRepositoryFolderDialog();
+      if (result.success) {
+        onSelectRepo(result.path);
+        toast.success(`Repository selected: ${result.path}`);
+      } else if (result.success === false && result.error) {
+        toast.error(result.error);
       }
-    } else {
-      // Fallback for web version
-      toast.info("Please use the Electron desktop app to select a repository");
+      // If error is null, user canceled - no need to show anything
+    } catch (error) {
+      console.error("Error selecting folder:", error);
+      toast.error("Failed to select repository folder");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -95,20 +97,16 @@ export const RepoSelector = ({ onSelectRepo, onCancel }: RepoSelectorProps) => {
   };
 
   const handleSelectCloneDestination = async () => {
-    if (typeof window !== "undefined" && window.electronAPI) {
-      try {
-        const result = await window.electronAPI.openSelectParentFolderDialog();
-        if (result.success) {
-          setCloneDestination(result.path);
-        } else if (result.success === false && result.error) {
-          toast.error(result.error);
-        }
-      } catch (error) {
-        console.error("Error selecting folder:", error);
-        toast.error("Failed to select folder");
+    try {
+      const result = await openSelectParentFolderDialog();
+      if (result.success) {
+        setCloneDestination(result.path);
+      } else if (result.success === false && result.error) {
+        toast.error(result.error);
       }
-    } else {
-      toast.info("Please use the Electron desktop app to select a folder");
+    } catch (error) {
+      console.error("Error selecting folder:", error);
+      toast.error("Failed to select folder");
     }
   };
 
@@ -132,7 +130,7 @@ export const RepoSelector = ({ onSelectRepo, onCancel }: RepoSelectorProps) => {
         }
       }
 
-      const result = await window.electronAPI.clone(
+      const result = await clone(
         cloneUrl,
         finalPath,
         effectiveUsername,
@@ -217,11 +215,10 @@ export const RepoSelector = ({ onSelectRepo, onCancel }: RepoSelectorProps) => {
       return;
     }
 
-    // Check if SSH URL and if host is trusted
     if (isSshUrl(trimmedUrl)) {
       const hostname = extractHostFromUrl(trimmedUrl);
       try {
-        const result = await window.electronAPI.isHostTrusted(hostname);
+        const result = await isHostTrusted(hostname);
         if (result.success && !result.isTrusted) {
           // Host not trusted - show trust dialog
           setSshTrustHostname(hostname);
@@ -265,12 +262,12 @@ export const RepoSelector = ({ onSelectRepo, onCancel }: RepoSelectorProps) => {
   const handleSshSetup = async () => {
     try {
       // Check for existing SSH keys
-      const result = await window.electronAPI.findKeys();
+      const result = await findSshKeys();
       if (result.success) {
         setSshHasExistingKeys(result.hasKeys);
         if (result.hasKeys && result.keys.length > 0) {
           // Found existing keys - pre-load the public key but stay on check screen
-          const publicKeyResult = await window.electronAPI.readPublicKey(result.keys[0].publicPath);
+          const publicKeyResult = await readSshPublicKey(result.keys[0].publicPath);
           if (publicKeyResult.success) {
             setSshPublicKey(publicKeyResult.content);
           }
@@ -290,10 +287,9 @@ export const RepoSelector = ({ onSelectRepo, onCancel }: RepoSelectorProps) => {
   const handleGenerateSshKey = async () => {
     setSshIsGenerating(true);
     try {
-      const result = await window.electronAPI.generateKey();
+      const result = await generateSshKey();
       if (result.success) {
-        // Read the public key
-        const publicKeyResult = await window.electronAPI.readPublicKey(result.publicKeyPath);
+        const publicKeyResult = await readSshPublicKey(result.publicKeyPath);
         if (publicKeyResult.success) {
           setSshPublicKey(publicKeyResult.content);
           setSshStep("show-key");
@@ -331,14 +327,13 @@ export const RepoSelector = ({ onSelectRepo, onCancel }: RepoSelectorProps) => {
     setSshStep("check");
     setSshPublicKey("");
     setSshHasExistingKeys(false);
-    // Return to clone dialog
     setShowCloneDialog(true);
   };
 
   const handleTrustHost = async () => {
     setSshIsTrusting(true);
     try {
-      const result = await window.electronAPI.trustHost(sshTrustHostname);
+      const result = await trustHost(sshTrustHostname);
       if (result.success) {
         toast.success(`Host ${sshTrustHostname} added to known hosts`);
         setShowSshTrustDialog(false);
@@ -357,33 +352,27 @@ export const RepoSelector = ({ onSelectRepo, onCancel }: RepoSelectorProps) => {
   const handleCancelTrustHost = () => {
     setShowSshTrustDialog(false);
     setSshTrustHostname("");
-    // Return to clone dialog
     setShowCloneDialog(true);
   };
 
   const handleCreateRepo = async () => {
-    if (typeof window !== "undefined" && window.electronAPI) {
-      try {
-        const result = await window.electronAPI.openSelectParentFolderDialog();
-        if (result.success) {
-          setSelectedParentPath(result.path);
-          setShowCreateDialog(true);
-        } else if (result.success === false && result.error) {
-          toast.error(result.error);
-        }
-      } catch (error) {
-        console.error("Error selecting folder:", error);
-        toast.error("Failed to select folder");
+    try {
+      const result = await openSelectParentFolderDialog();
+      if (result.success) {
+        setSelectedParentPath(result.path);
+        setShowCreateDialog(true);
+      } else if (result.success === false && result.error) {
+        toast.error(result.error);
       }
-    } else {
-      toast.info("Please use the Electron desktop app to create a repository");
+    } catch (error) {
+      console.error("Error selecting folder:", error);
+      toast.error("Failed to select folder");
     }
   };
 
   const handleRepoNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setRepoName(value);
-    // Clear error when user starts typing
     if (repoNameError) {
       setRepoNameError(null);
     }
@@ -400,7 +389,7 @@ export const RepoSelector = ({ onSelectRepo, onCancel }: RepoSelectorProps) => {
 
     setIsLoading(true);
     try {
-      const result = await window.electronAPI.createRepository(selectedParentPath, trimmedName);
+      const result = await createRepository(selectedParentPath, trimmedName);
 
       if (result.success) {
         toast.success(`Repository created: ${result.path}`);

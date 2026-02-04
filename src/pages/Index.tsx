@@ -34,8 +34,8 @@ import {
   pullFromRemote,
   pullNonCurrentBranch,
   pushToRemote,
+  getRemoteUrl,
   type Branch,
-  type FileStatus,
   type DiffLine,
   type Commit,
   type Stash,
@@ -45,6 +45,7 @@ import { useWordWrap } from "@/hooks/useWordWrap";
 import { useDiffViewerMode } from "@/hooks/useDiffViewerMode";
 import { useRepoTabs } from "@/hooks/useRepoTabs";
 import { LoadingOverlay } from "@/components/git/LoadingOverlay";
+import { FileChange } from "@/types/git";
 
 // State for each repo tab
 interface RepoState {
@@ -53,7 +54,7 @@ interface RepoState {
   remoteBranches: Branch[];
   commits: Commit[];
   stashes: Stash[];
-  files: FileStatus[];
+  files: FileChange[];
   selectedFile?: string;
   selectedFileIsStaged?: boolean; // Track if viewing staged or unstaged diff
   diffLines: DiffLine[];
@@ -138,7 +139,7 @@ export const Index = () => {
 
         // Check if repo has a remote configured
         try {
-          const remoteUrlResult = await window.electronAPI.getRemoteUrl(currentRepoPath);
+          const remoteUrlResult = await getRemoteUrl(currentRepoPath);
           if (!remoteUrlResult.success) {
             // No remote configured, skip auto-fetch
             return;
@@ -1215,7 +1216,7 @@ export const Index = () => {
         // Show authentication dialog (first time - no error yet)
         // Get hostname from remote URL for display
         try {
-          const remoteUrlResult = await window.electronAPI.getRemoteUrl(repoPath);
+          const remoteUrlResult = await getRemoteUrl(repoPath);
           if (remoteUrlResult.success) {
             handleAuthDialogOpenChange(true, "fetch");
           }
@@ -1270,7 +1271,7 @@ export const Index = () => {
         // Show authentication dialog (first time - no error yet)
         // Get hostname from remote URL for display
         try {
-          const remoteUrlResult = await window.electronAPI.getRemoteUrl(repoPath);
+          const remoteUrlResult = await getRemoteUrl(repoPath);
           if (remoteUrlResult.success) {
             handleAuthDialogOpenChange(true, "push");
           }
@@ -1327,7 +1328,7 @@ export const Index = () => {
         // Show authentication dialog (first time - no error yet)
         // Get hostname from remote URL for display
         try {
-          const remoteUrlResult = await window.electronAPI.getRemoteUrl(repoPath);
+          const remoteUrlResult = await getRemoteUrl(repoPath);
           if (remoteUrlResult.success) {
             handleAuthDialogOpenChange(true, "pull");
           }

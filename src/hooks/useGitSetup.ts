@@ -10,10 +10,6 @@ export const useGitSetup = () => {
   };
 
   useEffect(() => {
-    if (typeof window === "undefined" || !window.electronAPI) {
-      return;
-    }
-
     const setupComplete = getGitSetupComplete();
     if (setupComplete === "true") {
       return;
