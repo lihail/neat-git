@@ -16,7 +16,9 @@ import {
   getCurrentBranch,
   getStatus,
   stageFile,
+  stageAllFiles,
   unstageChange,
+  unstageAllFiles,
   getDiff,
   createBranch,
   checkoutBranch,
@@ -30,10 +32,10 @@ import {
   deleteStash,
   stageLines,
   unstageLines,
-  fetchFromRemote,
-  pullFromRemote,
+  fetch,
+  pullCurrentBranch,
   pullNonCurrentBranch,
-  pushToRemote,
+  push,
   getRemoteUrl,
   type Branch,
   type DiffLine,
@@ -154,7 +156,7 @@ export const Index = () => {
           // Set fetching state (same as manual fetch)
           setFetchingRepos((prev) => ({ ...prev, [currentRepoPath]: true }));
 
-          const result = await fetchFromRemote(currentRepoPath);
+          const result = await fetch(currentRepoPath);
 
           if (result.success) {
             // Refresh repo data after fetch
@@ -472,7 +474,6 @@ export const Index = () => {
       const wasInBothSections = fileBeforeAction?.hasStaged && fileBeforeAction?.hasUnstaged;
 
       if (shouldStage) {
-        // Stage the file
         await stageFile(repoPath, path);
       } else {
         await unstageChange(repoPath, path, fileBeforeAction?.oldPath);
@@ -597,13 +598,7 @@ export const Index = () => {
       const wasInBothSections =
         selectedFileBeforeAction?.hasStaged && selectedFileBeforeAction?.hasUnstaged;
 
-      // Get all unstaged files
-      const unstagedFiles = currentState.files.filter((f) => f.hasUnstaged);
-
-      // Stage each file individually to properly handle deleted files
-      for (const file of unstagedFiles) {
-        await stageFile(repoPath, file.path);
-      }
+      await stageAllFiles(repoPath);
 
       // Refresh the git status
       const statusList = await getStatus(repoPath);
@@ -662,12 +657,7 @@ export const Index = () => {
       const wasInBothSections =
         selectedFileBeforeAction?.hasStaged && selectedFileBeforeAction?.hasUnstaged;
 
-      // Get all staged files
-      const stagedFiles = currentState.files.filter((f) => f.hasStaged);
-
-      for (const file of stagedFiles) {
-        await unstageChange(repoPath, file.path, file.oldPath);
-      }
+      await unstageAllFiles(repoPath);
 
       // Refresh the git status
       const statusList = await getStatus(repoPath);
@@ -1196,7 +1186,7 @@ export const Index = () => {
     try {
       setFetchingRepos((prev) => ({ ...prev, [repoPath]: true }));
 
-      const result = await fetchFromRemote(repoPath, username, password, saveCredentials);
+      const result = await fetch(repoPath, username, password, saveCredentials);
 
       if (result.success) {
         toast.success("Successfully fetched from remote");
@@ -1251,7 +1241,7 @@ export const Index = () => {
     try {
       setPushingRepos((prev) => ({ ...prev, [repoPath]: true }));
 
-      const result = await pushToRemote(repoPath, username, password, saveCredentials);
+      const result = await push(repoPath, username, password, saveCredentials);
 
       if (result.success) {
         toast.success("Successfully pushed to remote");
@@ -1306,7 +1296,7 @@ export const Index = () => {
     try {
       setPullingRepos((prev) => ({ ...prev, [repoPath]: true }));
 
-      const result = await pullFromRemote(repoPath, username, password, saveCredentials);
+      const result = await pullCurrentBranch(repoPath, username, password, saveCredentials);
 
       if (result.success) {
         toast.success("Successfully pulled from remote");

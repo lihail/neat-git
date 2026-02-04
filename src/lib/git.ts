@@ -83,7 +83,7 @@ export const unstageChange = async (
   oldFilePath?: string
 ): Promise<void> => {
   try {
-    // Ensure all parameters are serializable primitives
+    // Ensure all parameters are serializable
     const safeOldFilePath = oldFilePath !== undefined ? String(oldFilePath) : null;
     await window.electronAPI.unstageChange(repoPath, filepath, safeOldFilePath);
   } catch (error) {
@@ -115,7 +115,7 @@ export const getDiff = async (
   oldFilePath?: string
 ): Promise<DiffLine[]> => {
   try {
-    // Ensure all parameters are serializable primitives
+    // Ensure all parameters are serializable
     const safeOldFilePath = oldFilePath !== undefined ? String(oldFilePath) : null;
     const diff = await window.electronAPI.getDiff(
       repoPath,
@@ -175,16 +175,16 @@ export const renameBranch = async (
   }
 };
 
-export const stageAll = async (repoPath: string): Promise<void> => {
+export const stageAllFiles = async (repoPath: string): Promise<void> => {
   try {
-    await window.electronAPI.stageFile(repoPath, ".");
+    await window.electronAPI.stageAllFiles(repoPath);
   } catch (error) {
     console.error("Error staging all files:", error);
     throw error;
   }
 };
 
-export const unstageAll = async (repoPath: string): Promise<void> => {
+export const unstageAllFiles = async (repoPath: string): Promise<void> => {
   try {
     await window.electronAPI.unstageAllFiles(repoPath);
   } catch (error) {
@@ -209,7 +209,7 @@ export const commit = async (
   description?: string
 ): Promise<{ success: boolean; sha: string }> => {
   try {
-    // Ensure all parameters are serializable primitives
+    // Ensure all parameters are serializable
     const safeDescription = description !== undefined ? String(description) : null;
     return await window.electronAPI.commit(repoPath, message, safeDescription);
   } catch (error) {
@@ -290,17 +290,14 @@ export const unstageLines = async (
   }
 };
 
-/**
- * Fetch from remote repository
- */
-export const fetchFromRemote = async (
+export const fetch = async (
   repoPath: string,
   username?: string,
   password?: string,
   saveCredentials?: boolean
 ): Promise<{ success: boolean; error?: string; needsAuth?: boolean }> => {
   try {
-    // Ensure all parameters are serializable primitives
+    // Ensure all parameters are serializable
     const safeUsername = username !== undefined ? String(username) : null;
     const safePassword = password !== undefined ? String(password) : null;
     const safeSaveCredentials = Boolean(saveCredentials);
@@ -320,17 +317,14 @@ export const fetchFromRemote = async (
   }
 };
 
-/**
- * Push to remote repository
- */
-export const pushToRemote = async (
+export const push = async (
   repoPath: string,
   username?: string,
   password?: string,
   saveCredentials?: boolean
 ): Promise<{ success: boolean; error?: string; needsAuth?: boolean }> => {
   try {
-    // Ensure all parameters are serializable primitives
+    // Ensure all parameters are serializable
     const safeUsername = username !== undefined ? String(username) : null;
     const safePassword = password !== undefined ? String(password) : null;
     const safeSaveCredentials = Boolean(saveCredentials);
@@ -345,17 +339,14 @@ export const pushToRemote = async (
   }
 };
 
-/**
- * Pull from remote repository
- */
-export const pullFromRemote = async (
+export const pullCurrentBranch = async (
   repoPath: string,
   username?: string,
   password?: string,
   saveCredentials?: boolean
 ): Promise<{ success: boolean; error?: string; needsAuth?: boolean }> => {
   try {
-    // Ensure all parameters are serializable primitives
+    // Ensure all parameters are serializable
     const safeUsername = username !== undefined ? String(username) : null;
     const safePassword = password !== undefined ? String(password) : null;
     const safeSaveCredentials = Boolean(saveCredentials);
@@ -375,10 +366,6 @@ export const pullFromRemote = async (
   }
 };
 
-/**
- * Pull a specific branch without checking it out
- * This fetches the branch and updates the local ref without affecting the working directory
- */
 export const pullNonCurrentBranch = async (
   repoPath: string,
   branchName: string,
@@ -387,7 +374,7 @@ export const pullNonCurrentBranch = async (
   saveCredentials?: boolean
 ): Promise<{ success: boolean; error?: string; needsAuth?: boolean }> => {
   try {
-    // Ensure all parameters are serializable primitives
+    // Ensure all parameters are serializable
     const safeUsername = username !== undefined ? String(username) : null;
     const safePassword = password !== undefined ? String(password) : null;
     const safeSaveCredentials = Boolean(saveCredentials);
@@ -446,7 +433,7 @@ export const clone = async (
   sshHostname?: string;
 }> => {
   try {
-    // Ensure all parameters are serializable primitives
+    // Ensure all parameters are serializable
     const safeUsername = username !== undefined ? String(username) : null;
     const safePassword = password !== undefined ? String(password) : null;
     const safeSaveCredentials = Boolean(saveCredentials);

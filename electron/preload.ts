@@ -34,6 +34,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
   getStatus: (repoPath: string) => ipcRenderer.invoke(IPC_CHANNELS.GIT_GET_STATUS, repoPath),
   stageFile: (repoPath: string, filepath: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.GIT_STAGE_FILE, repoPath, filepath),
+  stageAllFiles: (repoPath: string) => ipcRenderer.invoke(IPC_CHANNELS.GIT_STAGE_ALL_FILES, repoPath),
   unstageChange: (repoPath: string, filepath: string, oldFilePath?: string | null) =>
     ipcRenderer.invoke(IPC_CHANNELS.GIT_UNSTAGE_CHANGE, repoPath, filepath, oldFilePath),
   unstageAllFiles: (repoPath: string) =>

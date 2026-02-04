@@ -7,6 +7,7 @@ import {
   listRemoteBranches,
   getStatus,
   stageFile,
+  stageAllFiles,
   unstageChange,
   unstageAllFiles,
   createBranch,
@@ -62,6 +63,10 @@ export const registerGitHandlers = () => {
 
   ipcMain.handle(IPC_CHANNELS.GIT_STAGE_FILE, async (_, repoPath: string, filepath: string) => {
     return await stageFile(repoPath, filepath);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.GIT_STAGE_ALL_FILES, async (_, repoPath: string) => {
+    return await stageAllFiles(repoPath);
   });
 
   ipcMain.handle(

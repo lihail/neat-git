@@ -88,6 +88,7 @@ export interface ElectronAPI {
   checkout: (repoPath: string, branchName: string) => Promise<{ success: boolean; error?: string }>;
   getStatus: (repoPath: string) => Promise<FileStatus[]>;
   stageFile: (repoPath: string, filepath: string) => Promise<void>;
+  stageAllFiles: (repoPath: string) => Promise<void>;
   unstageChange: (repoPath: string, filepath: string, oldFilePath?: string | null) => Promise<void>;
   unstageAllFiles: (repoPath: string) => Promise<void>;
   stageLines: (repoPath: string, filepath: string, lines: DiffLine[]) => Promise<void>;

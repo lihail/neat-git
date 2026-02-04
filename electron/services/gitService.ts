@@ -461,6 +461,45 @@ export const stageFile = async (repoPath: string, filepath: string) => {
   }
 };
 
+export const stageAllFiles = async (repoPath: string) => {
+  try {
+    const statusMatrix = await git.statusMatrix({
+      fs,
+      dir: repoPath,
+    });
+
+    for (const [filepath, head, workdir, stage] of statusMatrix) {
+      // Check if the file has unstaged changes (workdir !== stage)
+      // workdir=0 means deleted, workdir=2 means modified/new
+      if (workdir !== stage) {
+        const fullPath = path.join(repoPath, filepath);
+        const fileExists = fs.existsSync(fullPath);
+
+        if (!fileExists) {
+          // File was deleted - stage the deletion using git.remove
+          await git.remove({
+            fs,
+            dir: repoPath,
+            filepath,
+          });
+        } else {
+          // File exists - stage normally
+          await git.add({
+            fs,
+            dir: repoPath,
+            filepath,
+          });
+        }
+      }
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error staging all files:", error);
+    throw error;
+  }
+};
+
 export const unstageChange = async (
   repoPath: string,
   filepath: string,
@@ -478,13 +517,11 @@ export const unstageChange = async (
 
 export const unstageAllFiles = async (repoPath: string) => {
   try {
-    // Get all files in the status matrix
     const statusMatrix = await git.statusMatrix({
       fs,
       dir: repoPath,
     });
 
-    // Unstage each staged file
     for (const [filepath, head, workdir, stage] of statusMatrix) {
       // Check if the file is staged (stage !== head or stage === 2)
       if (stage === 2 || (stage !== head && stage !== 1)) {

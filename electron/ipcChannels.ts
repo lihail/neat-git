@@ -12,6 +12,7 @@ export const IPC_CHANNELS = {
   GIT_CHECKOUT: "git:checkout",
   GIT_GET_STATUS: "git:getStatus",
   GIT_STAGE_FILE: "git:stageFile",
+  GIT_STAGE_ALL_FILES: "git:stageAllFiles",
   GIT_UNSTAGE_CHANGE: "git:unstageChange",
   GIT_UNSTAGE_ALL_FILES: "git:unstageAllFiles",
   GIT_STAGE_LINES: "git:stageLines",
