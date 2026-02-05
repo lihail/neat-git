@@ -1,7 +1,7 @@
 import { WrapText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn, detectLanguageFromPath } from "@/lib/utils";
-import { groupLinesByHunks, pairSplitLines } from "@/lib/gitDiff";
+import { groupLinesByHunks, pairSplitLines, computeLineGroups } from "@/lib/gitDiff";
 import { useMemo } from "react";
 import { DiffViewerModeToggle, type DiffViewerMode } from "./DiffViewerModeToggle";
 import { DiffSplitView } from "./DiffSplitView";
@@ -15,12 +15,17 @@ interface DiffViewerProps {
   oldFilePath?: string;
   lines: DiffLine[];
   fileStatus?: "modified" | "added" | "deleted";
+  isStaged?: boolean;
   isLoading?: boolean;
   wordWrap?: boolean;
   onWordWrapChange: (value: boolean) => void;
   viewMode?: DiffViewerMode;
   onViewModeChange: (value: DiffViewerMode) => void;
   onViewModeChangeStart: () => void;
+  onStageLines?: (lineIndices: number[]) => void;
+  onUnstageLines?: (lineIndices: number[]) => void;
+  onStageHunk?: (hunkIndex: number) => void;
+  onUnstageHunk?: (hunkIndex: number) => void;
 }
 
 export const DiffViewer = ({
@@ -28,12 +33,17 @@ export const DiffViewer = ({
   oldFilePath,
   lines,
   fileStatus,
+  isStaged = false,
   isLoading = false,
   wordWrap = false,
   onWordWrapChange,
   viewMode = "full",
   onViewModeChange,
   onViewModeChangeStart,
+  onStageLines,
+  onUnstageLines,
+  onStageHunk,
+  onUnstageHunk,
 }: DiffViewerProps) => {
   const language = useMemo(() => {
     return filePath ? detectLanguageFromPath(filePath) : "text";
@@ -60,6 +70,18 @@ export const DiffViewer = ({
     }
     return pairSplitLines(lines);
   }, [lines, effectiveViewMode]);
+
+  const lineGroupMap = useMemo(() => {
+    if (fileStatus !== "modified") {
+      return null;
+    }
+    return computeLineGroups(lines);
+  }, [lines, fileStatus]);
+
+  const canStageLines = fileStatus === "modified" && !isStaged && Boolean(onStageLines);
+  const canUnstageLines = fileStatus === "modified" && isStaged && Boolean(onUnstageLines);
+  const canStageHunk = fileStatus === "modified" && !isStaged && Boolean(onStageHunk);
+  const canUnstageHunk = fileStatus === "modified" && isStaged && Boolean(onUnstageHunk);
 
   if (!filePath) {
     return (
@@ -126,11 +148,38 @@ export const DiffViewer = ({
       ) : isEmptyFile ? (
         <DiffViewerEmptyState message="File is empty" />
       ) : effectiveViewMode === "hunks" && hunks ? (
-        <DiffHunkView hunks={hunks} language={language} wordWrap={wordWrap} />
+        <DiffHunkView
+          hunks={hunks}
+          lines={lines}
+          language={language}
+          wordWrap={wordWrap}
+          lineGroupMap={lineGroupMap}
+          isStaged={isStaged}
+          onStageHunk={canStageHunk ? onStageHunk : undefined}
+          onUnstageHunk={canUnstageHunk ? onUnstageHunk : undefined}
+          onStageLines={canStageLines ? onStageLines : undefined}
+          onUnstageLines={canUnstageLines ? onUnstageLines : undefined}
+        />
       ) : effectiveViewMode === "split" && splitLines ? (
-        <DiffSplitView splitLines={splitLines} language={language} wordWrap={wordWrap} />
+        <DiffSplitView
+          splitLines={splitLines}
+          language={language}
+          wordWrap={wordWrap}
+          lineGroupMap={lineGroupMap}
+          isStaged={isStaged}
+          onStageLines={canStageLines ? onStageLines : undefined}
+          onUnstageLines={canUnstageLines ? onUnstageLines : undefined}
+        />
       ) : (
-        <DiffFullView lines={lines} language={language} wordWrap={wordWrap} />
+        <DiffFullView
+          lines={lines}
+          language={language}
+          wordWrap={wordWrap}
+          lineGroupMap={lineGroupMap}
+          isStaged={isStaged}
+          onStageLines={canStageLines ? onStageLines : undefined}
+          onUnstageLines={canUnstageLines ? onUnstageLines : undefined}
+        />
       )}
     </div>
   );

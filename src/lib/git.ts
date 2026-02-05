@@ -12,7 +12,7 @@ export interface Branch {
 export interface DiffLine {
   type: "add" | "delete" | "context";
   content: string;
-  lineNumber: number;
+  lineNumber?: number;
   oldLineNumber?: number;
   newLineNumber?: number;
   hunkIndex?: number;
@@ -268,9 +268,9 @@ export const stageLines = async (
   repoPath: string,
   filepath: string,
   lines: DiffLine[]
-): Promise<void> => {
+): Promise<{ success: boolean; error?: string }> => {
   try {
-    await window.electronAPI.stageLines(repoPath, filepath, lines);
+    return await window.electronAPI.stageLines(repoPath, filepath, lines);
   } catch (error) {
     console.error("Error staging lines:", error);
     throw error;
@@ -281,11 +281,37 @@ export const unstageLines = async (
   repoPath: string,
   filepath: string,
   lines: DiffLine[]
-): Promise<void> => {
+): Promise<{ success: boolean; error?: string }> => {
   try {
-    await window.electronAPI.unstageLines(repoPath, filepath, lines);
+    return await window.electronAPI.unstageLines(repoPath, filepath, lines);
   } catch (error) {
     console.error("Error unstaging lines:", error);
+    throw error;
+  }
+};
+
+export const stageHunk = async (
+  repoPath: string,
+  filepath: string,
+  hunkIndex: number
+): Promise<{ success: boolean; error?: string }> => {
+  try {
+    return await window.electronAPI.stageHunk(repoPath, filepath, hunkIndex);
+  } catch (error) {
+    console.error("Error staging hunk:", error);
+    throw error;
+  }
+};
+
+export const unstageHunk = async (
+  repoPath: string,
+  filepath: string,
+  hunkIndex: number
+): Promise<{ success: boolean; error?: string }> => {
+  try {
+    return await window.electronAPI.unstageHunk(repoPath, filepath, hunkIndex);
+  } catch (error) {
+    console.error("Error unstaging hunk:", error);
     throw error;
   }
 };

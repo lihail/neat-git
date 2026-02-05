@@ -42,13 +42,17 @@ contextBridge.exposeInMainWorld("electronAPI", {
   stageLines: (
     repoPath: string,
     filepath: string,
-    lines: Array<{ type: string; content: string; lineNumber: number }>
+    lines: Array<{ type: string; content: string; oldLineNumber?: number; newLineNumber?: number }>
   ) => ipcRenderer.invoke(IPC_CHANNELS.GIT_STAGE_LINES, repoPath, filepath, lines),
   unstageLines: (
     repoPath: string,
     filepath: string,
-    lines: Array<{ type: string; content: string; lineNumber: number }>
+    lines: Array<{ type: string; content: string; oldLineNumber?: number; newLineNumber?: number }>
   ) => ipcRenderer.invoke(IPC_CHANNELS.GIT_UNSTAGE_LINES, repoPath, filepath, lines),
+  stageHunk: (repoPath: string, filepath: string, hunkIndex: number) =>
+    ipcRenderer.invoke(IPC_CHANNELS.GIT_STAGE_HUNK, repoPath, filepath, hunkIndex),
+  unstageHunk: (repoPath: string, filepath: string, hunkIndex: number) =>
+    ipcRenderer.invoke(IPC_CHANNELS.GIT_UNSTAGE_HUNK, repoPath, filepath, hunkIndex),
   commit: (repoPath: string, message: string, description?: string | null) =>
     ipcRenderer.invoke(IPC_CHANNELS.GIT_COMMIT, repoPath, message, description),
   log: (repoPath: string, limit?: number) =>

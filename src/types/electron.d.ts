@@ -37,7 +37,9 @@ export interface Stash {
 export interface DiffLine {
   type: "add" | "delete" | "context";
   content: string;
-  lineNumber: number;
+  lineNumber?: number;
+  oldLineNumber?: number;
+  newLineNumber?: number;
   hunkIndex?: number;
   hunkHeader?: string;
 }
@@ -91,8 +93,26 @@ export interface ElectronAPI {
   stageAllFiles: (repoPath: string) => Promise<void>;
   unstageChange: (repoPath: string, filepath: string, oldFilePath?: string | null) => Promise<void>;
   unstageAllFiles: (repoPath: string) => Promise<void>;
-  stageLines: (repoPath: string, filepath: string, lines: DiffLine[]) => Promise<void>;
-  unstageLines: (repoPath: string, filepath: string, lines: DiffLine[]) => Promise<void>;
+  stageLines: (
+    repoPath: string,
+    filepath: string,
+    lines: DiffLine[]
+  ) => Promise<{ success: boolean; error?: string }>;
+  unstageLines: (
+    repoPath: string,
+    filepath: string,
+    lines: DiffLine[]
+  ) => Promise<{ success: boolean; error?: string }>;
+  stageHunk: (
+    repoPath: string,
+    filepath: string,
+    hunkIndex: number
+  ) => Promise<{ success: boolean; error?: string }>;
+  unstageHunk: (
+    repoPath: string,
+    filepath: string,
+    hunkIndex: number
+  ) => Promise<{ success: boolean; error?: string }>;
   commit: (
     repoPath: string,
     message: string,

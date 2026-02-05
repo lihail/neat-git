@@ -19,6 +19,13 @@ type FileStatus = {
   unstagedStatus?: "modified" | "added" | "deleted";
 };
 
+type DiffLineInfo = {
+  type: string;
+  content: string;
+  oldLineNumber?: number;
+  newLineNumber?: number;
+};
+
 export const getGlobalConfig = async () => {
   try {
     let userName = "";
@@ -748,7 +755,6 @@ export const checkout = async (repoPath: string, branchName: string) => {
           console.error("Error checking out branch:", checkoutResult.error.message);
           throw new Error(`Failed to checkout branch: ${checkoutResult.error.message}`);
         }
-        console.log("Checked out branch:", checkoutResult.output);
       } else {
         // Local branch doesn't exist - check if remote branch exists
         let remoteBranchExists = false;
@@ -773,7 +779,6 @@ export const checkout = async (repoPath: string, branchName: string) => {
             console.error("Error creating tracking branch:", checkoutResult.error.message);
             throw new Error(`Failed to checkout remote branch: ${checkoutResult.error.message}`);
           }
-          console.log("Created tracking branch:", checkoutResult.output);
         } else {
           // Neither local nor remote branch exists
           throw new Error(`Branch '${branchName}' not found (checked both local and remote)`);
@@ -1381,138 +1386,652 @@ export const deleteStash = async (repoPath: string, index: number) => {
   }
 };
 
-export const stageLines = async (
-  repoPath: string,
-  filepath: string,
-  lines: Array<{ type: string; content: string; lineNumber: number }>
-) => {
-  try {
-    const line = lines[0];
+const buildPatchForLines = (diffOutput: string, linesToInclude: DiffLineInfo[]): string | null => {
+  if (linesToInclude.length === 0 || linesToInclude.every((l) => l.type === "context")) {
+    return null;
+  }
 
-    if (line.type === "context") {
+  // Create sets for matching by type+content+lineNumber for precise matching
+  // Delete lines use oldLineNumber, Add lines use newLineNumber
+  const linesToIncludeSet = new Set(
+    linesToInclude
+      .filter((l) => l.type !== "context")
+      .map((l) => {
+        const lineNum = l.type === "delete" ? l.oldLineNumber : l.newLineNumber;
+        return `${l.type}:${l.content}:${lineNum}`;
+      })
+  );
+
+  const isLineIncluded = (type: string, content: string, lineNum: number) => {
+    return linesToIncludeSet.has(`${type}:${content}:${lineNum}`);
+  };
+
+  const rawLines = diffOutput.split("\n");
+  const patchLines: string[] = [];
+  let inHunk = false;
+  let currentHunkLines: Array<{
+    raw: string;
+    type: string;
+    content: string;
+    lineNum: number;
+  }> = [];
+  let hunkOldStart = 0;
+  let hunkNewStart = 0;
+  let oldLineNum = 0;
+  let newLineNum = 0;
+
+  const flushHunk = () => {
+    if (currentHunkLines.length === 0) {
+      return;
+    }
+
+    // Check if any changes are included
+    const hasIncludedChanges = currentHunkLines.some(
+      (line) =>
+        (line.type === "add" || line.type === "delete") &&
+        isLineIncluded(line.type, line.content, line.lineNum)
+    );
+
+    if (!hasIncludedChanges) {
+      currentHunkLines = [];
+      return;
+    }
+
+    // Build patch for STAGING (git diff: old=INDEX, new=working tree)
+    // Within change blocks (consecutive deletes+adds), we pair deletes with adds
+    // and output each pair adjacently to preserve correct line ordering in the INDEX.
+    // - Non-selected deletes: convert to context (line exists in INDEX/old side)
+    // - Non-selected adds: skip entirely (line doesn't exist in INDEX/old side)
+    const outputLines: string[] = [];
+    let oldCount = 0;
+    let newCount = 0;
+
+    type HunkLine = (typeof currentHunkLines)[number];
+    type CollectedLine = { line: HunkLine; meta?: HunkLine };
+
+    let j = 0;
+    while (j < currentHunkLines.length) {
+      const line = currentHunkLines[j];
+
+      if (line.type === "context") {
+        outputLines.push(line.raw);
+        oldCount++;
+        newCount++;
+        j++;
+      } else if (line.type === "meta") {
+        outputLines.push(line.raw);
+        j++;
+      } else {
+        // Change block: collect consecutive deletes, then consecutive adds
+        // Attach trailing meta lines (e.g. "\ No newline at end of file") to each
+        const deleteLines: CollectedLine[] = [];
+        const addLines: CollectedLine[] = [];
+
+        while (j < currentHunkLines.length && currentHunkLines[j].type === "delete") {
+          const entry: CollectedLine = { line: currentHunkLines[j] };
+          j++;
+          if (j < currentHunkLines.length && currentHunkLines[j].type === "meta") {
+            entry.meta = currentHunkLines[j];
+            j++;
+          }
+          deleteLines.push(entry);
+        }
+        while (j < currentHunkLines.length && currentHunkLines[j].type === "add") {
+          const entry: CollectedLine = { line: currentHunkLines[j] };
+          j++;
+          if (j < currentHunkLines.length && currentHunkLines[j].type === "meta") {
+            entry.meta = currentHunkLines[j];
+            j++;
+          }
+          addLines.push(entry);
+        }
+
+        // Pair deletes with adds (1:1 from top), matching frontend grouping logic
+        const minPairs = Math.min(deleteLines.length, addLines.length);
+
+        // Process paired lines - output delete+add adjacently to preserve line order
+        for (let k = 0; k < minPairs; k++) {
+          const del = deleteLines[k];
+          const add = addLines[k];
+          const delIncluded = isLineIncluded(del.line.type, del.line.content, del.line.lineNum);
+          const addIncluded = isLineIncluded(add.line.type, add.line.content, add.line.lineNum);
+
+          if (delIncluded) {
+            outputLines.push(del.line.raw);
+            if (del.meta) {
+              outputLines.push(del.meta.raw);
+            }
+            oldCount++;
+          } else {
+            outputLines.push(` ${del.line.content}`);
+            oldCount++;
+            newCount++;
+          }
+
+          if (addIncluded) {
+            outputLines.push(add.line.raw);
+            if (add.meta) {
+              outputLines.push(add.meta.raw);
+            }
+            newCount++;
+          }
+        }
+
+        // Process unpaired deletes (more deletes than adds)
+        for (let k = minPairs; k < deleteLines.length; k++) {
+          const del = deleteLines[k];
+          const delIncluded = isLineIncluded(del.line.type, del.line.content, del.line.lineNum);
+          if (delIncluded) {
+            outputLines.push(del.line.raw);
+            if (del.meta) {
+              outputLines.push(del.meta.raw);
+            }
+            oldCount++;
+          } else {
+            outputLines.push(` ${del.line.content}`);
+            oldCount++;
+            newCount++;
+          }
+        }
+
+        // Process unpaired adds (more adds than deletes)
+        for (let k = minPairs; k < addLines.length; k++) {
+          const add = addLines[k];
+          const addIncluded = isLineIncluded(add.line.type, add.line.content, add.line.lineNum);
+          if (addIncluded) {
+            outputLines.push(add.line.raw);
+            if (add.meta) {
+              outputLines.push(add.meta.raw);
+            }
+            newCount++;
+          }
+        }
+      }
+    }
+
+    // Only output hunk if it has actual changes
+    const hasChanges = outputLines.some((l) => l.startsWith("-") || l.startsWith("+"));
+    if (hasChanges && outputLines.length > 0) {
+      patchLines.push(`@@ -${hunkOldStart},${oldCount} +${hunkNewStart},${newCount} @@`);
+      patchLines.push(...outputLines);
+    }
+
+    currentHunkLines = [];
+  };
+
+  for (const rawLine of rawLines) {
+    if (rawLine.startsWith("diff --git")) {
+      flushHunk();
+      patchLines.push(rawLine);
+      inHunk = false;
+    } else if (
+      rawLine.startsWith("index ") ||
+      rawLine.startsWith("---") ||
+      rawLine.startsWith("+++")
+    ) {
+      patchLines.push(rawLine);
+    } else if (rawLine.startsWith("@@")) {
+      flushHunk();
+      inHunk = true;
+      const match = rawLine.match(/@@\s*-(\d+)(?:,\d+)?\s+\+(\d+)/);
+      if (match) {
+        hunkOldStart = parseInt(match[1]);
+        hunkNewStart = parseInt(match[2]);
+        oldLineNum = hunkOldStart - 1;
+        newLineNum = hunkNewStart - 1;
+      }
+    } else if (inHunk) {
+      if (rawLine.startsWith("+")) {
+        newLineNum++;
+        currentHunkLines.push({
+          raw: rawLine,
+          type: "add",
+          content: rawLine.substring(1),
+          lineNum: newLineNum,
+        });
+      } else if (rawLine.startsWith("-")) {
+        oldLineNum++;
+        currentHunkLines.push({
+          raw: rawLine,
+          type: "delete",
+          content: rawLine.substring(1),
+          lineNum: oldLineNum,
+        });
+      } else if (rawLine.startsWith(" ")) {
+        oldLineNum++;
+        newLineNum++;
+        currentHunkLines.push({
+          raw: rawLine,
+          type: "context",
+          content: rawLine.substring(1),
+          lineNum: oldLineNum, // context lines exist in both, use oldLineNum
+        });
+      } else if (rawLine.startsWith("\\")) {
+        currentHunkLines.push({
+          raw: rawLine,
+          type: "meta",
+          content: rawLine,
+          lineNum: 0, // meta lines don't have line numbers
+        });
+      }
+    }
+  }
+  flushHunk();
+
+  if (patchLines.length <= 4) {
+    return null;
+  }
+
+  return `${patchLines.join("\n")}\n`;
+};
+
+export const stageLines = async (repoPath: string, filepath: string, lines: DiffLineInfo[]) => {
+  try {
+    if (lines.length === 0 || lines.every((l) => l.type === "context")) {
       return { success: true };
     }
 
-    // Get the current diff between working directory and index
-    const fullPath = path.join(repoPath, filepath);
-    if (!fs.existsSync(fullPath)) {
-      throw new Error("File does not exist");
+    // Use large context to match frontend's view (which uses 999999 for full/split modes)
+    const diffResult = await execGitCommand(["diff", "-U999999", "--", filepath], repoPath);
+    if (!diffResult.success || !diffResult.output.trim()) {
+      return { success: false, error: "No unstaged changes to stage" };
     }
 
-    // Read current file content and HEAD content to build a targeted patch
-    const workdirContent = fs.readFileSync(fullPath, "utf8");
-    const workdirLines = workdirContent.split("\n");
-
-    let headContent = "";
-    try {
-      const headOid = await git.resolveRef({
-        fs,
-        dir: repoPath,
-        ref: "HEAD",
-      });
-      const { blob } = await git.readBlob({
-        fs,
-        dir: repoPath,
-        oid: headOid,
-        filepath,
-      });
-      headContent = new TextDecoder().decode(blob);
-    } catch {
-      headContent = "";
-    }
-    const headLines = headContent.split("\n");
-
-    // Build a patch that includes only the selected line
-    // We'll create a minimal valid patch
-    const patchLines: string[] = [];
-    patchLines.push(`diff --git a/${filepath} b/${filepath}`);
-    patchLines.push(`index 0000000..0000000 100644`);
-    patchLines.push(`--- a/${filepath}`);
-    patchLines.push(`+++ b/${filepath}`);
-
-    // Find the position and context for our line
-    const targetLineIdx = line.lineNumber - 1;
-    const contextBefore = 3;
-    const contextAfter = 3;
-
-    if (line.type === "add") {
-      // For additions, we need to show where to insert
-      const startIdx = Math.max(0, targetLineIdx - contextBefore);
-      const endIdx = Math.min(workdirLines.length, targetLineIdx + contextAfter + 1);
-
-      const oldStart = startIdx + 1;
-      const oldLines = endIdx - startIdx - 1; // Don't count the new line
-      const newStart = startIdx + 1;
-      const newLines = endIdx - startIdx;
-
-      patchLines.push(`@@ -${oldStart},${oldLines} +${newStart},${newLines} @@`);
-
-      for (let i = startIdx; i < endIdx; i++) {
-        if (i === targetLineIdx) {
-          patchLines.push(`+${workdirLines[i]}`);
-        } else if (i < targetLineIdx) {
-          patchLines.push(` ${headLines[i] || workdirLines[i] || ""}`);
-        } else {
-          patchLines.push(` ${workdirLines[i] || ""}`);
-        }
-      }
-    } else if (line.type === "delete") {
-      // For deletions, we show the line being removed
-      const startIdx = Math.max(0, targetLineIdx - contextBefore);
-      const endIdx = Math.min(headLines.length, targetLineIdx + contextAfter + 1);
-
-      const oldStart = startIdx + 1;
-      const oldLines = endIdx - startIdx;
-      const newStart = startIdx + 1;
-      const newLines = endIdx - startIdx - 1; // One less due to deletion
-
-      patchLines.push(`@@ -${oldStart},${oldLines} +${newStart},${newLines} @@`);
-
-      for (let i = startIdx; i < endIdx; i++) {
-        if (i === targetLineIdx) {
-          patchLines.push(`-${headLines[i]}`);
-        } else {
-          patchLines.push(` ${headLines[i] || ""}`);
-        }
-      }
+    const patch = buildPatchForLines(diffResult.output, lines);
+    if (!patch) {
+      return { success: false, error: "Could not build patch for selected lines" };
     }
 
-    const patchContent = `${patchLines.join("\n")}\n`;
     const tempPatchPath = path.join(repoPath, ".git", "temp_stage.patch");
-    fs.writeFileSync(tempPatchPath, patchContent);
+    fs.writeFileSync(tempPatchPath, patch);
 
-    const applyResult = await execGitCommand(["apply", "--cached", tempPatchPath], repoPath);
-    if (!applyResult.success) {
-      console.error("Patch application failed, falling back to full file staging");
-      // Fallback: stage the whole file
-      await git.add({ fs, dir: repoPath, filepath });
+    try {
+      const applyResult = await execGitCommand(
+        ["apply", "--cached", "--unidiff-zero", tempPatchPath],
+        repoPath
+      );
+      if (!applyResult.success) {
+        const errorMsg = applyResult.error?.message || "Failed to apply patch";
+        return { success: false, error: errorMsg };
+      }
+      return { success: true };
+    } finally {
+      if (fs.existsSync(tempPatchPath)) {
+        fs.unlinkSync(tempPatchPath);
+      }
     }
-
-    if (fs.existsSync(tempPatchPath)) {
-      fs.unlinkSync(tempPatchPath);
-    }
-
-    return { success: true };
   } catch (error) {
     console.error("Error staging lines:", error);
     throw error;
   }
 };
 
-export const unstageLines = async (
-  repoPath: string,
-  filepath: string,
-  lines: Array<{ type: string; content: string; lineNumber: number }>
-) => {
+export const unstageLines = async (repoPath: string, filepath: string, lines: DiffLineInfo[]) => {
   try {
-    // For unstaging, we apply the reverse of what was staged
-    // Simply unstage the whole file for now
-    // True line-level unstaging requires reconstructing the index state
-    await git.resetIndex({ fs, dir: repoPath, filepath });
+    if (lines.length === 0 || lines.every((l) => l.type === "context")) {
+      return { success: true };
+    }
 
-    return { success: true };
+    // Strategy: Rebuild INDEX from HEAD by applying only changes that should STAY staged
+    // 1. Get HEAD content as base
+    // 2. Parse the full staged diff
+    // 3. Apply changes that are NOT being unstaged
+    // 4. Write result to INDEX
+
+    // Get HEAD content as the base
+    const headResult = await execGitCommand(["show", `HEAD:${filepath}`], repoPath);
+    if (!headResult.success) {
+      return { success: false, error: "Could not read HEAD file content" };
+    }
+
+    // Get the full diff with maximum context
+    const diffResult = await execGitCommand(
+      ["diff", "--cached", "-U999999", "--", filepath],
+      repoPath
+    );
+    if (!diffResult.success || !diffResult.output.trim()) {
+      return { success: false, error: "No staged changes to unstage" };
+    }
+
+    // Build set of lines to unstage by type+content+lineNumber for precise matching
+    // Delete lines use oldLineNumber, Add lines use newLineNumber
+    const linesToUnstage = new Set(
+      lines
+        .filter((l) => l.type !== "context")
+        .map((l) => {
+          const lineNum = l.type === "delete" ? l.oldLineNumber : l.newLineNumber;
+          return `${l.type}:${l.content}:${lineNum}`;
+        })
+    );
+
+    // Parse the diff into structured lines first
+    const diffLines = diffResult.output.split("\n");
+    type ParsedLine = {
+      raw: string;
+      type: "context" | "delete" | "add" | "meta";
+      content: string;
+      lineNum: number;
+    };
+    const parsedLines: ParsedLine[] = [];
+    let inHunk = false;
+    let oldLineNum = 0;
+    let newLineNum = 0;
+
+    for (const line of diffLines) {
+      if (
+        line.startsWith("diff --git") ||
+        line.startsWith("index ") ||
+        line.startsWith("---") ||
+        line.startsWith("+++")
+      ) {
+        continue;
+      }
+
+      if (line.startsWith("@@")) {
+        inHunk = true;
+        const match = line.match(/@@\s*-(\d+)(?:,\d+)?\s+\+(\d+)/);
+        if (match) {
+          oldLineNum = parseInt(match[1]) - 1;
+          newLineNum = parseInt(match[2]) - 1;
+        }
+        continue;
+      }
+
+      if (!inHunk) {
+        continue;
+      }
+
+      if (line.startsWith(" ")) {
+        oldLineNum++;
+        newLineNum++;
+        parsedLines.push({ raw: line, type: "context", content: line.substring(1), lineNum: 0 });
+      } else if (line.startsWith("-")) {
+        oldLineNum++;
+        parsedLines.push({
+          raw: line,
+          type: "delete",
+          content: line.substring(1),
+          lineNum: oldLineNum,
+        });
+      } else if (line.startsWith("+")) {
+        newLineNum++;
+        parsedLines.push({
+          raw: line,
+          type: "add",
+          content: line.substring(1),
+          lineNum: newLineNum,
+        });
+      } else if (line.startsWith("\\")) {
+        parsedLines.push({ raw: line, type: "meta", content: line, lineNum: 0 });
+      }
+    }
+
+    // Build new INDEX content by processing change blocks with correct pairing
+    const newIndexLines: string[] = [];
+    let lastLineType: string | null = null;
+    let noTrailingNewline = false;
+
+    const isUnstaging = (type: string, content: string, lineNum: number) =>
+      linesToUnstage.has(`${type}:${content}:${lineNum}`);
+
+    type CollectedLine = { parsed: ParsedLine; meta?: ParsedLine };
+
+    let pi = 0;
+    while (pi < parsedLines.length) {
+      const pl = parsedLines[pi];
+
+      if (pl.type === "context") {
+        newIndexLines.push(pl.content);
+        lastLineType = "context";
+        pi++;
+      } else if (pl.type === "meta") {
+        if (
+          lastLineType === "context" ||
+          lastLineType === "add-kept" ||
+          lastLineType === "delete-restored"
+        ) {
+          noTrailingNewline = true;
+        }
+        pi++;
+      } else {
+        // Change block: collect consecutive deletes then adds, with trailing meta
+        const deleteLines: CollectedLine[] = [];
+        const addLines: CollectedLine[] = [];
+
+        while (pi < parsedLines.length && parsedLines[pi].type === "delete") {
+          const entry: CollectedLine = { parsed: parsedLines[pi] };
+          pi++;
+          if (pi < parsedLines.length && parsedLines[pi].type === "meta") {
+            entry.meta = parsedLines[pi];
+            pi++;
+          }
+          deleteLines.push(entry);
+        }
+        while (pi < parsedLines.length && parsedLines[pi].type === "add") {
+          const entry: CollectedLine = { parsed: parsedLines[pi] };
+          pi++;
+          if (pi < parsedLines.length && parsedLines[pi].type === "meta") {
+            entry.meta = parsedLines[pi];
+            pi++;
+          }
+          addLines.push(entry);
+        }
+
+        // Pair deletes with adds and process each pair together
+        const minPairs = Math.min(deleteLines.length, addLines.length);
+
+        for (let k = 0; k < minPairs; k++) {
+          const del = deleteLines[k];
+          const add = addLines[k];
+          const delUnstaging = isUnstaging(del.parsed.type, del.parsed.content, del.parsed.lineNum);
+          const addUnstaging = isUnstaging(add.parsed.type, add.parsed.content, add.parsed.lineNum);
+
+          // For the paired position, output what should be in INDEX:
+          // - Keep add (not unstaging): output add content
+          // - Unstage add (remove from INDEX): don't output
+          // - Unstage delete (restore to INDEX): output delete content
+          // - Keep delete (stays deleted): don't output
+          // Order: kept add first (it was in INDEX at this position), then restored delete
+          if (!addUnstaging) {
+            newIndexLines.push(add.parsed.content);
+            lastLineType = "add-kept";
+            if (add.meta) {
+              noTrailingNewline = true;
+            }
+          }
+          if (delUnstaging) {
+            newIndexLines.push(del.parsed.content);
+            lastLineType = "delete-restored";
+            if (del.meta) {
+              noTrailingNewline = true;
+            }
+          }
+        }
+
+        // Unpaired deletes
+        for (let k = minPairs; k < deleteLines.length; k++) {
+          const del = deleteLines[k];
+          if (isUnstaging(del.parsed.type, del.parsed.content, del.parsed.lineNum)) {
+            newIndexLines.push(del.parsed.content);
+            lastLineType = "delete-restored";
+            if (del.meta) {
+              noTrailingNewline = true;
+            }
+          } else {
+            lastLineType = "delete-kept";
+          }
+        }
+
+        // Unpaired adds
+        for (let k = minPairs; k < addLines.length; k++) {
+          const add = addLines[k];
+          if (!isUnstaging(add.parsed.type, add.parsed.content, add.parsed.lineNum)) {
+            newIndexLines.push(add.parsed.content);
+            lastLineType = "add-kept";
+            if (add.meta) {
+              noTrailingNewline = true;
+            }
+          } else {
+            lastLineType = "add-removed";
+          }
+        }
+      }
+    }
+
+    // Write new content to object store
+    let newContent = newIndexLines.join("\n");
+    // Add trailing newline unless the file shouldn't have one
+    if (newIndexLines.length > 0 && !noTrailingNewline) {
+      newContent += "\n";
+    }
+
+    const tempFilePath = path.join(repoPath, ".git", "temp_index_content");
+    fs.writeFileSync(tempFilePath, newContent);
+
+    try {
+      // Hash the new content
+      const hashResult = await execGitCommand(["hash-object", "-w", tempFilePath], repoPath);
+      if (!hashResult.success || !hashResult.output.trim()) {
+        return { success: false, error: "Failed to hash new content" };
+      }
+      const newHash = hashResult.output.trim();
+
+      // Get the file mode from current index
+      const lsFilesResult = await execGitCommand(["ls-files", "-s", "--", filepath], repoPath);
+      let mode = "100644"; // default
+      if (lsFilesResult.success && lsFilesResult.output.trim()) {
+        const modeMatch = lsFilesResult.output.match(/^(\d+)/);
+        if (modeMatch) {
+          mode = modeMatch[1];
+        }
+      }
+
+      // Update the index
+      const updateResult = await execGitCommand(
+        ["update-index", "--cacheinfo", `${mode},${newHash},${filepath}`],
+        repoPath
+      );
+      if (!updateResult.success) {
+        const errorMsg = updateResult.error?.message || "Failed to update index";
+        return { success: false, error: errorMsg };
+      }
+
+      return { success: true };
+    } finally {
+      if (fs.existsSync(tempFilePath)) {
+        fs.unlinkSync(tempFilePath);
+      }
+    }
   } catch (error) {
     console.error("Error unstaging lines:", error);
+    throw error;
+  }
+};
+
+const buildPatchForHunk = (diffOutput: string, targetHunkIndex: number): string | null => {
+  const rawLines = diffOutput.split("\n");
+  const patchLines: string[] = [];
+  let currentHunkIndex = -1;
+  let inTargetHunk = false;
+
+  for (const rawLine of rawLines) {
+    if (
+      rawLine.startsWith("diff --git") ||
+      rawLine.startsWith("index ") ||
+      rawLine.startsWith("---") ||
+      rawLine.startsWith("+++")
+    ) {
+      patchLines.push(rawLine);
+    } else if (rawLine.startsWith("@@")) {
+      currentHunkIndex++;
+      inTargetHunk = currentHunkIndex === targetHunkIndex;
+      if (inTargetHunk) {
+        patchLines.push(rawLine);
+      }
+    } else if (inTargetHunk) {
+      if (
+        rawLine.startsWith("+") ||
+        rawLine.startsWith("-") ||
+        rawLine.startsWith(" ") ||
+        rawLine.startsWith("\\")
+      ) {
+        patchLines.push(rawLine);
+      }
+    }
+  }
+
+  if (patchLines.length <= 4) {
+    return null;
+  }
+
+  return `${patchLines.join("\n")}\n`;
+};
+
+export const stageHunk = async (repoPath: string, filepath: string, hunkIndex: number) => {
+  try {
+    const diffResult = await execGitCommand(["diff", "-U3", "--", filepath], repoPath);
+    if (!diffResult.success || !diffResult.output.trim()) {
+      return { success: false, error: "No unstaged changes to stage" };
+    }
+
+    const patch = buildPatchForHunk(diffResult.output, hunkIndex);
+    if (!patch) {
+      return { success: false, error: "Could not build patch for hunk" };
+    }
+
+    const tempPatchPath = path.join(repoPath, ".git", "temp_stage_hunk.patch");
+    fs.writeFileSync(tempPatchPath, patch);
+
+    try {
+      const applyResult = await execGitCommand(["apply", "--cached", tempPatchPath], repoPath);
+      if (!applyResult.success) {
+        const errorMsg = applyResult.error?.message || "Failed to apply patch";
+        return { success: false, error: errorMsg };
+      }
+      return { success: true };
+    } finally {
+      if (fs.existsSync(tempPatchPath)) {
+        fs.unlinkSync(tempPatchPath);
+      }
+    }
+  } catch (error) {
+    console.error("Error staging hunk:", error);
+    throw error;
+  }
+};
+
+export const unstageHunk = async (repoPath: string, filepath: string, hunkIndex: number) => {
+  try {
+    const diffResult = await execGitCommand(["diff", "--cached", "-U3", "--", filepath], repoPath);
+    if (!diffResult.success || !diffResult.output.trim()) {
+      return { success: false, error: "No staged changes to unstage" };
+    }
+
+    const patch = buildPatchForHunk(diffResult.output, hunkIndex);
+    if (!patch) {
+      return { success: false, error: "Could not build patch for hunk" };
+    }
+
+    const tempPatchPath = path.join(repoPath, ".git", "temp_unstage_hunk.patch");
+    fs.writeFileSync(tempPatchPath, patch);
+
+    try {
+      const applyResult = await execGitCommand(
+        ["apply", "--cached", "--reverse", tempPatchPath],
+        repoPath
+      );
+      if (!applyResult.success) {
+        const errorMsg = applyResult.error?.message || "Failed to apply reverse patch";
+        return { success: false, error: errorMsg };
+      }
+      return { success: true };
+    } finally {
+      if (fs.existsSync(tempPatchPath)) {
+        fs.unlinkSync(tempPatchPath);
+      }
+    }
+  } catch (error) {
+    console.error("Error unstaging hunk:", error);
     throw error;
   }
 };

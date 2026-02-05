@@ -23,6 +23,8 @@ import {
   deleteStash,
   stageLines,
   unstageLines,
+  stageHunk,
+  unstageHunk,
   createRepository,
   clone,
   getRemoteUrl,
@@ -152,7 +154,7 @@ export const registerGitHandlers = () => {
       _,
       repoPath: string,
       filepath: string,
-      lines: Array<{ type: string; content: string; lineNumber: number }>
+      lines: Array<{ type: string; content: string; oldLineNumber?: number; newLineNumber?: number }>
     ) => {
       return await stageLines(repoPath, filepath, lines);
     }
@@ -164,9 +166,23 @@ export const registerGitHandlers = () => {
       _,
       repoPath: string,
       filepath: string,
-      lines: Array<{ type: string; content: string; lineNumber: number }>
+      lines: Array<{ type: string; content: string; oldLineNumber?: number; newLineNumber?: number }>
     ) => {
       return await unstageLines(repoPath, filepath, lines);
+    }
+  );
+
+  ipcMain.handle(
+    IPC_CHANNELS.GIT_STAGE_HUNK,
+    async (_, repoPath: string, filepath: string, hunkIndex: number) => {
+      return await stageHunk(repoPath, filepath, hunkIndex);
+    }
+  );
+
+  ipcMain.handle(
+    IPC_CHANNELS.GIT_UNSTAGE_HUNK,
+    async (_, repoPath: string, filepath: string, hunkIndex: number) => {
+      return await unstageHunk(repoPath, filepath, hunkIndex);
     }
   );
 

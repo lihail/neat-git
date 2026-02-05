@@ -32,6 +32,8 @@ import {
   deleteStash,
   stageLines,
   unstageLines,
+  stageHunk,
+  unstageHunk,
   fetch,
   pullCurrentBranch,
   pullNonCurrentBranch,
@@ -525,28 +527,69 @@ export const Index = () => {
     }
   };
 
-  const handleStageLine = async (lineIndex: number) => {
+  const refreshAfterPartialStaging = async (
+    statusList: FileChange[],
+    newDiff: DiffLine[],
+    wasStaged: boolean
+  ) => {
+    if (newDiff.length > 0 || !currentState?.selectedFile) {
+      updateRepoState(repoPath!, {
+        files: statusList,
+        diffLines: newDiff,
+      });
+      return;
+    }
+
+    // Diff is empty on current side - switch to the other side if it has changes
+    const fileStatus = statusList.find((f) => f.path === currentState.selectedFile);
+    const otherSideHasChanges = wasStaged ? fileStatus?.hasUnstaged : fileStatus?.hasStaged;
+
+    if (otherSideHasChanges) {
+      const otherSideIsStaged = !wasStaged;
+      const otherDiff = await getDiff(
+        repoPath!,
+        currentState.selectedFile,
+        otherSideIsStaged,
+        getContextLinesForMode(diffViewerMode)
+      );
+      updateRepoState(repoPath!, {
+        files: statusList,
+        selectedFileIsStaged: otherSideIsStaged,
+        diffLines: otherDiff,
+      });
+    } else {
+      updateRepoState(repoPath!, {
+        files: statusList,
+        diffLines: newDiff,
+      });
+    }
+  };
+
+  const handleStageLines = async (lineIndices: number[]) => {
     if (!repoPath || !currentState || !currentState.selectedFile) {
       return;
     }
 
     try {
       setLoadingDiff(true);
-      const line = currentState.diffLines[lineIndex];
-      await stageLines(repoPath, currentState.selectedFile, [line]);
+      const linesToStage = lineIndices.map((i) => currentState.diffLines[i]);
+      const result = await stageLines(repoPath, currentState.selectedFile, linesToStage);
 
-      // Refresh both status and diff
+      if (!result.success) {
+        toast.error("Failed to stage lines", {
+          description: result.error || "Unknown error",
+        });
+        return;
+      }
+
       const [statusList, newDiff] = await Promise.all([
         getStatus(repoPath),
-        getDiff(repoPath, currentState.selectedFile),
+        getDiff(repoPath, currentState.selectedFile, false, getContextLinesForMode(diffViewerMode)),
       ]);
 
-      updateRepoState(repoPath, {
-        files: statusList,
-        diffLines: newDiff,
-      });
+      await refreshAfterPartialStaging(statusList, newDiff, false);
     } catch (error) {
-      console.error("Error staging line:", error);
+      console.error("Error staging lines:", error);
       toast.error("Failed to stage", {
         description: error instanceof Error ? error.message : "Unknown error",
       });
@@ -555,29 +598,96 @@ export const Index = () => {
     }
   };
 
-  const handleUnstageLine = async (lineIndex: number) => {
+  const handleUnstageLines = async (lineIndices: number[]) => {
     if (!repoPath || !currentState || !currentState.selectedFile) {
       return;
     }
 
     try {
       setLoadingDiff(true);
-      const line = currentState.diffLines[lineIndex];
-      await unstageLines(repoPath, currentState.selectedFile, [line]);
+      const linesToUnstage = lineIndices.map((i) => currentState.diffLines[i]);
+      const result = await unstageLines(repoPath, currentState.selectedFile, linesToUnstage);
 
-      // Refresh both status and diff
+      if (!result.success) {
+        toast.error("Failed to unstage lines", {
+          description: result.error || "Unknown error",
+        });
+        return;
+      }
+
       const [statusList, newDiff] = await Promise.all([
         getStatus(repoPath),
-        getDiff(repoPath, currentState.selectedFile),
+        getDiff(repoPath, currentState.selectedFile, true, getContextLinesForMode(diffViewerMode)),
       ]);
 
-      updateRepoState(repoPath, {
-        files: statusList,
-        diffLines: newDiff,
-      });
+      await refreshAfterPartialStaging(statusList, newDiff, true);
     } catch (error) {
-      console.error("Error unstaging line:", error);
+      console.error("Error unstaging lines:", error);
       toast.error("Failed to unstage", {
+        description: error instanceof Error ? error.message : "Unknown error",
+      });
+    } finally {
+      setLoadingDiff(false);
+    }
+  };
+
+  const handleStageHunk = async (hunkIndex: number) => {
+    if (!repoPath || !currentState || !currentState.selectedFile) {
+      return;
+    }
+
+    try {
+      setLoadingDiff(true);
+      const result = await stageHunk(repoPath, currentState.selectedFile, hunkIndex);
+
+      if (!result.success) {
+        toast.error("Failed to stage hunk", {
+          description: result.error || "Unknown error",
+        });
+        return;
+      }
+
+      const [statusList, newDiff] = await Promise.all([
+        getStatus(repoPath),
+        getDiff(repoPath, currentState.selectedFile, false, getContextLinesForMode(diffViewerMode)),
+      ]);
+
+      await refreshAfterPartialStaging(statusList, newDiff, false);
+    } catch (error) {
+      console.error("Error staging hunk:", error);
+      toast.error("Failed to stage hunk", {
+        description: error instanceof Error ? error.message : "Unknown error",
+      });
+    } finally {
+      setLoadingDiff(false);
+    }
+  };
+
+  const handleUnstageHunk = async (hunkIndex: number) => {
+    if (!repoPath || !currentState || !currentState.selectedFile) {
+      return;
+    }
+
+    try {
+      setLoadingDiff(true);
+      const result = await unstageHunk(repoPath, currentState.selectedFile, hunkIndex);
+
+      if (!result.success) {
+        toast.error("Failed to unstage hunk", {
+          description: result.error || "Unknown error",
+        });
+        return;
+      }
+
+      const [statusList, newDiff] = await Promise.all([
+        getStatus(repoPath),
+        getDiff(repoPath, currentState.selectedFile, true, getContextLinesForMode(diffViewerMode)),
+      ]);
+
+      await refreshAfterPartialStaging(statusList, newDiff, true);
+    } catch (error) {
+      console.error("Error unstaging hunk:", error);
+      toast.error("Failed to unstage hunk", {
         description: error instanceof Error ? error.message : "Unknown error",
       });
     } finally {
@@ -1505,6 +1615,7 @@ export const Index = () => {
                   ? currentState.files.find((f) => f.path === currentState.selectedFile)?.status
                   : undefined
               }
+              isStaged={currentState.selectedFileIsStaged}
               isLoading={loadingDiff}
               wordWrap={wordWrap}
               onWordWrapChange={setWordWrap}
@@ -1517,6 +1628,10 @@ export const Index = () => {
                   updateRepoState(repoPath, { diffLines: [] });
                 }
               }}
+              onStageLines={handleStageLines}
+              onUnstageLines={handleUnstageLines}
+              onStageHunk={handleStageHunk}
+              onUnstageHunk={handleUnstageHunk}
             />
           </div>
 

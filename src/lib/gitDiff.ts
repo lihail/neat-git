@@ -1,5 +1,75 @@
 import type { DiffLine } from "./git";
-import type { SplitLine, Hunk } from "@/types/git";
+import type { SplitLine, Hunk, LineGroupMap } from "@/types/git";
+
+export const computeLineGroups = (lines: DiffLine[]): LineGroupMap => {
+  const lineToGroup = new Map<number, number>();
+  const groups = new Map<number, number[]>();
+  let nextGroupId = 0;
+
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+
+    if (line.type === "context") {
+      lineToGroup.set(i, -1);
+      i++;
+      continue;
+    }
+
+    if (line.type === "delete") {
+      const deleteIndices: number[] = [];
+      let j = i;
+      while (j < lines.length && lines[j].type === "delete") {
+        deleteIndices.push(j);
+        j++;
+      }
+
+      const addIndices: number[] = [];
+      while (j < lines.length && lines[j].type === "add") {
+        addIndices.push(j);
+        j++;
+      }
+
+      const minPairs = Math.min(deleteIndices.length, addIndices.length);
+
+      for (let k = 0; k < minPairs; k++) {
+        const groupId = nextGroupId++;
+        groups.set(groupId, [deleteIndices[k], addIndices[k]]);
+        lineToGroup.set(deleteIndices[k], groupId);
+        lineToGroup.set(addIndices[k], groupId);
+      }
+
+      for (let k = minPairs; k < deleteIndices.length; k++) {
+        const groupId = nextGroupId++;
+        groups.set(groupId, [deleteIndices[k]]);
+        lineToGroup.set(deleteIndices[k], groupId);
+      }
+
+      for (let k = minPairs; k < addIndices.length; k++) {
+        const groupId = nextGroupId++;
+        groups.set(groupId, [addIndices[k]]);
+        lineToGroup.set(addIndices[k], groupId);
+      }
+
+      i = j;
+    } else if (line.type === "add") {
+      const groupId = nextGroupId++;
+      groups.set(groupId, [i]);
+      lineToGroup.set(i, groupId);
+      i++;
+    }
+  }
+
+  return { lineToGroup, groups };
+};
+
+export const getGroupedLineIndices = (lineIndex: number, lineGroupMap: LineGroupMap): number[] => {
+  const groupId = lineGroupMap.lineToGroup.get(lineIndex);
+  if (groupId === undefined || groupId === -1) {
+    return [];
+  }
+  return lineGroupMap.groups.get(groupId) || [];
+};
 
 export const groupLinesByHunks = (lines: DiffLine[]): Hunk[] | null => {
   if (lines.length === 0) {
@@ -41,7 +111,6 @@ export const pairSplitLines = (lines: DiffLine[]): SplitLine[] | null => {
     const line = lines[i];
 
     if (line.type === "context") {
-      // Context appears on both sides
       leftLineNumber++;
       rightLineNumber++;
       splitLines.push({
@@ -55,28 +124,29 @@ export const pairSplitLines = (lines: DiffLine[]): SplitLine[] | null => {
           lineNumber: rightLineNumber,
           type: "context",
         },
+        leftGlobalIndex: i,
+        rightGlobalIndex: i,
       });
     } else if (line.type === "delete") {
-      // Collect all consecutive delete lines
-      const deleteLines: DiffLine[] = [];
+      const deleteIndices: number[] = [];
       let j = i;
       while (j < lines.length && lines[j].type === "delete") {
-        deleteLines.push(lines[j]);
+        deleteIndices.push(j);
         j++;
       }
 
-      // Collect all consecutive add lines that follow
-      const addLines: DiffLine[] = [];
+      const addIndices: number[] = [];
       while (j < lines.length && lines[j].type === "add") {
-        addLines.push(lines[j]);
+        addIndices.push(j);
         j++;
       }
 
-      // Pair up deletes and adds side by side
-      const maxLines = Math.max(deleteLines.length, addLines.length);
+      const maxLines = Math.max(deleteIndices.length, addIndices.length);
       for (let k = 0; k < maxLines; k++) {
-        const deleteLine = deleteLines[k];
-        const addLine = addLines[k];
+        const deleteIdx = deleteIndices[k];
+        const addIdx = addIndices[k];
+        const deleteLine = deleteIdx !== undefined ? lines[deleteIdx] : undefined;
+        const addLine = addIdx !== undefined ? lines[addIdx] : undefined;
 
         splitLines.push({
           leftLine: deleteLine
@@ -93,13 +163,13 @@ export const pairSplitLines = (lines: DiffLine[]): SplitLine[] | null => {
                 type: "add",
               }
             : undefined,
+          leftGlobalIndex: deleteIdx,
+          rightGlobalIndex: addIdx,
         });
       }
 
-      // Move index forward (minus 1 because the loop will increment)
       i = j - 1;
     } else if (line.type === "add") {
-      // Standalone add line (not preceded by deletes)
       rightLineNumber++;
       splitLines.push({
         rightLine: {
@@ -107,6 +177,7 @@ export const pairSplitLines = (lines: DiffLine[]): SplitLine[] | null => {
           lineNumber: rightLineNumber,
           type: "add",
         },
+        rightGlobalIndex: i,
       });
     }
   }

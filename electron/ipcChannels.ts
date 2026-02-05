@@ -17,6 +17,8 @@ export const IPC_CHANNELS = {
   GIT_UNSTAGE_ALL_FILES: "git:unstageAllFiles",
   GIT_STAGE_LINES: "git:stageLines",
   GIT_UNSTAGE_LINES: "git:unstageLines",
+  GIT_STAGE_HUNK: "git:stageHunk",
+  GIT_UNSTAGE_HUNK: "git:unstageHunk",
   GIT_COMMIT: "git:commit",
   GIT_LOG: "git:log",
   GIT_GET_DIFF: "git:getDiff",

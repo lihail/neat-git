@@ -9,6 +9,8 @@ export interface SplitLine {
     lineNumber?: number;
     type: "add" | "context";
   };
+  leftGlobalIndex?: number;
+  rightGlobalIndex?: number;
 }
 
 export interface Hunk {
@@ -58,4 +60,9 @@ export interface DiffLine {
   newLineNumber?: number;
   hunkIndex?: number;
   hunkHeader?: string;
+}
+
+export interface LineGroupMap {
+  lineToGroup: Map<number, number>;
+  groups: Map<number, number[]>;
 }
