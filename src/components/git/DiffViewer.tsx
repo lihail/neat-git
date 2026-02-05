@@ -39,18 +39,13 @@ export const DiffViewer = ({
     return filePath ? detectLanguageFromPath(filePath) : "text";
   }, [filePath]);
 
-  // Force full mode only when the diff is entirely adds or deletes (no context lines),
-  // e.g. a brand new file or a fully deleted file. If context lines exist, the diff
-  // behaves like a normal modification and should support all view modes
+  // For new and deleted files, always show in full mode regardless of user's selected mode
   const effectiveViewMode = useMemo(() => {
-    if (
-      (fileStatus === "added" || fileStatus === "deleted") &&
-      !lines.some((l) => l.type === "context")
-    ) {
+    if (fileStatus === "added" || fileStatus === "deleted") {
       return "full";
     }
     return viewMode;
-  }, [fileStatus, viewMode, lines]);
+  }, [fileStatus, viewMode]);
 
   const hunks = useMemo(() => {
     if (effectiveViewMode !== "hunks") {
