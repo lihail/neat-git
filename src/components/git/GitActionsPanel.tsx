@@ -54,7 +54,7 @@ export const GitActionsPanel = ({
           label="Push"
           onClick={onPush}
           disabled={isLoading || isFetching || isPulling || isPushing}
-          iconClassName={isPushing ? "animate-pulse" : undefined}
+          iconClassName={isPushing ? "animate-bounce-up" : undefined}
         />
 
         <GitActionButton icon={Archive} label="Stash" onClick={onStash} disabled={isLoading} />
