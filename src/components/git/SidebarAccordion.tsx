@@ -119,7 +119,7 @@ export const SidebarAccordion = ({
       >
         {/* Local Branches */}
         <AccordionItem value="local-branches" className="border-b border-border">
-          <AccordionTrigger className="px-4 py-3 hover:no-underline border-b border-border">
+          <AccordionTrigger className="px-4 py-3 hover:no-underline border-b border-border bg-secondary/40">
             <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
               <GitBranch className="h-4 w-4 text-primary" />
               Local Branches
@@ -143,7 +143,7 @@ export const SidebarAccordion = ({
         <AccordionItem value="remote-branches" className="border-b border-border">
           <AccordionTrigger
             className={cn(
-              "px-4 py-3 hover:no-underline border-b border-border",
+              "px-4 py-3 hover:no-underline border-b border-border bg-secondary/40",
               remoteBranches.length === 0 && "opacity-50 cursor-not-allowed"
             )}
             disabled={remoteBranches.length === 0}
@@ -181,7 +181,7 @@ export const SidebarAccordion = ({
         <AccordionItem value="stashed-changes" className="border-b border-border">
           <AccordionTrigger
             className={cn(
-              "px-4 py-3 hover:no-underline border-b border-border",
+              "px-4 py-3 hover:no-underline border-b border-border bg-secondary/40",
               stashes.length === 0 && "opacity-50 cursor-not-allowed"
             )}
             disabled={stashes.length === 0}
@@ -284,7 +284,7 @@ export const SidebarAccordion = ({
         <AccordionItem value="commit-history" className="flex-1 border-b-0 min-h-0">
           <AccordionTrigger
             className={cn(
-              "px-4 py-3 hover:no-underline border-b border-border",
+              "px-4 py-3 hover:no-underline border-b border-border bg-secondary/40",
               commits.length === 0 && "opacity-50 cursor-not-allowed"
             )}
             disabled={commits.length === 0}

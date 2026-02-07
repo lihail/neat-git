@@ -25,7 +25,7 @@ export const ChangedFilesSidebar = ({
 
   return (
     <div className="flex h-full flex-col">
-      <div className="border-b border-border p-4">
+      <div className="border-b border-border p-4 bg-secondary/40">
         <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
           <FileText className="h-4 w-4 flex-shrink-0 text-primary" />
           Changed Files
