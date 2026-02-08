@@ -8,8 +8,8 @@ Download the latest release for your operating system from the [releases page](h
 
 **Available versions:**
 
-- **Mac (Apple Silicon)**: Download the file ending in `-arm64-mac.dmg` for M1/M2/M3/M4 Macs
-- **Mac (Intel)**: Download the file ending in `-x64-mac.dmg` for Intel-based Macs
+- **Mac (Apple Silicon: M1/M2/M3, etc.)**: Download the file ending in `-arm64-mac.dmg`
+- **Mac (Intel)**: Download the file ending in `-x64-mac.dmg`
 
 After downloading, open the `.dmg` file and drag NeatGit to your Applications folder.
 

@@ -1,5 +1,58 @@
 # Changelog
 
+## 0.3.0 - Feb. 8, 2026
+
+### User-facing changes
+
+- Added ability to stage and unstage individual lines and hunks in diff viewer for modified files
+- App now includes its own git, no longer requires git to be installed on the user's machine
+- Fixed bug where all stashes of current repo would be deleted upon app start
+- Added rename/move detection for files, showing an appropriate icon and the old and new file paths
+- Fixed bug where new files in new folders showed truncated paths and threw an error when clicked
+- Fixed bug where clicking "Rename" in the rename branch dialog would do nothing
+- Fixed bug where user setup dialog on first app use would not appear
+- Fixed bug where file status icons in staged and unstaged sections showed the same status, even when the actual changes differed
+- Fixed bug where diff viewer showed stale content when selected file was removed from the changed files list
+- Fixed bug where regaining window focus would reload the diff with the wrong view mode or staged/unstaged section if those settings had changed since the window last lost focus
+- Fixed bug where diff viewer showed identical line numbers for consecutive deleted lines in hunks and full view modes
+- App now starts maximized instead of centered in a small window
+- Added validation for existing branch names in the create branch dialog
+- Added the ability to select text in diff viewer
+- Fixed bug where full and hunks diff viewer modes showed only one line number column instead of two (old and new) side by side
+- Fixed bug where diff viewer displayed trailing newline changes at end of files
+- Fixed bug where "Lines x-y" separator in hunks view would scroll horizontally with the content when word wrap is off
+- Added sticky vertical scrolling behavior to "Lines x-y" separators in hunks view
+- Added timeout for git operations to prevent indefinite hangs
+- Added "Save credentials" checkbox when cloning a repository with credentials embedded in the URL
+- Fixed bug where diff viewer forced full mode for staged added files with unstaged changes
+- Improved styling consistency across diff viewer section headers (hunks and split view modes)
+- Fixed bug where stored keychain credentials could be used as fallback when user-provided credentials failed authentication
+- Fixed "Save credentials" checkbox not working when authenticating during clone operations - credentials are now properly saved when the option is selected
+- Close tab and open repository buttons are now disabled during remote operations
+- Added a message when the app is opened in a browser instead of Electron, preventing usage in the browser
+- Renamed "Open Repository" tooltip to "Add Repository"
+- Removed a duplicate empty state in Changed Files sidebar
+- Added upward bounce animation to the Push button while pushing, matching the Pull button's downward bounce style
+- Standardized Git hosting service references across the app
+- Fixed a security vulnerability where malicious SSH hostnames in clone URLs could execute arbitrary shell commands
+- Fixed a security vulnerability where authentication credentials could be temporarily written to disk in plain text
+
+### Behind the scenes
+
+- Switched from system git to dugite for all git CLI operations, bundling git with the app
+- Bundled git-credential-osxkeychain binary with the app for credential storage
+- Added issues section to the readme file
+- Added license to the repo
+- Changed the stash logic to work with native isomorphic-git stash action
+- Added top-level Electron detection guard in `App.tsx` - the app now checks for `window.electronAPI` once at startup
+- Refactored code
+- Added Prettier to the repo and prettified files
+- Normalized line endings to LF in all files
+- Added ESLint rules and fixed all lint issues in the repo
+- Added TypeScript type checking during development with vite-plugin-checker, which displays errors in both the terminal and browser overlay
+- Renamed license file
+- Removed an unused, empty file
+
 ## v0.2.0 - Dec. 7, 2025
 
 ### User-facing changes
@@ -33,7 +86,7 @@
 - Improved UX in staged/unstaged changes sections: stage/unstage buttons now only appear on hover and take no space when hidden, improving readability in long file paths
 - Added app version display to welcome screen
 
-### Behind the scenes:
+### Behind the scenes
 
 - Added this changelog file
 - Rewrote the readme file
