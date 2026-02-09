@@ -68,6 +68,19 @@ export const BranchContextMenu = ({
           <Download className="h-4 w-4" />
         </ContextMenuItem>
       )}
+
+      <ContextMenuSeparator />
+
+      <ContextMenuItem
+        className="gap-3 hover:bg-secondary focus:bg-secondary focus:text-foreground"
+        onSelect={onRename}
+      >
+        <span className="flex-1">Rename</span>
+        <Edit className="h-4 w-4" />
+      </ContextMenuItem>
+
+      <ContextMenuSeparator />
+
       <ContextMenuItem
         className="gap-3 hover:bg-secondary focus:bg-secondary focus:text-foreground"
         onSelect={() => {
@@ -78,6 +91,7 @@ export const BranchContextMenu = ({
         <span className="flex-1">Copy Branch Name</span>
         <Copy className="h-4 w-4" />
       </ContextMenuItem>
+
       {branch.upstream && (
         <ContextMenuItem
           className="gap-3 hover:bg-secondary focus:bg-secondary focus:text-foreground"
@@ -92,13 +106,9 @@ export const BranchContextMenu = ({
           <Copy className="h-4 w-4" />
         </ContextMenuItem>
       )}
-      <ContextMenuItem
-        className="gap-3 hover:bg-secondary focus:bg-secondary focus:text-foreground"
-        onSelect={onRename}
-      >
-        <span className="flex-1">Rename</span>
-        <Edit className="h-4 w-4" />
-      </ContextMenuItem>
+
+      <ContextMenuSeparator />
+
       {branch.current ? (
         <Tooltip delayDuration={0}>
           <TooltipTrigger asChild>
