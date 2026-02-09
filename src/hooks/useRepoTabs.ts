@@ -11,24 +11,19 @@ import {
 
 export const useRepoTabs = () => {
   const [tabs, setTabs] = useState<RepoTab[]>(() => {
-    if (typeof window !== "undefined") {
-      const saved = getTabs();
-      if (saved) {
-        try {
-          return JSON.parse(saved);
-        } catch {
-          return [];
-        }
+    const saved = getTabs();
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        return [];
       }
     }
     return [];
   });
 
   const [activeTabId, setActiveTabId] = useState<string | null>(() => {
-    if (typeof window !== "undefined") {
-      return getActiveTab();
-    }
-    return null;
+    return getActiveTab();
   });
 
   useEffect(() => {
