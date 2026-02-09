@@ -24,8 +24,10 @@ export const ChangedFilesSidebar = ({
   onUnstageAll,
   onDiscardChanges,
 }: ChangedFilesSidebarProps) => {
-  const stagedFiles = files.filter((f) => f.hasStaged);
-  const unstagedFiles = files.filter((f) => f.hasUnstaged);
+  const stagedFiles = files.filter((f) => f.hasStaged).sort((a, b) => a.path.localeCompare(b.path));
+  const unstagedFiles = files
+    .filter((f) => f.hasUnstaged)
+    .sort((a, b) => a.path.localeCompare(b.path));
 
   return (
     <div className="flex h-full flex-col">
