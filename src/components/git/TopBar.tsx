@@ -1,6 +1,7 @@
 import { GitActionsPanel } from "./GitActionsPanel";
 import { RepoTabsList } from "./RepoTabsList";
 import { Separator } from "@/components/ui/separator";
+import { SettingsDrawer } from "@/components/common/SettingsDrawer";
 
 export interface RepoTab {
   id: string;
@@ -72,6 +73,10 @@ export const TopBar = ({
         isPushing={isPushing}
         existingBranches={existingBranches}
       />
+      <Separator orientation="vertical" className="h-10 self-center mx-2 ml-auto" />
+      <div className="self-center">
+        <SettingsDrawer />
+      </div>
     </div>
   );
 };
