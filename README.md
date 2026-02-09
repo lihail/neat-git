@@ -4,14 +4,19 @@ A modern, beautiful Git client built with Electron, React and TypeScript.
 
 ## Installation
 
-Download the latest release for your operating system from the [releases page](https://github.com/lihail/neat-git/releases).
+1. Download the latest release for your operating system from the [releases page](https://github.com/lihail/neat-git/releases). Available versions:
+   - **macOS (Apple Silicon: M1/M2/M3, etc.)**: Download the file ending in `-arm64-mac.dmg`
+   - **macOS (Intel)**: Download the file ending in `-x64-mac.dmg`
 
-**Available versions:**
+2. Open the `.dmg` file and drag NeatGit to your Applications folder.
 
-- **Mac (Apple Silicon: M1/M2/M3, etc.)**: Download the file ending in `-arm64-mac.dmg`
-- **Mac (Intel)**: Download the file ending in `-x64-mac.dmg`
+3. For **macOS only:** Since NeatGit is not a certified Apple application, macOS will block the app from opening the first time. To resolve this, use one of the following options (you only need to do this once):
+   - **Option 1:** Right-click the app → click **Open** → click **Open** in the confirmation dialog.
 
-After downloading, open the `.dmg` file and drag NeatGit to your Applications folder.
+   - **Option 2:** Run the following command in Terminal:
+     ```sh
+     xattr -cr /Applications/NeatGit.app
+     ```
 
 ## Local Development
 
