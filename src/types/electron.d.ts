@@ -5,11 +5,11 @@ export interface Branch {
   current: boolean;
   behind?: number;
   ahead?: number;
-  upstream?: string;
   hasUpstream?: boolean;
+  upstream?: string;
 }
 
-export interface FileStatus {
+export interface FileChange {
   path: string;
   status: "modified" | "added" | "deleted";
   hasStaged: boolean;
@@ -44,16 +44,7 @@ export interface DiffLine {
   hunkHeader?: string;
 }
 
-export interface SSHKeyInfo {
-  success: boolean;
-  hasKeys: boolean;
-  keys?: Array<{ path: string; publicPath: string }>;
-  keyPath?: string;
-  publicKeyPath?: string;
-}
-
 export interface ElectronAPI {
-  versions: NodeJS.ProcessVersions;
   openSelectGitRepositoryFolderDialog: () => Promise<
     { success: true; path: string } | { success: false; error: string | null }
   >;
@@ -70,30 +61,28 @@ export interface ElectronAPI {
     userName: string,
     userEmail: string
   ) => Promise<{ success: boolean; error?: string }>;
-  getCurrentBranch: (repoPath: string) => Promise<string | null>;
-  listBranches: (repoPath: string) => Promise<Branch[]>;
+  getCurrentBranch: (repoPath: string) => Promise<string>;
+  listLocalBranches: (repoPath: string) => Promise<Branch[]>;
   listRemoteBranches: (repoPath: string) => Promise<Branch[]>;
-  createBranch: (
-    repoPath: string,
-    branchName: string
-  ) => Promise<{ success: boolean; error?: string }>;
-  deleteBranch: (
-    repoPath: string,
-    branchName: string
-  ) => Promise<{ success: boolean; error?: string }>;
+  createBranch: (repoPath: string, branchName: string) => Promise<{ success: true }>;
+  deleteBranch: (repoPath: string, branchName: string) => Promise<{ success: true }>;
   renameBranch: (
     repoPath: string,
     oldName: string,
     newName: string,
     alsoRenameRemote: boolean
-  ) => Promise<{ success: boolean; error?: string }>;
-  checkout: (repoPath: string, branchName: string) => Promise<{ success: boolean; error?: string }>;
-  getStatus: (repoPath: string) => Promise<FileStatus[]>;
-  stageFile: (repoPath: string, filepath: string) => Promise<void>;
-  stageAllFiles: (repoPath: string) => Promise<void>;
-  unstageChange: (repoPath: string, filepath: string, oldFilePath?: string | null) => Promise<void>;
-  unstageAllFiles: (repoPath: string) => Promise<void>;
-  discardChanges: (repoPath: string, filepath: string) => Promise<void>;
+  ) => Promise<{ success: true }>;
+  checkout: (repoPath: string, branchName: string) => Promise<{ success: true }>;
+  getStatus: (repoPath: string) => Promise<FileChange[]>;
+  stageFile: (repoPath: string, filepath: string) => Promise<{ success: true }>;
+  stageAllFiles: (repoPath: string) => Promise<{ success: true }>;
+  unstageChange: (
+    repoPath: string,
+    filepath: string,
+    oldFilePath?: string | null
+  ) => Promise<{ success: true }>;
+  unstageAllFiles: (repoPath: string) => Promise<{ success: true }>;
+  discardChanges: (repoPath: string, filepath: string) => Promise<{ success: true }>;
   stageLines: (
     repoPath: string,
     filepath: string,
@@ -118,7 +107,7 @@ export interface ElectronAPI {
     repoPath: string,
     message: string,
     description?: string | null
-  ) => Promise<{ success: boolean; sha: string; error?: string }>;
+  ) => Promise<{ success: boolean; sha?: string; message?: string }>;
   log: (repoPath: string, limit?: number) => Promise<Commit[]>;
   getDiff: (
     repoPath: string,
@@ -128,18 +117,9 @@ export interface ElectronAPI {
     oldFilePath?: string | null
   ) => Promise<DiffLine[]>;
   listStashes: (repoPath: string) => Promise<Stash[]>;
-  stash: (
-    repoPath: string,
-    message: string
-  ) => Promise<{ success: boolean; message: string; error?: string }>;
-  popStash: (
-    repoPath: string,
-    index: number
-  ) => Promise<{ success: boolean; message: string; error?: string }>;
-  deleteStash: (
-    repoPath: string,
-    index: number
-  ) => Promise<{ success: boolean; message: string; error?: string }>;
+  stash: (repoPath: string, message: string) => Promise<{ success: boolean; message: string }>;
+  popStash: (repoPath: string, index: number) => Promise<{ success: true; message: string }>;
+  deleteStash: (repoPath: string, index: number) => Promise<{ success: true; message: string }>;
   createRepository: (
     parentPath: string,
     repoName: string
@@ -185,20 +165,23 @@ export interface ElectronAPI {
     password?: string | null,
     saveCredentials?: boolean
   ) => Promise<{ success: boolean; error?: string; needsAuth?: boolean }>;
-  findKeys: () => Promise<SSHKeyInfo>;
-  generateKey: () => Promise<{
+  findSshKeys: () => Promise<{
+    success: boolean;
+    hasKeys?: boolean;
+    keys?: Array<{ name: string; privatePath: string; publicPath: string }>;
+    error?: string;
+  }>;
+  generateSshKey: () => Promise<{
     success: boolean;
     keyPath?: string;
     publicKeyPath?: string;
-    publicKey?: string;
     error?: string;
   }>;
-  readPublicKey: (
+  readSshPublicKey: (
     keyPath: string
   ) => Promise<{ success: boolean; content?: string; error?: string }>;
   isHostTrusted: (hostname: string) => Promise<{
     success: boolean;
-    trusted?: boolean;
     isTrusted?: boolean;
     error?: string;
   }>;

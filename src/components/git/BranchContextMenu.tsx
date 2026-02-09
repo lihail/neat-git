@@ -21,6 +21,18 @@ export const BranchContextMenu = ({
   onDelete,
   onRename,
 }: BranchContextMenuProps) => {
+  const handleCopyBranchName = () => {
+    navigator.clipboard.writeText(branch.name);
+    toast.success(`Copied "${branch.name}" to clipboard`);
+  };
+
+  const handleCopyRemoteBranchName = () => {
+    if (branch.upstream) {
+      navigator.clipboard.writeText(branch.upstream);
+      toast.success(`Copied "${branch.upstream}" to clipboard`);
+    }
+  };
+
   return (
     <ContextMenuContent className="max-w-64">
       {branch.hasUpstream && branch.upstream && (
@@ -83,10 +95,7 @@ export const BranchContextMenu = ({
 
       <ContextMenuItem
         className="gap-3 hover:bg-secondary focus:bg-secondary focus:text-foreground"
-        onSelect={() => {
-          navigator.clipboard.writeText(branch.name);
-          toast.success(`Copied "${branch.name}" to clipboard`);
-        }}
+        onSelect={handleCopyBranchName}
       >
         <span className="flex-1">Copy Branch Name</span>
         <Copy className="h-4 w-4" />
@@ -95,12 +104,7 @@ export const BranchContextMenu = ({
       {branch.upstream && (
         <ContextMenuItem
           className="gap-3 hover:bg-secondary focus:bg-secondary focus:text-foreground"
-          onSelect={() => {
-            if (branch.upstream) {
-              navigator.clipboard.writeText(branch.upstream);
-              toast.success(`Copied "${branch.upstream}" to clipboard`);
-            }
-          }}
+          onSelect={handleCopyRemoteBranchName}
         >
           <span className="flex-1">Copy Remote Branch Name</span>
           <Copy className="h-4 w-4" />

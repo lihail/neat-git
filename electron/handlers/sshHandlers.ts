@@ -9,16 +9,16 @@ import {
 } from "../services/sshService";
 
 export const registerSshHandlers = () => {
-  ipcMain.handle(IPC_CHANNELS.SSH_FIND_KEYS, async () => {
-    return await findKeys();
+  ipcMain.handle(IPC_CHANNELS.SSH_FIND_KEYS, () => {
+    return findKeys();
   });
 
   ipcMain.handle(IPC_CHANNELS.SSH_GENERATE_KEY, async () => {
     return await generateKey();
   });
 
-  ipcMain.handle(IPC_CHANNELS.SSH_READ_PUBLIC_KEY, async (_, keyPath: string) => {
-    return await readPublicKey(keyPath);
+  ipcMain.handle(IPC_CHANNELS.SSH_READ_PUBLIC_KEY, (_, keyPath: string) => {
+    return readPublicKey(keyPath);
   });
 
   ipcMain.handle(IPC_CHANNELS.SSH_IS_HOST_TRUSTED, async (_, hostname: string) => {

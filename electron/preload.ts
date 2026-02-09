@@ -3,8 +3,6 @@ import { IPC_CHANNELS } from "./ipcChannels";
 
 // --------- Expose a type-safe API to the Renderer process ---------
 contextBridge.exposeInMainWorld("electronAPI", {
-  platform: process.platform,
-  versions: process.versions,
   openSelectGitRepositoryFolderDialog: () =>
     ipcRenderer.invoke(IPC_CHANNELS.DIALOG_OPEN_SELECT_GIT_REPOSITORY_FOLDER),
   openSelectParentFolderDialog: () =>
@@ -14,7 +12,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
     ipcRenderer.invoke(IPC_CHANNELS.GIT_SET_GLOBAL_CONFIG, userName, userEmail),
   getCurrentBranch: (repoPath: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.GIT_GET_CURRENT_BRANCH, repoPath),
-  listBranches: (repoPath: string) => ipcRenderer.invoke(IPC_CHANNELS.GIT_LIST_BRANCHES, repoPath),
+  listLocalBranches: (repoPath: string) => ipcRenderer.invoke(IPC_CHANNELS.GIT_LIST_LOCAL_BRANCHES, repoPath),
   listRemoteBranches: (repoPath: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.GIT_LIST_REMOTE_BRANCHES, repoPath),
   createBranch: (repoPath: string, branchName: string) =>
@@ -139,9 +137,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
       password,
       saveCredentials
     ),
-  findKeys: () => ipcRenderer.invoke(IPC_CHANNELS.SSH_FIND_KEYS),
-  generateKey: () => ipcRenderer.invoke(IPC_CHANNELS.SSH_GENERATE_KEY),
-  readPublicKey: (keyPath: string) => ipcRenderer.invoke(IPC_CHANNELS.SSH_READ_PUBLIC_KEY, keyPath),
+  findSshKeys: () => ipcRenderer.invoke(IPC_CHANNELS.SSH_FIND_KEYS),
+  generateSshKey: () => ipcRenderer.invoke(IPC_CHANNELS.SSH_GENERATE_KEY),
+  readSshPublicKey: (keyPath: string) => ipcRenderer.invoke(IPC_CHANNELS.SSH_READ_PUBLIC_KEY, keyPath),
   isHostTrusted: (hostname: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.SSH_IS_HOST_TRUSTED, hostname),
   trustHost: (hostname: string) => ipcRenderer.invoke(IPC_CHANNELS.SSH_TRUST_HOST, hostname),

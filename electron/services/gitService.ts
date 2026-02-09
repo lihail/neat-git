@@ -89,7 +89,7 @@ export const getCurrentBranch = async (repoPath: string) => {
   }
 };
 
-export const listBranches = async (repoPath: string) => {
+export const listLocalBranches = async (repoPath: string) => {
   try {
     if (!fs.existsSync(repoPath)) {
       throw new Error(`Repository path does not exist: ${repoPath}`);
@@ -842,6 +842,7 @@ export const commit = async (repoPath: string, message: string, description: str
     });
 
     // Verify the branch ref was updated
+    // TODO: not used?
     const currentBranch = await git.currentBranch({
       fs,
       dir: repoPath,

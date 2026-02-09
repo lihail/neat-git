@@ -45,12 +45,9 @@ export const getCurrentBranch = async (repoPath: string): Promise<string> => {
   }
 };
 
-/**
- * List all local branches
- */
-export const listBranches = async (repoPath: string): Promise<Branch[]> => {
+export const listLocalBranches = async (repoPath: string): Promise<Branch[]> => {
   try {
-    const branches = await window.electronAPI.listBranches(repoPath);
+    const branches = await window.electronAPI.listLocalBranches(repoPath);
     return branches || [];
   } catch (error) {
     console.error("Error listing branches:", error);
@@ -216,7 +213,7 @@ export const commit = async (
   repoPath: string,
   message: string,
   description?: string
-): Promise<{ success: boolean; sha: string }> => {
+): Promise<{ success: boolean; sha?: string; message?: string }> => {
   try {
     // Ensure all parameters are serializable
     const safeDescription = description !== undefined ? String(description) : null;
@@ -430,28 +427,6 @@ export const pullNonCurrentBranch = async (
   }
 };
 
-export const openSelectGitRepositoryFolderDialog = async (): Promise<
-  { success: true; path: string } | { success: false; error: string | null }
-> => {
-  try {
-    return await window.electronAPI.openSelectGitRepositoryFolderDialog();
-  } catch (error) {
-    console.error("Error opening select git repository folder dialog:", error);
-    throw error;
-  }
-};
-
-export const openSelectParentFolderDialog = async (): Promise<
-  { success: true; path: string } | { success: false; error: string | null }
-> => {
-  try {
-    return await window.electronAPI.openSelectParentFolderDialog();
-  } catch (error) {
-    console.error("Error opening select parent folder dialog:", error);
-    throw error;
-  }
-};
-
 export const clone = async (
   url: string,
   destination: string,
@@ -481,69 +456,6 @@ export const clone = async (
     );
   } catch (error) {
     console.error("Error cloning repository:", error);
-    throw error;
-  }
-};
-
-export const isHostTrusted = async (
-  hostname: string
-): Promise<{ success: boolean; trusted?: boolean; isTrusted?: boolean; error?: string }> => {
-  try {
-    return await window.electronAPI.isHostTrusted(hostname);
-  } catch (error) {
-    console.error("Error checking if host is trusted:", error);
-    throw error;
-  }
-};
-
-export const trustHost = async (
-  hostname: string
-): Promise<{ success: boolean; error?: string }> => {
-  try {
-    return await window.electronAPI.trustHost(hostname);
-  } catch (error) {
-    console.error("Error trusting host:", error);
-    throw error;
-  }
-};
-
-export const findSshKeys = async (): Promise<{
-  success: boolean;
-  hasKeys: boolean;
-  keys?: Array<{ path: string; publicPath: string }>;
-  keyPath?: string;
-  publicKeyPath?: string;
-}> => {
-  try {
-    return await window.electronAPI.findKeys();
-  } catch (error) {
-    console.error("Error finding SSH keys:", error);
-    throw error;
-  }
-};
-
-export const readSshPublicKey = async (
-  publicKeyPath: string
-): Promise<{ success: boolean; content?: string; error?: string }> => {
-  try {
-    return await window.electronAPI.readPublicKey(publicKeyPath);
-  } catch (error) {
-    console.error("Error reading SSH public key:", error);
-    throw error;
-  }
-};
-
-export const generateSshKey = async (): Promise<{
-  success: boolean;
-  keyPath?: string;
-  publicKeyPath?: string;
-  publicKey?: string;
-  error?: string;
-}> => {
-  try {
-    return await window.electronAPI.generateKey();
-  } catch (error) {
-    console.error("Error generating SSH key:", error);
     throw error;
   }
 };

@@ -11,7 +11,7 @@ import { AuthDialog } from "@/components/git/AuthDialog";
 import { toast } from "@/components/ui/toaster";
 import { cn } from "@/lib/utils";
 import {
-  listBranches,
+  listLocalBranches,
   listRemoteBranches,
   getCurrentBranch,
   getStatus,
@@ -165,7 +165,7 @@ export const Index = () => {
             // Refresh repo data after fetch
             const remoteBranchList = await listRemoteBranches(currentRepoPath);
             const commitHistory = await getCommitHistory(currentRepoPath);
-            const branchList = await listBranches(currentRepoPath);
+            const branchList = await listLocalBranches(currentRepoPath);
 
             updateRepoState(currentRepoPath, {
               remoteBranches: remoteBranchList,
@@ -264,7 +264,7 @@ export const Index = () => {
 
         try {
           const current = await getCurrentBranch(repoPath);
-          const branchList = await listBranches(repoPath);
+          const branchList = await listLocalBranches(repoPath);
           const remoteBranchList = await listRemoteBranches(repoPath);
           const statusList = await getStatus(repoPath);
           const commitHistory = await getCommitHistory(repoPath);
@@ -351,7 +351,7 @@ export const Index = () => {
       try {
         const statusList = await getStatus(repoPath);
         const commitHistory = await getCommitHistory(repoPath);
-        const branchList = await listBranches(repoPath);
+        const branchList = await listLocalBranches(repoPath);
         const current = await getCurrentBranch(repoPath);
         const stashList = await listStashes(repoPath);
 
@@ -887,7 +887,7 @@ export const Index = () => {
         // Refresh git status, commit history, and branches after commit
         const statusList = await getStatus(repoPath);
         const commitHistory = await getCommitHistory(repoPath);
-        const branchList = await listBranches(repoPath);
+        const branchList = await listLocalBranches(repoPath);
         updateRepoState(repoPath, {
           files: statusList,
           commits: commitHistory,
@@ -920,7 +920,7 @@ export const Index = () => {
       // Refresh git status, commit history, and branches after branch switch
       const statusList = await getStatus(repoPath);
       const commitHistory = await getCommitHistory(repoPath);
-      const branchList = await listBranches(repoPath);
+      const branchList = await listLocalBranches(repoPath);
       updateRepoState(repoPath, {
         currentBranch: branch,
         files: statusList,
@@ -977,7 +977,7 @@ export const Index = () => {
                   // Refresh git status, commit history, branches, and stashes
                   const statusList = await getStatus(repoPath);
                   const commitHistory = await getCommitHistory(repoPath);
-                  const branchList = await listBranches(repoPath);
+                  const branchList = await listLocalBranches(repoPath);
                   const stashList = await listStashes(repoPath);
                   updateRepoState(repoPath, {
                     currentBranch: branch,
@@ -1024,7 +1024,7 @@ export const Index = () => {
       toast.success(`Created and switched to branch: ${branchName}`);
 
       // Refresh branches and update current branch
-      const branchList = await listBranches(repoPath);
+      const branchList = await listLocalBranches(repoPath);
       const current = await getCurrentBranch(repoPath);
 
       // Refresh git status and commit history
@@ -1055,7 +1055,7 @@ export const Index = () => {
       toast.success(`Branch deleted: ${branchName}`);
 
       // Refresh branches
-      const branchList = await listBranches(repoPath);
+      const branchList = await listLocalBranches(repoPath);
       updateRepoState(repoPath, { branches: branchList });
     } catch (error) {
       console.error("Error deleting branch:", error);
@@ -1089,7 +1089,7 @@ export const Index = () => {
       const wasCurrentBranch = oldName === currentState.currentBranch;
 
       // Refresh branches
-      const branchList = await listBranches(repoPath);
+      const branchList = await listLocalBranches(repoPath);
       const remoteBranchList = await listRemoteBranches(repoPath);
 
       // If we renamed the current branch, update currentBranch state
@@ -1358,7 +1358,7 @@ export const Index = () => {
 
         const remoteBranchList = await listRemoteBranches(repoPath);
         const commitHistory = await getCommitHistory(repoPath);
-        const branchList = await listBranches(repoPath);
+        const branchList = await listLocalBranches(repoPath);
 
         updateRepoState(repoPath, {
           remoteBranches: remoteBranchList,
@@ -1413,7 +1413,7 @@ export const Index = () => {
 
         const remoteBranchList = await listRemoteBranches(repoPath);
         const commitHistory = await getCommitHistory(repoPath);
-        const branchList = await listBranches(repoPath);
+        const branchList = await listLocalBranches(repoPath);
 
         updateRepoState(repoPath, {
           remoteBranches: remoteBranchList,
@@ -1468,7 +1468,7 @@ export const Index = () => {
 
         const remoteBranchList = await listRemoteBranches(repoPath);
         const commitHistory = await getCommitHistory(repoPath);
-        const branchList = await listBranches(repoPath);
+        const branchList = await listLocalBranches(repoPath);
         const statusResult = await getStatus(repoPath);
 
         updateRepoState(repoPath, {
@@ -1550,7 +1550,7 @@ export const Index = () => {
         toast.success(`Successfully pulled branch "${branchName}"`);
 
         // Refresh branch list and commits to show updated state
-        const branchList = await listBranches(repoPath);
+        const branchList = await listLocalBranches(repoPath);
         const remoteBranchList = await listRemoteBranches(repoPath);
         const commitHistory = await getCommitHistory(repoPath);
 

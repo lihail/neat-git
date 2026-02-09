@@ -4,7 +4,7 @@ export const IPC_CHANNELS = {
   GIT_GET_GLOBAL_CONFIG: "git:getGlobalConfig",
   GIT_SET_GLOBAL_CONFIG: "git:setGlobalConfig",
   GIT_GET_CURRENT_BRANCH: "git:getCurrentBranch",
-  GIT_LIST_BRANCHES: "git:listBranches",
+  GIT_LIST_LOCAL_BRANCHES: "git:listLocalBranches",
   GIT_LIST_REMOTE_BRANCHES: "git:listRemoteBranches",
   GIT_CREATE_BRANCH: "git:createBranch",
   GIT_DELETE_BRANCH: "git:deleteBranch",

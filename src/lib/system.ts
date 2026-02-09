@@ -1,3 +1,25 @@
+export const openSelectGitRepositoryFolderDialog = async (): Promise<
+  { success: true; path: string } | { success: false; error: string | null }
+> => {
+  try {
+    return await window.electronAPI.openSelectGitRepositoryFolderDialog();
+  } catch (error) {
+    console.error("Error opening select git repository folder dialog:", error);
+    throw error;
+  }
+};
+
+export const openSelectParentFolderDialog = async (): Promise<
+  { success: true; path: string } | { success: false; error: string | null }
+> => {
+  try {
+    return await window.electronAPI.openSelectParentFolderDialog();
+  } catch (error) {
+    console.error("Error opening select parent folder dialog:", error);
+    throw error;
+  }
+};
+
 export const showItemInFolder = (repoPath: string, filePath: string): void => {
   try {
     window.electronAPI.showItemInFolder(`${repoPath}/${filePath}`);

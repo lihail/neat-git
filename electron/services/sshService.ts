@@ -3,7 +3,7 @@ import fs from "node:fs";
 import { isValidHostname } from "../utils/validation";
 import { spawnAsync } from "../utils/process";
 
-export const findKeys = async () => {
+export const findKeys = () => {
   try {
     const homeDir = process.env.HOME || process.env.USERPROFILE || "";
     const sshDir = path.join(homeDir, ".ssh");
@@ -99,7 +99,7 @@ export const generateKey = async () => {
   }
 };
 
-export const readPublicKey = async (keyPath: string) => {
+export const readPublicKey = (keyPath: string) => {
   try {
     const content = fs.readFileSync(keyPath, "utf8").trim();
     return { success: true, content };

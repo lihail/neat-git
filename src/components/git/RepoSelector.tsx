@@ -18,17 +18,9 @@ import {
   validateCloneUrl,
   getFullClonePath,
 } from "@/lib/utils";
-import {
-  openSelectGitRepositoryFolderDialog,
-  openSelectParentFolderDialog,
-  clone,
-  isHostTrusted,
-  trustHost,
-  findSshKeys,
-  readSshPublicKey,
-  generateSshKey,
-  createRepository,
-} from "@/lib/git";
+import { openSelectGitRepositoryFolderDialog, openSelectParentFolderDialog } from "@/lib/system";
+import { clone, createRepository } from "@/lib/git";
+import { isHostTrusted, trustHost, findSshKeys, readSshPublicKey, generateSshKey } from "@/lib/ssh";
 import packageJson from "../../../package.json";
 
 interface RepoSelectorProps {

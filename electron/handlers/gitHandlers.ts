@@ -3,7 +3,7 @@ import {
   getGlobalConfig,
   setGlobalConfig,
   getCurrentBranch,
-  listBranches,
+  listLocalBranches,
   listRemoteBranches,
   getStatus,
   stageFile,
@@ -52,8 +52,8 @@ export const registerGitHandlers = () => {
     return await getCurrentBranch(repoPath);
   });
 
-  ipcMain.handle(IPC_CHANNELS.GIT_LIST_BRANCHES, async (_, repoPath: string) => {
-    return await listBranches(repoPath);
+  ipcMain.handle(IPC_CHANNELS.GIT_LIST_LOCAL_BRANCHES, async (_, repoPath: string) => {
+    return await listLocalBranches(repoPath);
   });
 
   ipcMain.handle(IPC_CHANNELS.GIT_LIST_REMOTE_BRANCHES, async (_, repoPath: string) => {
