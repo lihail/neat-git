@@ -94,6 +94,12 @@ app.whenReady().then(() => {
   }
 });
 
+app.on("before-quit", () => {
+  if (win && !win.isDestroyed()) {
+    win.webContents.session.flushStorageData();
+  }
+});
+
 app.on("window-all-closed", () => {
   win = null;
   if (process.platform !== "darwin") {
