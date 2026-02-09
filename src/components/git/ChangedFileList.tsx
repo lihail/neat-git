@@ -82,7 +82,7 @@ export const ChangedFileList = ({
                     <Button
                       size="sm"
                       variant="destructive"
-                      className="h-6 px-2 text-xs"
+                      className="h-7 px-2 text-xs"
                       onClick={() => {
                         onDiscardChanges(file.path);
                         setDiscardingFile(null);
@@ -93,7 +93,7 @@ export const ChangedFileList = ({
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="h-6 px-2 text-xs"
+                      className="h-7 px-2 text-xs"
                       onClick={() => setDiscardingFile(null)}
                     >
                       Cancel
