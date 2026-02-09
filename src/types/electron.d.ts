@@ -93,6 +93,7 @@ export interface ElectronAPI {
   stageAllFiles: (repoPath: string) => Promise<void>;
   unstageChange: (repoPath: string, filepath: string, oldFilePath?: string | null) => Promise<void>;
   unstageAllFiles: (repoPath: string) => Promise<void>;
+  discardChanges: (repoPath: string, filepath: string) => Promise<void>;
   stageLines: (
     repoPath: string,
     filepath: string,
@@ -202,6 +203,8 @@ export interface ElectronAPI {
     error?: string;
   }>;
   trustHost: (hostname: string) => Promise<{ success: boolean; error?: string }>;
+  showItemInFolder: (fullPath: string) => Promise<{ success: boolean; error?: string }>;
+  openInExternalEditor: (fullPath: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 declare global {

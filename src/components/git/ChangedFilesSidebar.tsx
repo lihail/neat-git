@@ -3,22 +3,26 @@ import { ChangesFilesSection, FileChange } from "./ChangesFilesSection";
 
 interface ChangedFilesSidebarProps {
   files: FileChange[];
+  repoPath: string;
   onToggleStage: (path: string, shouldStage: boolean) => void;
   onSelectFile: (path: string, isStaged: boolean) => void;
   selectedFile?: string;
   selectedFileIsStaged?: boolean;
   onStageAll: () => void;
   onUnstageAll: () => void;
+  onDiscardChanges: (path: string) => void;
 }
 
 export const ChangedFilesSidebar = ({
   files,
+  repoPath,
   onToggleStage,
   onSelectFile,
   selectedFile,
   selectedFileIsStaged,
   onStageAll,
   onUnstageAll,
+  onDiscardChanges,
 }: ChangedFilesSidebarProps) => {
   const stagedFiles = files.filter((f) => f.hasStaged);
   const unstagedFiles = files.filter((f) => f.hasUnstaged);
@@ -35,21 +39,25 @@ export const ChangedFilesSidebar = ({
       <ChangesFilesSection
         files={unstagedFiles}
         isStaged={false}
+        repoPath={repoPath}
         selectedFile={selectedFile}
         selectedFileIsStaged={selectedFileIsStaged}
         onAction={onStageAll}
         onSelectFile={onSelectFile}
         onToggleStage={onToggleStage}
+        onDiscardChanges={onDiscardChanges}
       />
 
       <ChangesFilesSection
         files={stagedFiles}
         isStaged={true}
+        repoPath={repoPath}
         selectedFile={selectedFile}
         selectedFileIsStaged={selectedFileIsStaged}
         onAction={onUnstageAll}
         onSelectFile={onSelectFile}
         onToggleStage={onToggleStage}
+        onDiscardChanges={onDiscardChanges}
       />
     </div>
   );

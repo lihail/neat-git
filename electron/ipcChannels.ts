@@ -15,6 +15,7 @@ export const IPC_CHANNELS = {
   GIT_STAGE_ALL_FILES: "git:stageAllFiles",
   GIT_UNSTAGE_CHANGE: "git:unstageChange",
   GIT_UNSTAGE_ALL_FILES: "git:unstageAllFiles",
+  GIT_DISCARD_CHANGES: "git:discardChanges",
   GIT_STAGE_LINES: "git:stageLines",
   GIT_UNSTAGE_LINES: "git:unstageLines",
   GIT_STAGE_HUNK: "git:stageHunk",
@@ -38,4 +39,6 @@ export const IPC_CHANNELS = {
   SSH_READ_PUBLIC_KEY: "ssh:readPublicKey",
   SSH_IS_HOST_TRUSTED: "ssh:isHostTrusted",
   SSH_TRUST_HOST: "ssh:trustHost",
+  SYSTEM_SHOW_ITEM_IN_FOLDER: "system:showItemInFolder",
+  SYSTEM_OPEN_IN_EXTERNAL_EDITOR: "system:openInExternalEditor",
 } as const;

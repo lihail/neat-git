@@ -1386,6 +1386,36 @@ export const deleteStash = async (repoPath: string, index: number) => {
   }
 };
 
+export const discardChanges = async (repoPath: string, filepath: string) => {
+  try {
+    const fullPath = path.join(repoPath, filepath);
+    const fileExists = fs.existsSync(fullPath);
+
+    // Check if the file is tracked (exists in HEAD or index)
+    const lsFilesResult = await execGitCommand(["ls-files", "--", filepath], repoPath);
+    const isTracked = lsFilesResult.success && lsFilesResult.output.trim().length > 0;
+
+    if (!isTracked) {
+      // Untracked file — delete it
+      if (fileExists) {
+        fs.unlinkSync(fullPath);
+      }
+      return { success: true };
+    }
+
+    // Tracked file — restore from index (discard unstaged changes)
+    const checkoutResult = await execGitCommand(["checkout", "--", filepath], repoPath);
+    if (!checkoutResult.success) {
+      throw new Error(`Failed to discard changes: ${checkoutResult.error.message}`);
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error discarding changes:", error);
+    throw error;
+  }
+};
+
 const buildPatchForLines = (diffOutput: string, linesToInclude: DiffLineInfo[]): string | null => {
   if (linesToInclude.length === 0 || linesToInclude.every((l) => l.type === "context")) {
     return null;

@@ -10,6 +10,7 @@ import {
   stageAllFiles,
   unstageChange,
   unstageAllFiles,
+  discardChanges,
   createBranch,
   deleteBranch,
   renameBranch,
@@ -81,6 +82,13 @@ export const registerGitHandlers = () => {
   ipcMain.handle(IPC_CHANNELS.GIT_UNSTAGE_ALL_FILES, async (_, repoPath: string) => {
     return await unstageAllFiles(repoPath);
   });
+
+  ipcMain.handle(
+    IPC_CHANNELS.GIT_DISCARD_CHANGES,
+    async (_, repoPath: string, filepath: string) => {
+      return await discardChanges(repoPath, filepath);
+    }
+  );
 
   ipcMain.handle(
     IPC_CHANNELS.GIT_CREATE_BRANCH,

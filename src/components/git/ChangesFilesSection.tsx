@@ -12,21 +12,25 @@ export interface FileChange {
 interface ChangesFilesSectionProps {
   files: FileChange[];
   isStaged: boolean;
+  repoPath: string;
   selectedFile?: string;
   selectedFileIsStaged?: boolean;
   onAction: () => void;
   onSelectFile: (path: string, isStaged: boolean) => void;
   onToggleStage: (path: string, shouldStage: boolean) => void;
+  onDiscardChanges: (path: string) => void;
 }
 
 export const ChangesFilesSection = ({
   files,
   isStaged,
+  repoPath,
   selectedFile,
   selectedFileIsStaged,
   onAction,
   onSelectFile,
   onToggleStage,
+  onDiscardChanges,
 }: ChangesFilesSectionProps) => {
   return (
     <div className={`flex flex-1 flex-col min-h-0${isStaged ? "" : " border-b border-border"}`}>
@@ -52,10 +56,12 @@ export const ChangesFilesSection = ({
             <ChangedFileList
               files={files}
               isStaged={isStaged}
+              repoPath={repoPath}
               selectedFile={selectedFile}
               selectedFileIsStaged={selectedFileIsStaged}
               onSelectFile={onSelectFile}
               onToggleStage={onToggleStage}
+              onDiscardChanges={onDiscardChanges}
             />
           ) : (
             <div className="p-4 text-center text-xs text-muted-foreground">

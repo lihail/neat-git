@@ -4,6 +4,7 @@ import path from "node:path";
 import { registerDialogHandlers } from "./handlers/dialogHandlers";
 import { registerSshHandlers } from "./handlers/sshHandlers";
 import { registerGitHandlers } from "./handlers/gitHandlers";
+import { registerSystemHandlers } from "./handlers/systemHandlers";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -84,6 +85,7 @@ async function createWindow() {
 
 registerSshHandlers();
 registerGitHandlers();
+registerSystemHandlers();
 
 app.whenReady().then(() => {
   createWindow();

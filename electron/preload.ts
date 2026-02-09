@@ -39,6 +39,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
     ipcRenderer.invoke(IPC_CHANNELS.GIT_UNSTAGE_CHANGE, repoPath, filepath, oldFilePath),
   unstageAllFiles: (repoPath: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.GIT_UNSTAGE_ALL_FILES, repoPath),
+  discardChanges: (repoPath: string, filepath: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.GIT_DISCARD_CHANGES, repoPath, filepath),
   stageLines: (
     repoPath: string,
     filepath: string,
@@ -143,4 +145,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
   isHostTrusted: (hostname: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.SSH_IS_HOST_TRUSTED, hostname),
   trustHost: (hostname: string) => ipcRenderer.invoke(IPC_CHANNELS.SSH_TRUST_HOST, hostname),
+  showItemInFolder: (fullPath: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.SYSTEM_SHOW_ITEM_IN_FOLDER, fullPath),
+  openInExternalEditor: (fullPath: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.SYSTEM_OPEN_IN_EXTERNAL_EDITOR, fullPath),
 });

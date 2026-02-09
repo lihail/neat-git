@@ -30,6 +30,7 @@ import {
   listStashes,
   popStash,
   deleteStash,
+  discardChanges,
   stageLines,
   unstageLines,
   stageHunk,
@@ -522,6 +523,58 @@ export const Index = () => {
     } catch (error) {
       console.error("Error toggling stage:", error);
       toast.error(`Failed to ${shouldStage ? "stage" : "unstage"} file`, {
+        description: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  };
+
+  const handleDiscardChanges = async (filePath: string) => {
+    if (!repoPath || !currentState) {
+      return;
+    }
+
+    try {
+      const fileData = currentState.files.find((f) => f.path === filePath);
+      const wasUntracked = fileData?.status === "added" && !fileData?.hasStaged;
+
+      await discardChanges(repoPath, filePath);
+
+      toast.success(wasUntracked ? `Deleted "${filePath}"` : `Discarded changes to "${filePath}"`);
+
+      // Refresh the git status
+      const statusList = await getStatus(repoPath);
+
+      // If the discarded file was selected, clear the diff or update it
+      if (currentState.selectedFile === filePath && !currentState.selectedFileIsStaged) {
+        const fileStillExists = statusList.find((f) => f.path === filePath);
+        if (fileStillExists) {
+          // File still has staged changes — keep it selected but clear diff
+          updateRepoState(repoPath, {
+            files: statusList,
+            selectedFileIsStaged: true,
+            diffLines: await getDiff(
+              repoPath,
+              filePath,
+              true,
+              getContextLinesForMode(diffViewerMode),
+              fileStillExists.oldPath
+            ),
+          });
+        } else {
+          // File is gone from the list entirely
+          updateRepoState(repoPath, {
+            files: statusList,
+            selectedFile: undefined,
+            selectedFileIsStaged: undefined,
+            diffLines: [],
+          });
+        }
+      } else {
+        updateRepoState(repoPath, { files: statusList });
+      }
+    } catch (error) {
+      console.error("Error discarding changes:", error);
+      toast.error("Failed to discard changes", {
         description: error instanceof Error ? error.message : "Unknown error",
       });
     }
@@ -1639,12 +1692,14 @@ export const Index = () => {
             <div className="flex-1 min-h-0">
               <ChangedFilesSidebar
                 files={currentState.files}
+                repoPath={repoPath}
                 onToggleStage={handleToggleStage}
                 onSelectFile={handleSelectFile}
                 selectedFile={currentState.selectedFile}
                 selectedFileIsStaged={currentState.selectedFileIsStaged}
                 onStageAll={handleStageAll}
                 onUnstageAll={handleUnstageAll}
+                onDiscardChanges={handleDiscardChanges}
               />
             </div>
             <CommitPanel

@@ -92,6 +92,15 @@ export const unstageChange = async (
   }
 };
 
+export const discardChanges = async (repoPath: string, filepath: string): Promise<void> => {
+  try {
+    await window.electronAPI.discardChanges(repoPath, filepath);
+  } catch (error) {
+    console.error("Error discarding changes:", error);
+    throw error;
+  }
+};
+
 export const listRemoteBranches = async (repoPath: string): Promise<Branch[]> => {
   try {
     const branches = await window.electronAPI.listRemoteBranches(repoPath);
