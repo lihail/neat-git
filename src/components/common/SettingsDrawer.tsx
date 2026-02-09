@@ -1,16 +1,28 @@
 import { useState, useEffect, useRef } from "react";
-import { Settings, User, Mail } from "lucide-react";
+import { Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { getGlobalConfig, setGlobalConfig } from "@/lib/git";
+import { themes, type ThemeId } from "@/lib/themes";
+import { useTheme } from "@/hooks/useTheme";
 import { toast } from "@/components/ui/toaster";
+
+const themeIds = Object.keys(themes) as ThemeId[];
 
 export const SettingsDrawer = () => {
   const [open, setOpen] = useState(false);
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
+  const { themeId, setThemeId } = useTheme();
   const [loading, setLoading] = useState(false);
 
   // Track the last saved values to avoid unnecessary writes
@@ -93,54 +105,80 @@ export const SettingsDrawer = () => {
             <SheetTitle>Settings</SheetTitle>
           </SheetHeader>
 
-          <div className="mt-6 space-y-6">
-            <div className="space-y-4">
+          <div className="mt-6 space-y-8">
+            <section className="space-y-3">
+              <h3 className="text-sm font-medium text-foreground">Appearance</h3>
+              <div className="flex items-center gap-4">
+                <label
+                  htmlFor="theme-select"
+                  className="text-sm text-muted-foreground w-[35%] flex-shrink-0"
+                >
+                  Color Theme
+                </label>
+                <Select value={themeId} onValueChange={(value) => setThemeId(value as ThemeId)}>
+                  <SelectTrigger id="theme-select" className="h-8 flex-1 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {themeIds.map((id) => (
+                      <SelectItem key={id} value={id}>
+                        {themes[id].name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </section>
+
+            <section className="space-y-3">
               <div>
                 <h3 className="text-sm font-medium text-foreground">Git Configuration</h3>
-                <p className="text-xs text-muted-foreground mt-1">Global git identity</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Changes here affect all git operations on this machine
+                </p>
               </div>
               {loading ? (
                 <p className="text-sm text-muted-foreground">Loading...</p>
               ) : (
                 <div className="space-y-3">
-                  <div className="flex items-center gap-3">
-                    <User className="h-4 w-4 flex-shrink-0 text-muted-foreground mt-1" />
-                    <div className="flex-1 min-w-0">
-                      <label htmlFor="git-username" className="text-xs text-muted-foreground">
-                        Username
-                      </label>
-                      <Input
-                        id="git-username"
-                        value={userName}
-                        onChange={(e) => setUserName(e.target.value)}
-                        onBlur={saveGitConfigIfChanged}
-                        onKeyDown={handleKeyDown}
-                        placeholder="Not set"
-                        className="h-8 text-sm"
-                      />
-                    </div>
+                  <div className="flex items-center gap-4">
+                    <label
+                      htmlFor="git-username"
+                      className="text-sm text-muted-foreground w-[35%] flex-shrink-0"
+                    >
+                      Username
+                    </label>
+                    <Input
+                      id="git-username"
+                      value={userName}
+                      onChange={(e) => setUserName(e.target.value)}
+                      onBlur={saveGitConfigIfChanged}
+                      onKeyDown={handleKeyDown}
+                      placeholder="Not set"
+                      className="h-8 flex-1 text-sm"
+                    />
                   </div>
-                  <div className="flex items-center gap-3">
-                    <Mail className="h-4 w-4 flex-shrink-0 text-muted-foreground mt-1" />
-                    <div className="flex-1 min-w-0">
-                      <label htmlFor="git-email" className="text-xs text-muted-foreground">
-                        Email
-                      </label>
-                      <Input
-                        id="git-email"
-                        type="email"
-                        value={userEmail}
-                        onChange={(e) => setUserEmail(e.target.value)}
-                        onBlur={saveGitConfigIfChanged}
-                        onKeyDown={handleKeyDown}
-                        placeholder="Not set"
-                        className="h-8 text-sm"
-                      />
-                    </div>
+                  <div className="flex items-center gap-4">
+                    <label
+                      htmlFor="git-email"
+                      className="text-sm text-muted-foreground w-[35%] flex-shrink-0"
+                    >
+                      Email
+                    </label>
+                    <Input
+                      id="git-email"
+                      type="email"
+                      value={userEmail}
+                      onChange={(e) => setUserEmail(e.target.value)}
+                      onBlur={saveGitConfigIfChanged}
+                      onKeyDown={handleKeyDown}
+                      placeholder="Not set"
+                      className="h-8 flex-1 text-sm"
+                    />
                   </div>
                 </div>
               )}
-            </div>
+            </section>
           </div>
         </SheetContent>
       </Sheet>

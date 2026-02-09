@@ -3,6 +3,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Workspace } from "./pages/Workspace";
 import { BrowserNotSupportedScreen } from "@/components/common/BrowserNotSupportedScreen";
+import { ThemeProvider } from "@/hooks/useTheme";
 
 const queryClient = new QueryClient();
 
@@ -15,10 +16,12 @@ export const App = () => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Workspace />
-      </TooltipProvider>
+      <ThemeProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Workspace />
+        </TooltipProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 };
