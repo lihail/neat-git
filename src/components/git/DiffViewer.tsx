@@ -139,8 +139,8 @@ export const DiffViewer = ({
             size="sm"
             onClick={() => onWordWrapChange(!wordWrap)}
             className={cn(
-              "h-7 gap-2 text-xs text-foreground",
-              wordWrap && "bg-accent text-accent-foreground"
+              "h-7 gap-2 text-xs text-foreground border border-transparent",
+              wordWrap && "border-primary bg-primary/10 text-primary"
             )}
           >
             <WrapText className="h-4 w-4" />

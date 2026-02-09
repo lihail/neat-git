@@ -20,7 +20,7 @@ export const ActionButton = ({
   return (
     <Button
       variant="ghost"
-      className="flex flex-col items-center gap-1 h-auto py-1 w-16 text-foreground"
+      className="flex flex-col items-center gap-1 h-auto py-1 w-16"
       onClick={onClick}
       disabled={disabled}
     >

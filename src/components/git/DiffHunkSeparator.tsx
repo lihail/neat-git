@@ -31,7 +31,7 @@ export const DiffHunkSeparator = ({
       {showButton && (
         <Button
           size="sm"
-          variant="default"
+          variant="ghost"
           onClick={handleClick}
           className="h-6 px-2 text-xs ml-auto relative z-10"
         >
