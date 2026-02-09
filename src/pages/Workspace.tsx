@@ -85,7 +85,7 @@ const getContextLinesForMode = (mode: DiffViewerMode): number => {
   }
 };
 
-export const Index = () => {
+export const Workspace = () => {
   const { tabs, setTabs, activeTabId, setActiveTabId } = useRepoTabs();
   const { showGitSetup, handleGitSetupComplete } = useGitSetup();
   const { wordWrap, setWordWrap } = useWordWrap();
