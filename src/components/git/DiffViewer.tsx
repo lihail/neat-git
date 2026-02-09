@@ -7,7 +7,7 @@ import { DiffViewerModeToggle, type DiffViewerMode } from "./DiffViewerModeToggl
 import { DiffSplitView } from "./DiffSplitView";
 import { DiffHunkView } from "./DiffHunkView";
 import { DiffFullView } from "./DiffFullView";
-import { DiffViewerEmptyState } from "./DiffViewerEmptyState";
+import { EmptyStateCard } from "../common/EmptyStateCard";
 import type { DiffLine } from "@/lib/git";
 
 interface DiffViewerProps {
@@ -149,9 +149,9 @@ export const DiffViewer = ({
         </div>
       </div>
       {isPureRename ? (
-        <DiffViewerEmptyState message="File renamed or moved, no content changes" />
+        <EmptyStateCard message="File renamed or moved, no content changes" />
       ) : isEmptyFile ? (
-        <DiffViewerEmptyState message="File is empty" />
+        <EmptyStateCard message="File is empty" />
       ) : effectiveViewMode === "hunks" && hunks ? (
         <DiffHunkView
           hunks={hunks}

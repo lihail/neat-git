@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Index } from "./pages/Index";
-import { BrowserNotSupportedScreen } from "@/components/BrowserNotSupportedScreen";
+import { BrowserNotSupportedScreen } from "@/components/common/BrowserNotSupportedScreen";
 
 const queryClient = new QueryClient();
 

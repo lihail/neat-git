@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { HighlightedContent } from "./HighlightedContent";
+import { HighlightedContent } from "../common/HighlightedContent";
 import { DiffLineRow } from "./DiffLineRow";
 import { LineStagingButton } from "./LineStagingButton";
 

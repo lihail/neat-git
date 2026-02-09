@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Eye, EyeOff } from "lucide-react";
 
-interface AuthDialogProps {
+interface AuthenticationDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   isLoading: boolean;
@@ -26,7 +26,7 @@ interface AuthDialogProps {
   error?: string | null;
 }
 
-export const AuthDialog = ({
+export const AuthenticationDialog = ({
   open,
   onOpenChange,
   isLoading,
@@ -37,7 +37,7 @@ export const AuthDialog = ({
   initialPassword = "",
   onConfirm,
   error: externalError,
-}: AuthDialogProps) => {
+}: AuthenticationDialogProps) => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [saveCredentials, setSaveCredentials] = useState(true);

@@ -7,7 +7,7 @@ import { type DiffViewerMode } from "@/components/git/DiffViewerModeToggle";
 import { CommitPanel } from "@/components/git/CommitPanel";
 import { TopBar, type RepoTab } from "@/components/git/TopBar";
 import { GitSetupDialog } from "@/components/git/GitSetupDialog";
-import { AuthDialog } from "@/components/git/AuthDialog";
+import { AuthenticationDialog } from "@/components/common/AuthenticationDialog";
 import { toast } from "@/components/ui/toaster";
 import { cn } from "@/lib/utils";
 import {
@@ -49,7 +49,7 @@ import { useGitSetup } from "@/hooks/useGitSetup";
 import { useWordWrap } from "@/hooks/useWordWrap";
 import { useDiffViewerMode } from "@/hooks/useDiffViewerMode";
 import { useRepoTabs } from "@/hooks/useRepoTabs";
-import { LoadingOverlay } from "@/components/git/LoadingOverlay";
+import { LoadingOverlay } from "@/components/common/LoadingOverlay";
 import { FileChange } from "@/types/git";
 
 // State for each repo tab
@@ -1714,7 +1714,7 @@ export const Index = () => {
         </div>
       )}
 
-      <AuthDialog
+      <AuthenticationDialog
         open={isAuthDialogOpen}
         onOpenChange={handleAuthDialogOpenChange}
         isLoading={isFetching || isPulling || isPushing}

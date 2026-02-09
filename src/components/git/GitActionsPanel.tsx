@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Download, Upload, RefreshCw, Archive, GitBranchPlus } from "lucide-react";
-import { GitActionButton } from "./GitActionButton";
+import { ActionButton } from "../common/ActionButton";
 import { NewBranchDialog } from "./NewBranchDialog";
 
 interface GitActionsPanelProps {
@@ -33,7 +33,7 @@ export const GitActionsPanel = ({
   return (
     <>
       <div className="flex items-center gap-1 flex-shrink-0">
-        <GitActionButton
+        <ActionButton
           icon={RefreshCw}
           label="Fetch"
           onClick={onFetch}
@@ -41,7 +41,7 @@ export const GitActionsPanel = ({
           iconClassName={isFetching ? "animate-spin" : undefined}
         />
 
-        <GitActionButton
+        <ActionButton
           icon={Download}
           label="Pull"
           onClick={onPull}
@@ -49,7 +49,7 @@ export const GitActionsPanel = ({
           iconClassName={isPulling ? "animate-bounce" : undefined}
         />
 
-        <GitActionButton
+        <ActionButton
           icon={Upload}
           label="Push"
           onClick={onPush}
@@ -57,9 +57,9 @@ export const GitActionsPanel = ({
           iconClassName={isPushing ? "animate-bounce-up" : undefined}
         />
 
-        <GitActionButton icon={Archive} label="Stash" onClick={onStash} disabled={isLoading} />
+        <ActionButton icon={Archive} label="Stash" onClick={onStash} disabled={isLoading} />
 
-        <GitActionButton
+        <ActionButton
           icon={GitBranchPlus}
           label="Branch"
           onClick={() => setIsCreatingBranch(true)}

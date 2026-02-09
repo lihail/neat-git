@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { cn } from "@/lib/utils";
-import { HighlightedContent } from "./HighlightedContent";
+import { HighlightedContent } from "../common/HighlightedContent";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { DiffHunkSeparator } from "./DiffHunkSeparator";
 import { DiffLineRow } from "./DiffLineRow";

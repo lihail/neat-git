@@ -2,7 +2,7 @@ import { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-interface GitActionButtonProps {
+interface ActionButtonProps {
   icon: LucideIcon;
   label: string;
   onClick: () => void;
@@ -10,13 +10,13 @@ interface GitActionButtonProps {
   iconClassName?: string;
 }
 
-export const GitActionButton = ({
+export const ActionButton = ({
   icon: Icon,
   label,
   onClick,
   disabled = false,
   iconClassName,
-}: GitActionButtonProps) => {
+}: ActionButtonProps) => {
   return (
     <Button
       variant="ghost"

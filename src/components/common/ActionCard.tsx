@@ -2,7 +2,7 @@ import { type LucideIcon } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
-interface RepoActionCardProps {
+interface ActionCardProps {
   icon: LucideIcon;
   title: string;
   description: string;
@@ -12,7 +12,7 @@ interface RepoActionCardProps {
   onClick: () => void;
 }
 
-export const RepoActionCard = ({
+export const ActionCard = ({
   icon: Icon,
   title,
   description,
@@ -20,7 +20,7 @@ export const RepoActionCard = ({
   buttonLoadingText,
   isLoading = false,
   onClick,
-}: RepoActionCardProps) => {
+}: ActionCardProps) => {
   return (
     <Card
       className="p-6 hover:border-primary transition-colors cursor-pointer flex flex-col"

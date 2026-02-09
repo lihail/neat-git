@@ -1,11 +1,11 @@
 import { FolderOpen, X, GitBranch, FolderPlus } from "lucide-react";
-import { LoadingOverlay } from "./LoadingOverlay";
-import { AuthDialog } from "./AuthDialog";
+import { LoadingOverlay } from "../common/LoadingOverlay";
+import { AuthenticationDialog } from "../common/AuthenticationDialog";
 import { SshSetupDialog } from "./SshSetupDialog";
-import { SshTrustHostDialog } from "./SshTrustHostDialog";
+import { ConfirmationDialog } from "../common/ConfirmationDialog";
 import { CreateRepoDialog } from "./CreateRepoDialog";
 import { CloneRepoDialog } from "./CloneRepoDialog";
-import { RepoActionCard } from "./RepoActionCard";
+import { ActionCard } from "../common/ActionCard";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useState } from "react";
@@ -429,7 +429,7 @@ export const RepoSelector = ({ onSelectRepo, onCancel }: RepoSelectorProps) => {
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <RepoActionCard
+            <ActionCard
               icon={FolderOpen}
               title="Open Repository"
               description="Browse and open an existing Git repository from your local machine"
@@ -438,14 +438,14 @@ export const RepoSelector = ({ onSelectRepo, onCancel }: RepoSelectorProps) => {
               isLoading={isLoading}
               onClick={handleSelectRepo}
             />
-            <RepoActionCard
+            <ActionCard
               icon={GitBranch}
               title="Clone Repository"
               description="Clone a remote Git repository from GitHub, GitLab, Bitbucket, or other sources"
               buttonText="Clone"
               onClick={handleCloneRepo}
             />
-            <RepoActionCard
+            <ActionCard
               icon={FolderPlus}
               title="Create Repository"
               description="Initialize a new Git repository in an existing or new folder"
@@ -489,7 +489,7 @@ export const RepoSelector = ({ onSelectRepo, onCancel }: RepoSelectorProps) => {
           onCancel={handleCancelClone}
         />
 
-        <AuthDialog
+        <AuthenticationDialog
           open={showAuthDialog}
           onOpenChange={handleAuthDialogChange}
           isLoading={isLoading}
@@ -516,14 +516,27 @@ export const RepoSelector = ({ onSelectRepo, onCancel }: RepoSelectorProps) => {
           onCancel={handleCancelSshSetup}
         />
 
-        <SshTrustHostDialog
+        <ConfirmationDialog
           open={showSshTrustDialog}
           onOpenChange={setShowSshTrustDialog}
-          hostname={sshTrustHostname}
-          isTrusting={sshIsTrusting}
-          onTrust={handleTrustHost}
+          title="Trust SSH Host"
+          description="First time connecting to this host."
+          isProcessing={sshIsTrusting}
+          confirmLabel="Trust Host"
+          processingLabel="Trusting..."
+          onConfirm={handleTrustHost}
           onCancel={handleCancelTrustHost}
-        />
+        >
+          <div className="p-4 bg-muted rounded-md">
+            <p className="text-sm">
+              The authenticity of host <code className="font-semibold">{sshTrustHostname}</code>{" "}
+              can't be verified.
+            </p>
+            <p className="text-sm mt-2 text-muted-foreground">
+              Do you want to trust this host and add it to your known hosts?
+            </p>
+          </div>
+        </ConfirmationDialog>
 
         {isCloning && <LoadingOverlay message="Cloning repository..." />}
       </div>
