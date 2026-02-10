@@ -236,10 +236,10 @@ export const listLocalBranches = async (repoPath: string) => {
                 }
               }
             }
-          } catch (remoteError) {
+          } catch {
             // Remote branch doesn't exist, which is fine
           }
-        } catch (error) {
+        } catch {
           // Branch might not have any commits yet, which is fine
         }
 
@@ -487,7 +487,7 @@ export const stageAllFiles = async (repoPath: string) => {
       dir: repoPath,
     });
 
-    for (const [filepath, head, workdir, stage] of statusMatrix) {
+    for (const [filepath, _head, workdir, stage] of statusMatrix) {
       // Check if the file has unstaged changes (workdir !== stage)
       // workdir=0 means deleted, workdir=2 means modified/new
       if (workdir !== stage) {
@@ -541,7 +541,7 @@ export const unstageAllFiles = async (repoPath: string) => {
       dir: repoPath,
     });
 
-    for (const [filepath, head, workdir, stage] of statusMatrix) {
+    for (const [filepath, head, _workdir, stage] of statusMatrix) {
       // Check if the file is staged (stage !== head or stage === 2)
       if (stage === 2 || (stage !== head && stage !== 1)) {
         await git.resetIndex({
@@ -566,7 +566,7 @@ export const createBranch = async (repoPath: string, branchName: string) => {
     try {
       await git.resolveRef({ fs, dir: repoPath, ref: "HEAD" });
       hasCommits = true;
-    } catch (error) {
+    } catch {
       // No commits yet
       hasCommits = false;
     }
@@ -619,7 +619,7 @@ export const deleteBranch = async (repoPath: string, branchName: string) => {
     try {
       await git.resolveRef({ fs, dir: repoPath, ref: "HEAD" });
       hasCommits = true;
-    } catch (error) {
+    } catch {
       hasCommits = false;
     }
 
@@ -740,7 +740,7 @@ export const checkout = async (repoPath: string, branchName: string) => {
     try {
       await git.resolveRef({ fs, dir: repoPath, ref: "HEAD" });
       hasCommits = true;
-    } catch (error) {
+    } catch {
       hasCommits = false;
     }
 
@@ -756,7 +756,7 @@ export const checkout = async (repoPath: string, branchName: string) => {
           ref: `refs/heads/${branchName}`,
         });
         localBranchExists = true;
-      } catch (error) {
+      } catch {
         localBranchExists = false;
       }
 
@@ -777,7 +777,7 @@ export const checkout = async (repoPath: string, branchName: string) => {
             ref: `refs/remotes/origin/${branchName}`,
           });
           remoteBranchExists = true;
-        } catch (error) {
+        } catch {
           remoteBranchExists = false;
         }
 
@@ -819,7 +819,7 @@ export const commit = async (repoPath: string, message: string, description: str
     });
 
     // Check if there are actually staged changes
-    const hasStagedChanges = statusMatrix.some(([_, head, workdir, stage]) => {
+    const hasStagedChanges = statusMatrix.some(([_, head, _workdir, stage]) => {
       // Staged changes have stage !== head
       return stage !== head;
     });
@@ -847,14 +847,6 @@ export const commit = async (repoPath: string, message: string, description: str
         name: authorName,
         email: authorEmail,
       },
-    });
-
-    // Verify the branch ref was updated
-    // TODO: not used?
-    const currentBranch = await git.currentBranch({
-      fs,
-      dir: repoPath,
-      fullname: false,
     });
 
     return { success: true, sha };

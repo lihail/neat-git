@@ -1,4 +1,4 @@
-import { GitBranch, GitCommit, Plus, Trash2, Archive, Upload, Loader2, Cloud } from "lucide-react";
+import { GitBranch, GitCommit, Trash2, Archive, Upload, Loader2, Cloud } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Accordion,
