@@ -1,6 +1,7 @@
 import { shell } from "electron";
 import { promisify } from "node:util";
 import { execFile as execFileCallback } from "node:child_process";
+import { getPlatform } from "../utils/platform";
 
 const execFile = promisify(execFileCallback);
 
@@ -19,9 +20,14 @@ export const showFileInFileExplorer = (fullPath: string) => {
 
 export const openFileInExternalEditor = async (fullPath: string) => {
   try {
-    if (process.platform === "darwin") {
+    const platform = getPlatform();
+
+    if (platform === "mac") {
       await execFile("open", ["-t", fullPath]);
+    } else if (platform === "win") {
+      await execFile("notepad.exe", [fullPath]);
     }
+
     return { success: true };
   } catch (error) {
     console.error("Error opening in external editor:", error);
