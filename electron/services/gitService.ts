@@ -26,25 +26,37 @@ type DiffLineInfo = {
   newLineNumber?: number;
 };
 
+const readGlobalConfig = async () => {
+  let userName = "";
+  let userEmail = "";
+
+  const [nameResult, emailResult] = await Promise.all([
+    execGitCommand(["config", "--global", "user.name"]),
+    execGitCommand(["config", "--global", "user.email"]),
+  ]);
+
+  if (nameResult.success) {
+    userName = nameResult.output.trim();
+  }
+
+  if (emailResult.success) {
+    userEmail = emailResult.output.trim();
+  }
+
+  return {
+    userName,
+    userEmail,
+  };
+};
+
 export const getGlobalConfig = async () => {
   try {
-    let userName = "";
-    let userEmail = "";
-
-    const nameResult = await execGitCommand(["config", "--global", "user.name"]);
-    if (nameResult.success) {
-      userName = nameResult.output.trim();
-    }
-
-    const emailResult = await execGitCommand(["config", "--global", "user.email"]);
-    if (emailResult.success) {
-      userEmail = emailResult.output.trim();
-    }
+    const config = await readGlobalConfig();
 
     return {
       success: true,
-      userName,
-      userEmail,
+      userName: config.userName,
+      userEmail: config.userEmail,
     };
   } catch (error) {
     console.error("Error getting git config:", error);
@@ -823,13 +835,9 @@ export const commit = async (repoPath: string, message: string, description: str
     let authorName = "User";
     let authorEmail = "user@example.com";
 
-    try {
-      authorName = (await git.getConfig({ fs, dir: repoPath, path: "user.name" })) || "User";
-      authorEmail =
-        (await git.getConfig({ fs, dir: repoPath, path: "user.email" })) || "user@example.com";
-    } catch (error) {
-      console.warn("Could not get git config, using defaults");
-    }
+    const config = await readGlobalConfig();
+    authorName = config.userName || "User";
+    authorEmail = config.userEmail || "user@example.com";
 
     const sha = await git.commit({
       fs,
