@@ -12,7 +12,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
     ipcRenderer.invoke(IPC_CHANNELS.GIT_SET_GLOBAL_CONFIG, userName, userEmail),
   getCurrentBranch: (repoPath: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.GIT_GET_CURRENT_BRANCH, repoPath),
-  listLocalBranches: (repoPath: string) => ipcRenderer.invoke(IPC_CHANNELS.GIT_LIST_LOCAL_BRANCHES, repoPath),
+  listLocalBranches: (repoPath: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.GIT_LIST_LOCAL_BRANCHES, repoPath),
   listRemoteBranches: (repoPath: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.GIT_LIST_REMOTE_BRANCHES, repoPath),
   createBranch: (repoPath: string, branchName: string) =>
@@ -32,7 +33,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
   getStatus: (repoPath: string) => ipcRenderer.invoke(IPC_CHANNELS.GIT_GET_STATUS, repoPath),
   stageFile: (repoPath: string, filepath: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.GIT_STAGE_FILE, repoPath, filepath),
-  stageAllFiles: (repoPath: string) => ipcRenderer.invoke(IPC_CHANNELS.GIT_STAGE_ALL_FILES, repoPath),
+  stageAllFiles: (repoPath: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.GIT_STAGE_ALL_FILES, repoPath),
   unstageChange: (repoPath: string, filepath: string, oldFilePath?: string | null) =>
     ipcRenderer.invoke(IPC_CHANNELS.GIT_UNSTAGE_CHANGE, repoPath, filepath, oldFilePath),
   unstageAllFiles: (repoPath: string) =>
@@ -139,12 +141,13 @@ contextBridge.exposeInMainWorld("electronAPI", {
     ),
   findSshKeys: () => ipcRenderer.invoke(IPC_CHANNELS.SSH_FIND_KEYS),
   generateSshKey: () => ipcRenderer.invoke(IPC_CHANNELS.SSH_GENERATE_KEY),
-  readSshPublicKey: (keyPath: string) => ipcRenderer.invoke(IPC_CHANNELS.SSH_READ_PUBLIC_KEY, keyPath),
+  readSshPublicKey: (keyPath: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.SSH_READ_PUBLIC_KEY, keyPath),
   isHostTrusted: (hostname: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.SSH_IS_HOST_TRUSTED, hostname),
   trustHost: (hostname: string) => ipcRenderer.invoke(IPC_CHANNELS.SSH_TRUST_HOST, hostname),
-  showItemInFolder: (fullPath: string) =>
-    ipcRenderer.invoke(IPC_CHANNELS.SYSTEM_SHOW_ITEM_IN_FOLDER, fullPath),
-  openInExternalEditor: (fullPath: string) =>
-    ipcRenderer.invoke(IPC_CHANNELS.SYSTEM_OPEN_IN_EXTERNAL_EDITOR, fullPath),
+  showFileInFileExplorer: (fullPath: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.SYSTEM_SHOW_FILE_IN_FILE_EXPLORER, fullPath),
+  openFileInExternalEditor: (fullPath: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.SYSTEM_OPEN_FILE_IN_EXTERNAL_EDITOR, fullPath),
 });

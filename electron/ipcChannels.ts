@@ -39,6 +39,6 @@ export const IPC_CHANNELS = {
   SSH_READ_PUBLIC_KEY: "ssh:readPublicKey",
   SSH_IS_HOST_TRUSTED: "ssh:isHostTrusted",
   SSH_TRUST_HOST: "ssh:trustHost",
-  SYSTEM_SHOW_ITEM_IN_FOLDER: "system:showItemInFolder",
-  SYSTEM_OPEN_IN_EXTERNAL_EDITOR: "system:openInExternalEditor",
+  SYSTEM_SHOW_FILE_IN_FILE_EXPLORER: "system:showFileInFileExplorer",
+  SYSTEM_OPEN_FILE_IN_EXTERNAL_EDITOR: "system:openFileInExternalEditor",
 } as const;

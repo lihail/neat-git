@@ -6,7 +6,7 @@ import {
 } from "@/components/ui/context-menu";
 import { toast } from "@/components/ui/toaster";
 import type { FileChange } from "@/types/git";
-import { showItemInFolder, openInExternalEditor } from "@/lib/system";
+import { showFileInFileExplorer, openFileInExternalEditor } from "@/lib/system";
 
 interface FileChangeContextMenuProps {
   change: FileChange;
@@ -33,11 +33,11 @@ export const FileChangeContextMenu = ({
   };
 
   const handleOpenInExternalEditor = () => {
-    openInExternalEditor(repoPath, change.path);
+    openFileInExternalEditor(repoPath, change.path);
   };
 
-  const handleShowInFinder = () => {
-    showItemInFolder(repoPath, change.path);
+  const handleShowInFileExplorer = () => {
+    showFileInFileExplorer(repoPath, change.path);
   };
 
   const handleCopyFilePath = () => {
@@ -83,9 +83,9 @@ export const FileChangeContextMenu = ({
 
           <ContextMenuItem
             className="gap-3 hover:bg-secondary focus:bg-secondary focus:text-foreground"
-            onSelect={handleShowInFinder}
+            onSelect={handleShowInFileExplorer}
           >
-            <span className="flex-1">Show in Finder</span>
+            <span className="flex-1">Show in File Explorer</span>
             <FolderOpen className="h-4 w-4" />
           </ContextMenuItem>
         </>

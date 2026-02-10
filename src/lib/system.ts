@@ -20,18 +20,18 @@ export const openSelectParentFolderDialog = async (): Promise<
   }
 };
 
-export const showItemInFolder = (repoPath: string, filePath: string): void => {
+export const showFileInFileExplorer = (repoPath: string, filePath: string): void => {
   try {
-    window.electronAPI.showItemInFolder(`${repoPath}/${filePath}`);
+    window.electronAPI.showFileInFileExplorer(`${repoPath}/${filePath}`);
   } catch (error) {
     console.error("Error showing item in folder:", error);
     throw error;
   }
 };
 
-export const openInExternalEditor = (repoPath: string, filePath: string): void => {
+export const openFileInExternalEditor = (repoPath: string, filePath: string): void => {
   try {
-    window.electronAPI.openInExternalEditor(`${repoPath}/${filePath}`);
+    window.electronAPI.openFileInExternalEditor(`${repoPath}/${filePath}`);
   } catch (error) {
     console.error("Error opening in external editor:", error);
     throw error;

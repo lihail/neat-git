@@ -186,8 +186,8 @@ export interface ElectronAPI {
     error?: string;
   }>;
   trustHost: (hostname: string) => Promise<{ success: boolean; error?: string }>;
-  showItemInFolder: (fullPath: string) => Promise<{ success: boolean; error?: string }>;
-  openInExternalEditor: (fullPath: string) => Promise<{ success: boolean; error?: string }>;
+  showFileInFileExplorer: (fullPath: string) => Promise<{ success: boolean; error?: string }>;
+  openFileInExternalEditor: (fullPath: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 declare global {

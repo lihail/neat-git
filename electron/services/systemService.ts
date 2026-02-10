@@ -4,7 +4,7 @@ import { execFile as execFileCallback } from "node:child_process";
 
 const execFile = promisify(execFileCallback);
 
-export const showItemInFolder = (fullPath: string) => {
+export const showFileInFileExplorer = (fullPath: string) => {
   try {
     shell.showItemInFolder(fullPath);
     return { success: true };
@@ -17,7 +17,7 @@ export const showItemInFolder = (fullPath: string) => {
   }
 };
 
-export const openInExternalEditor = async (fullPath: string) => {
+export const openFileInExternalEditor = async (fullPath: string) => {
   try {
     if (process.platform === "darwin") {
       await execFile("open", ["-t", fullPath]);
