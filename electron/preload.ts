@@ -150,4 +150,5 @@ contextBridge.exposeInMainWorld("electronAPI", {
     ipcRenderer.invoke(IPC_CHANNELS.SYSTEM_SHOW_FILE_IN_FILE_EXPLORER, fullPath),
   openFileInExternalEditor: (fullPath: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.SYSTEM_OPEN_FILE_IN_EXTERNAL_EDITOR, fullPath),
+  getPlatform: () => ipcRenderer.invoke(IPC_CHANNELS.SYSTEM_GET_PLATFORM),
 });

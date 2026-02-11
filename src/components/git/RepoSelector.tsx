@@ -8,7 +8,9 @@ import { CloneRepoDialog } from "./CloneRepoDialog";
 import { ActionCard } from "../common/ActionCard";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { usePlatform } from "@/hooks/usePlatform";
+import { WINDOWS_AUTH_HINT_DELAY_MS } from "@/hooks/useWindowsAuthToast";
 import { toast } from "@/components/ui/toaster";
 import {
   validateRepoName,
@@ -29,8 +31,23 @@ interface RepoSelectorProps {
 }
 
 export const RepoSelector = ({ onSelectRepo, onCancel }: RepoSelectorProps) => {
+  const platform = usePlatform();
   const [isLoading, setIsLoading] = useState(false);
   const [isCloning, setIsCloning] = useState(false);
+  const [showAuthHint, setShowAuthHint] = useState(false);
+
+  // Show the "sign-in window may appear" hint after a short delay on Windows,
+  // so it doesn't flash for fast clones where credentials are already cached
+  useEffect(() => {
+    if (!isCloning || platform !== "win") {
+      setShowAuthHint(false);
+      return;
+    }
+
+    const timer = setTimeout(() => setShowAuthHint(true), WINDOWS_AUTH_HINT_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [isCloning, platform]);
+
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [selectedParentPath, setSelectedParentPath] = useState<string>("");
   const [repoName, setRepoName] = useState("");
@@ -153,6 +170,8 @@ export const RepoSelector = ({ onSelectRepo, onCancel }: RepoSelectorProps) => {
       } else if (result.needsAuth) {
         if (isAuthRetry) {
           setAuthError("Authentication failed. Please check your credentials and try again.");
+        } else if (platform === "win") {
+          toast.error("Authentication was canceled");
         } else {
           // First time - show auth dialog
           const host = extractHostFromUrl(cloneUrl);
@@ -538,7 +557,16 @@ export const RepoSelector = ({ onSelectRepo, onCancel }: RepoSelectorProps) => {
           </div>
         </ConfirmationDialog>
 
-        {isCloning && <LoadingOverlay message="Cloning repository..." />}
+        {isCloning && (
+          <LoadingOverlay
+            message="Cloning repository..."
+            secondaryMessage={
+              showAuthHint
+                ? "A sign-in window may appear. Please complete authentication to continue."
+                : undefined
+            }
+          />
+        )}
       </div>
       <p className="absolute bottom-4 left-1/2 -translate-x-1/2 text-xs text-muted-foreground/60">
         NeatGit v{packageJson.version}

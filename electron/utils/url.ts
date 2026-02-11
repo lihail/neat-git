@@ -20,3 +20,15 @@ export const isValidHostname = (hostname: string): boolean => {
     /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
   return hostnameRegex.test(hostname);
 };
+
+export const isHttpRemote = (url: string): boolean => {
+  if (!url) {
+    return false;
+  }
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+};

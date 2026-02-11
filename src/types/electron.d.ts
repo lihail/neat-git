@@ -188,6 +188,7 @@ export interface ElectronAPI {
   trustHost: (hostname: string) => Promise<{ success: boolean; error?: string }>;
   showFileInFileExplorer: (fullPath: string) => Promise<{ success: boolean; error?: string }>;
   openFileInExternalEditor: (fullPath: string) => Promise<{ success: boolean; error?: string }>;
+  getPlatform: () => Promise<"mac" | "win">;
 }
 
 declare global {

@@ -162,7 +162,12 @@ export const registerGitHandlers = () => {
       _,
       repoPath: string,
       filepath: string,
-      lines: Array<{ type: string; content: string; oldLineNumber?: number; newLineNumber?: number }>
+      lines: Array<{
+        type: string;
+        content: string;
+        oldLineNumber?: number;
+        newLineNumber?: number;
+      }>
     ) => {
       return await stageLines(repoPath, filepath, lines);
     }
@@ -174,7 +179,12 @@ export const registerGitHandlers = () => {
       _,
       repoPath: string,
       filepath: string,
-      lines: Array<{ type: string; content: string; oldLineNumber?: number; newLineNumber?: number }>
+      lines: Array<{
+        type: string;
+        content: string;
+        oldLineNumber?: number;
+        newLineNumber?: number;
+      }>
     ) => {
       return await unstageLines(repoPath, filepath, lines);
     }

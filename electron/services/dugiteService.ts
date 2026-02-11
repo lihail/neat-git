@@ -1,4 +1,5 @@
 import { exec as dugiteExec } from "dugite";
+import { getPlatform } from "../utils/platform";
 
 interface GitCommandSuccess {
   success: true;
@@ -16,11 +17,13 @@ interface GitCommandFailure {
 
 type GitCommandResult = GitCommandSuccess | GitCommandFailure;
 
-const CLONE_TIMEOUT_MS = 300_000; // 5m
+const MAC_CLONE_TIMEOUT_MS = 300_000; // 5m
 const DEFAULT_COMMAND_TIMEOUT_MS = 30_000; // 30s
+const WINDOWS_AUTH_PROMPT_COMMANDS_TIMEOUT_MS = 3_600_000; // 1h
+const WINDOWS_AUTH_PROMPT_COMMANDS = ["clone", "fetch", "push", "pull"];
 
 // Environment variables to make git fail fast on auth instead of prompting
-const FAIL_AUTH_FAST_ENV = {
+const MAC_FAIL_AUTH_FAST_ENV = {
   GIT_TERMINAL_PROMPT: "0",
   GIT_ASKPASS: "",
   SSH_ASKPASS: "",
@@ -34,15 +37,34 @@ export const execGitCommand = async (
   customEnv?: Record<string, string>,
   stdin?: string
 ): Promise<GitCommandResult> => {
-  const command = args[0];
-  const timeoutMs = command === "clone" ? CLONE_TIMEOUT_MS : DEFAULT_COMMAND_TIMEOUT_MS;
+  // The command might not be the first argument, because of earlier configuration flags
+  const command = args.find((arg) => WINDOWS_AUTH_PROMPT_COMMANDS.includes(arg)) || args[0];
+  const platform = getPlatform();
+
+  let timeoutMs = DEFAULT_COMMAND_TIMEOUT_MS;
+
+  if (platform === "mac" && command === "clone") {
+    timeoutMs = MAC_CLONE_TIMEOUT_MS;
+  }
+
+  // On Windows, increase the timeout significantly for auth-related commands to let the user time to respond in the auth dialog
+  if (platform === "win" && WINDOWS_AUTH_PROMPT_COMMANDS.includes(command)) {
+    timeoutMs = WINDOWS_AUTH_PROMPT_COMMANDS_TIMEOUT_MS;
+  }
+
   const abortController = new AbortController();
   const timeoutId = setTimeout(() => abortController.abort(), timeoutMs);
 
   try {
+    const env = {
+      ...process.env,
+      ...(platform === "mac" ? MAC_FAIL_AUTH_FAST_ENV : {}),
+      ...customEnv,
+    };
+
     const result = await dugiteExec(args, cwd, {
       signal: abortController.signal,
-      env: { ...process.env, ...FAIL_AUTH_FAST_ENV, ...customEnv },
+      env,
       stdin,
     });
 

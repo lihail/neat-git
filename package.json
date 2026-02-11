@@ -117,12 +117,10 @@
     "files": [
       "dist/**/*",
       "dist-electron/**/*",
-      "resources/**/*",
       "package.json"
     ],
     "asarUnpack": [
-      "node_modules/dugite/**",
-      "resources/third_party/**"
+      "node_modules/dugite/**"
     ],
     "win": {
       "target": [
@@ -146,7 +144,13 @@
         }
       ],
       "icon": "public/favicon.png",
-      "identity": null
+      "identity": null,
+      "extraResources": [
+        {
+          "from": "resources/third_party/git-credential-osxkeychain",
+          "to": "resources/third_party/git-credential-osxkeychain"
+        }
+      ]
     },
     "nsis": {
       "oneClick": false,

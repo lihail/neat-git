@@ -2,5 +2,11 @@ type Platform = "mac" | "win";
 
 export const getPlatform = (): Platform => {
   const rawPlatform = process.platform;
-  return rawPlatform === "darwin" ? "mac" : "win";
+  if (rawPlatform === "darwin") {
+    return "mac";
+  } else if (rawPlatform === "win32") {
+    return "win";
+  }
+  // Default to Windows arbitrarily
+  return "win";
 };

@@ -2,13 +2,10 @@ import path from "node:path";
 import fs from "node:fs";
 import * as git from "isomorphic-git";
 import { execGitCommand } from "./dugiteService";
-import { listFilesRecursively } from "../utils/files";
-import {
-  GIT_CREDENTIAL_OSXKEYCHAIN_PATH,
-  INLINE_CREDENTIAL_HELPER,
-  createCredentialEnv,
-  storeCredentialsToOsxkeychain,
-} from "../utils/gitCredentialOsxkeychain";
+import { listFilesRecursively } from "../utils/file";
+import { getCredentialHelperConfig, storeCredentials } from "../utils/credentialStore";
+import { isHttpRemote } from "../utils/url";
+import { getPlatform } from "../utils/platform";
 
 type FileStatus = {
   path: string;
@@ -2115,23 +2112,16 @@ export const clone = async (
   saveCredentials: boolean
 ) => {
   try {
-    const isHttpsUrl = url.startsWith("https://") || url.startsWith("http://");
+    const isHttpUrl = isHttpRemote(url);
 
     const cloneArgs: string[] = [];
-    let credentialEnv: Record<string, string> | undefined;
 
-    if (isHttpsUrl) {
-      if (username && password) {
-        cloneArgs.push("-c", `credential.helper=${INLINE_CREDENTIAL_HELPER}`);
-        credentialEnv = createCredentialEnv(username, password);
-      } else {
-        cloneArgs.push("-c", `credential.helper=${GIT_CREDENTIAL_OSXKEYCHAIN_PATH}`);
-      }
-    }
+    const credentialConfig = getCredentialHelperConfig(isHttpUrl, username, password);
+    cloneArgs.push(...credentialConfig.args);
 
     // Strip any existing credentials from URL to avoid double-injection or plaintext exposure
     let cloneUrl = url;
-    if (isHttpsUrl) {
+    if (isHttpUrl) {
       try {
         const urlObj = new URL(url);
         urlObj.username = "";
@@ -2146,14 +2136,10 @@ export const clone = async (
     cloneArgs.push("clone", cloneUrl, destination);
 
     // Execute git clone with credential environment if provided
-    const cloneResult = await execGitCommand(cloneArgs, process.cwd(), credentialEnv);
+    const cloneResult = await execGitCommand(cloneArgs, process.cwd(), credentialConfig.env);
 
-    if (cloneResult.success && isHttpsUrl && username && password && saveCredentials) {
-      try {
-        await storeCredentialsToOsxkeychain(cloneUrl, destination, username, password);
-      } catch (error) {
-        console.error("Failed to store credentials to keychain:", error);
-      }
+    if (cloneResult.success && isHttpUrl && username && password && saveCredentials) {
+      await storeCredentials(cloneUrl, destination, username, password);
     }
 
     if (!cloneResult.success) {
@@ -2317,35 +2303,32 @@ export const fetch = async (
     }
     const remoteUrl = remoteResult.output.trim();
 
-    const isHttpsUrl = remoteUrl.startsWith("https://") || remoteUrl.startsWith("http://");
+    const isHttpUrl = isHttpRemote(remoteUrl);
 
     const fetchArgs: string[] = [];
-    let credentialEnv: Record<string, string> | undefined;
 
-    if (isHttpsUrl) {
-      if (username && password) {
-        fetchArgs.push("-c", `credential.helper=${INLINE_CREDENTIAL_HELPER}`);
-        credentialEnv = createCredentialEnv(username, password);
-      } else {
-        fetchArgs.push("-c", `credential.helper=${GIT_CREDENTIAL_OSXKEYCHAIN_PATH}`);
-      }
-    }
-
+    const credentialConfig = getCredentialHelperConfig(isHttpUrl, username, password);
+    fetchArgs.push(...credentialConfig.args);
     fetchArgs.push("fetch", "--all", "--prune");
 
-    const fetchResult = await execGitCommand(fetchArgs, repoPath, credentialEnv);
+    const fetchResult = await execGitCommand(fetchArgs, repoPath, credentialConfig.env);
 
-    if (fetchResult.success && isHttpsUrl && username && password && saveCredentials) {
-      try {
-        await storeCredentialsToOsxkeychain(remoteUrl, repoPath, username, password);
-      } catch (error) {
-        console.error("Failed to store credentials to keychain:", error);
-      }
+    if (fetchResult.success && isHttpUrl && username && password && saveCredentials) {
+      await storeCredentials(remoteUrl, repoPath, username, password);
     }
 
     if (!fetchResult.success) {
       const errorMessage = fetchResult.error.message || "";
       const lowerError = errorMessage.toLowerCase();
+
+      const platform = getPlatform();
+      if (platform === "win" && lowerError.includes("user cancelled dialog")) {
+        return {
+          success: false,
+          error: "Authentication was canceled",
+          needsAuth: true,
+        };
+      }
 
       // Check if this is an authentication error
       if (
@@ -2462,35 +2445,32 @@ export const push = async (
     }
     const remoteUrl = remoteResult.output.trim();
 
-    const isHttpsUrl = remoteUrl.startsWith("https://") || remoteUrl.startsWith("http://");
+    const isHttpUrl = isHttpRemote(remoteUrl);
 
     const pushArgs: string[] = [];
-    let credentialEnv: Record<string, string> | undefined;
 
-    if (isHttpsUrl) {
-      if (username && password) {
-        pushArgs.push("-c", `credential.helper=${INLINE_CREDENTIAL_HELPER}`);
-        credentialEnv = createCredentialEnv(username, password);
-      } else {
-        pushArgs.push("-c", `credential.helper=${GIT_CREDENTIAL_OSXKEYCHAIN_PATH}`);
-      }
-    }
-
+    const credentialConfig = getCredentialHelperConfig(isHttpUrl, username, password);
+    pushArgs.push(...credentialConfig.args);
     pushArgs.push("push");
 
-    const pushResult = await execGitCommand(pushArgs, repoPath, credentialEnv);
+    const pushResult = await execGitCommand(pushArgs, repoPath, credentialConfig.env);
 
-    if (pushResult.success && isHttpsUrl && username && password && saveCredentials) {
-      try {
-        await storeCredentialsToOsxkeychain(remoteUrl, repoPath, username, password);
-      } catch (error) {
-        console.error("Failed to store credentials to keychain:", error);
-      }
+    if (pushResult.success && isHttpUrl && username && password && saveCredentials) {
+      await storeCredentials(remoteUrl, repoPath, username, password);
     }
 
     if (!pushResult.success) {
       const errorMessage = pushResult.error.message || "";
       const lowerError = errorMessage.toLowerCase();
+
+      const platform = getPlatform();
+      if (platform === "win" && lowerError.includes("user cancelled dialog")) {
+        return {
+          success: false,
+          error: "Authentication was canceled",
+          needsAuth: true,
+        };
+      }
 
       // Check if this is an authentication error
       if (
@@ -2619,7 +2599,7 @@ const pull = async (
     }
     const remoteUrl = remoteResult.output.trim();
 
-    const isHttpsUrl = remoteUrl.startsWith("https://") || remoteUrl.startsWith("http://");
+    const isHttpUrl = isHttpRemote(remoteUrl);
 
     // If branchName is provided, use fetch to update specific branch without checking it out
     // Otherwise, use pull to update and merge current branch
@@ -2628,32 +2608,29 @@ const pull = async (
       : ["pull"];
 
     const operationArgs: string[] = [];
-    let credentialEnv: Record<string, string> | undefined;
 
-    if (isHttpsUrl) {
-      if (username && password) {
-        operationArgs.push("-c", `credential.helper=${INLINE_CREDENTIAL_HELPER}`);
-        credentialEnv = createCredentialEnv(username, password);
-      } else {
-        operationArgs.push("-c", `credential.helper=${GIT_CREDENTIAL_OSXKEYCHAIN_PATH}`);
-      }
-    }
-
+    const credentialConfig = getCredentialHelperConfig(isHttpUrl, username, password);
+    operationArgs.push(...credentialConfig.args);
     operationArgs.push(...baseOperationArgs);
 
-    const operationResult = await execGitCommand(operationArgs, repoPath, credentialEnv);
+    const operationResult = await execGitCommand(operationArgs, repoPath, credentialConfig.env);
 
-    if (operationResult.success && isHttpsUrl && username && password && saveCredentials) {
-      try {
-        await storeCredentialsToOsxkeychain(remoteUrl, repoPath, username, password);
-      } catch (error) {
-        console.error("Failed to store credentials to keychain:", error);
-      }
+    if (operationResult.success && isHttpUrl && username && password && saveCredentials) {
+      await storeCredentials(remoteUrl, repoPath, username, password);
     }
 
     if (!operationResult.success) {
       const errorMessage = operationResult.error.message || "";
       const lowerError = errorMessage.toLowerCase();
+
+      const platform = getPlatform();
+      if (platform === "win" && lowerError.includes("user cancelled dialog")) {
+        return {
+          success: false,
+          error: "Authentication was canceled",
+          needsAuth: true,
+        };
+      }
 
       // Check if this is an authentication error
       if (

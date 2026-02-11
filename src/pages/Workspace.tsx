@@ -1,4 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
+import { usePlatform } from "@/hooks/usePlatform";
+import { useWindowsAuthDialogToast } from "@/hooks/useWindowsAuthToast";
 import { RepoSelector } from "@/components/git/RepoSelector";
 import { SidebarAccordion } from "@/components/git/SidebarAccordion";
 import { ChangedFilesSidebar } from "@/components/git/ChangedFilesSidebar";
@@ -86,6 +88,7 @@ const getContextLinesForMode = (mode: DiffViewerMode): number => {
 };
 
 export const Workspace = () => {
+  const platform = usePlatform();
   const { tabs, setTabs, activeTabId, setActiveTabId } = useRepoTabs();
   const { showGitSetup, handleGitSetupComplete } = useGitSetup();
   const { wordWrap, setWordWrap } = useWordWrap();
@@ -218,6 +221,10 @@ export const Workspace = () => {
     Object.values(fetchingRepos).some(Boolean) ||
     Object.values(pullingRepos).some(Boolean) ||
     Object.values(pushingRepos).some(Boolean);
+
+  const isRemoteOperationActive = isFetching || isPulling || isPushing;
+
+  useWindowsAuthDialogToast(isRemoteOperationActive);
 
   // Helper to update state for a specific repo
   const updateRepoState = (path: string, updates: Partial<RepoState>) => {
@@ -1366,15 +1373,19 @@ export const Workspace = () => {
           branches: branchList,
         });
       } else if (result.needsAuth) {
-        // Show authentication dialog (first time - no error yet)
-        // Get hostname from remote URL for display
-        try {
-          const remoteUrlResult = await getRemoteUrl(repoPath);
-          if (remoteUrlResult.success) {
+        if (platform === "win") {
+          toast.error("Authentication was canceled");
+        } else {
+          // Show authentication dialog (first time - no error yet)
+          // Get hostname from remote URL for display
+          try {
+            const remoteUrlResult = await getRemoteUrl(repoPath);
+            if (remoteUrlResult.success) {
+              handleAuthDialogOpenChange(true, "fetch");
+            }
+          } catch {
             handleAuthDialogOpenChange(true, "fetch");
           }
-        } catch {
-          handleAuthDialogOpenChange(true, "fetch");
         }
       } else {
         // If the auth dialog is open, only show error in dialog (not toast)
@@ -1421,15 +1432,19 @@ export const Workspace = () => {
           branches: branchList,
         });
       } else if (result.needsAuth) {
-        // Show authentication dialog (first time - no error yet)
-        // Get hostname from remote URL for display
-        try {
-          const remoteUrlResult = await getRemoteUrl(repoPath);
-          if (remoteUrlResult.success) {
+        if (platform === "win") {
+          toast.error("Authentication was canceled");
+        } else {
+          // Show authentication dialog (first time - no error yet)
+          // Get hostname from remote URL for display
+          try {
+            const remoteUrlResult = await getRemoteUrl(repoPath);
+            if (remoteUrlResult.success) {
+              handleAuthDialogOpenChange(true, "push");
+            }
+          } catch {
             handleAuthDialogOpenChange(true, "push");
           }
-        } catch {
-          handleAuthDialogOpenChange(true, "push");
         }
       } else {
         // If the auth dialog is open, only show error in dialog (not toast)
@@ -1478,15 +1493,19 @@ export const Workspace = () => {
           files: statusResult,
         });
       } else if (result.needsAuth) {
-        // Show authentication dialog (first time - no error yet)
-        // Get hostname from remote URL for display
-        try {
-          const remoteUrlResult = await getRemoteUrl(repoPath);
-          if (remoteUrlResult.success) {
+        if (platform === "win") {
+          toast.error("Authentication was canceled");
+        } else {
+          // Show authentication dialog (first time - no error yet)
+          // Get hostname from remote URL for display
+          try {
+            const remoteUrlResult = await getRemoteUrl(repoPath);
+            if (remoteUrlResult.success) {
+              handleAuthDialogOpenChange(true, "pull");
+            }
+          } catch {
             handleAuthDialogOpenChange(true, "pull");
           }
-        } catch {
-          handleAuthDialogOpenChange(true, "pull");
         }
       } else {
         // If the auth dialog is open, only show error in dialog (not toast)
@@ -1560,9 +1579,13 @@ export const Workspace = () => {
           commits: commitHistory,
         });
       } else if (result.needsAuth) {
-        // For now, show a message that auth is needed
-        // In the future, we could show an auth dialog specifically for this operation
-        toast.error("Authentication required. Please configure your credentials.");
+        if (platform === "win") {
+          toast.error("Authentication was canceled");
+        } else {
+          // For now, show a message that auth is needed
+          // In the future, we could show an auth dialog specifically for this operation
+          toast.error("Authentication required. Please configure your credentials");
+        }
       } else {
         toast.error(result.error || `Failed to pull branch "${branchName}"`);
       }

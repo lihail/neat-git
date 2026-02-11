@@ -1,6 +1,6 @@
 import path from "node:path";
 import fs from "node:fs";
-import { isValidHostname } from "../utils/validation";
+import { isValidHostname } from "../utils/url";
 import { spawnAsync } from "../utils/process";
 
 export const findKeys = () => {
