@@ -31,7 +31,7 @@ interface RepoSelectorProps {
 }
 
 export const RepoSelector = ({ onSelectRepo, onCancel }: RepoSelectorProps) => {
-  const platform = usePlatform();
+  const { isWindows } = usePlatform();
   const [isLoading, setIsLoading] = useState(false);
   const [isCloning, setIsCloning] = useState(false);
   const [showAuthHint, setShowAuthHint] = useState(false);
@@ -39,14 +39,14 @@ export const RepoSelector = ({ onSelectRepo, onCancel }: RepoSelectorProps) => {
   // Show the "sign-in window may appear" hint after a short delay on Windows,
   // so it doesn't flash for fast clones where credentials are already cached
   useEffect(() => {
-    if (!isCloning || platform !== "win") {
+    if (!isCloning || !isWindows) {
       setShowAuthHint(false);
       return;
     }
 
     const timer = setTimeout(() => setShowAuthHint(true), WINDOWS_AUTH_HINT_DELAY_MS);
     return () => clearTimeout(timer);
-  }, [isCloning, platform]);
+  }, [isCloning, isWindows]);
 
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [selectedParentPath, setSelectedParentPath] = useState<string>("");
@@ -170,7 +170,7 @@ export const RepoSelector = ({ onSelectRepo, onCancel }: RepoSelectorProps) => {
       } else if (result.needsAuth) {
         if (isAuthRetry) {
           setAuthError("Authentication failed. Please check your credentials and try again.");
-        } else if (platform === "win") {
+        } else if (isWindows) {
           toast.error("Authentication was canceled");
         } else {
           // First time - show auth dialog

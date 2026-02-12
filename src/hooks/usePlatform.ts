@@ -30,5 +30,8 @@ export const usePlatform = () => {
     };
   }, []);
 
-  return platform;
+  return {
+    isWindows: platform === "win",
+    isMac: platform === "mac",
+  };
 };

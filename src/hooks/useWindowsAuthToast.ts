@@ -12,10 +12,10 @@ const AUTH_TOAST_DURATION_MS = 10_000;
  * filtering out fast operations where credentials are already cached
  */
 export const useWindowsAuthDialogToast = (isRemoteOperationActive: boolean) => {
-  const platform = usePlatform();
+  const { isWindows } = usePlatform();
 
   useEffect(() => {
-    if (!isRemoteOperationActive || platform !== "win") {
+    if (!isRemoteOperationActive || !isWindows) {
       return;
     }
 
@@ -27,5 +27,5 @@ export const useWindowsAuthDialogToast = (isRemoteOperationActive: boolean) => {
     }, WINDOWS_AUTH_HINT_DELAY_MS);
 
     return () => clearTimeout(timer);
-  }, [isRemoteOperationActive, platform]);
+  }, [isRemoteOperationActive, isWindows]);
 };

@@ -88,7 +88,7 @@ const getContextLinesForMode = (mode: DiffViewerMode): number => {
 };
 
 export const Workspace = () => {
-  const platform = usePlatform();
+  const { isWindows } = usePlatform();
   const { tabs, setTabs, activeTabId, setActiveTabId } = useRepoTabs();
   const { showGitSetup, handleGitSetupComplete } = useGitSetup();
   const { wordWrap, setWordWrap } = useWordWrap();
@@ -1373,7 +1373,7 @@ export const Workspace = () => {
           branches: branchList,
         });
       } else if (result.needsAuth) {
-        if (platform === "win") {
+        if (isWindows) {
           toast.error("Authentication was canceled");
         } else {
           // Show authentication dialog (first time - no error yet)
@@ -1432,7 +1432,7 @@ export const Workspace = () => {
           branches: branchList,
         });
       } else if (result.needsAuth) {
-        if (platform === "win") {
+        if (isWindows) {
           toast.error("Authentication was canceled");
         } else {
           // Show authentication dialog (first time - no error yet)
@@ -1493,7 +1493,7 @@ export const Workspace = () => {
           files: statusResult,
         });
       } else if (result.needsAuth) {
-        if (platform === "win") {
+        if (isWindows) {
           toast.error("Authentication was canceled");
         } else {
           // Show authentication dialog (first time - no error yet)
@@ -1579,7 +1579,7 @@ export const Workspace = () => {
           commits: commitHistory,
         });
       } else if (result.needsAuth) {
-        if (platform === "win") {
+        if (isWindows) {
           toast.error("Authentication was canceled");
         } else {
           // For now, show a message that auth is needed
