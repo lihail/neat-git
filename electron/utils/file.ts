@@ -1,5 +1,6 @@
 import path from "node:path";
 import fs from "node:fs";
+import { getPlatform } from "./platform";
 
 /**
  * Recursively list all files in a directory
@@ -30,4 +31,15 @@ export const listFilesRecursively = (dirPath: string, relativePath: string): str
   }
 
   return files;
+};
+
+export const getUserHomeFolder = () => {
+  const platform = getPlatform();
+  if (platform === "win") {
+    return process.env.USERPROFILE || "";
+  }
+  if (platform === "mac") {
+    return process.env.HOME || "";
+  }
+  return "";
 };

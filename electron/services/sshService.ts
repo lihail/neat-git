@@ -2,13 +2,20 @@ import path from "node:path";
 import fs from "node:fs";
 import { isValidHostname } from "../utils/url";
 import { spawnAsync } from "../utils/process";
+import { getUserHomeFolder } from "../utils/file";
+
+const SSH_KEYS_FOLDER = ".ssh";
+
+const getSshKeysFolder = () => {
+  const homeFolder = getUserHomeFolder();
+  return path.join(homeFolder, SSH_KEYS_FOLDER);
+};
 
 export const findKeys = () => {
   try {
-    const homeDir = process.env.HOME || process.env.USERPROFILE || "";
-    const sshDir = path.join(homeDir, ".ssh");
+    const sshFolder = getSshKeysFolder();
 
-    if (!fs.existsSync(sshDir)) {
+    if (!fs.existsSync(sshFolder)) {
       return { success: true, hasKeys: false, keys: [] };
     }
 
@@ -23,8 +30,8 @@ export const findKeys = () => {
       publicPath: string;
     }> = [];
     for (const keyType of keyTypes) {
-      const privatePath = path.join(sshDir, keyType.private);
-      const publicPath = path.join(sshDir, keyType.public);
+      const privatePath = path.join(sshFolder, keyType.private);
+      const publicPath = path.join(sshFolder, keyType.public);
 
       if (fs.existsSync(privatePath) && fs.existsSync(publicPath)) {
         foundKeys.push({
@@ -51,15 +58,14 @@ export const findKeys = () => {
 
 export const generateKey = async () => {
   try {
-    const homeDir = process.env.HOME || process.env.USERPROFILE || "";
-    const sshDir = path.join(homeDir, ".ssh");
+    const sshFolder = getSshKeysFolder();
 
-    // Create .ssh directory if it doesn't exist
-    if (!fs.existsSync(sshDir)) {
-      fs.mkdirSync(sshDir, { recursive: true, mode: 0o700 });
+    // Create SSH keys folder if it doesn't exist
+    if (!fs.existsSync(sshFolder)) {
+      fs.mkdirSync(sshFolder, { recursive: true, mode: 0o700 });
     }
 
-    const keyPath = path.join(sshDir, "id_ed25519");
+    const keyPath = path.join(sshFolder, "id_ed25519");
     const publicKeyPath = `${keyPath}.pub`;
 
     // Backup existing keys if they exist (instead of deleting)
@@ -121,11 +127,10 @@ export const isHostTrusted = async (hostname: string) => {
       };
     }
 
-    const homeDir = process.env.HOME || process.env.USERPROFILE || "";
-    const sshDir = path.join(homeDir, ".ssh");
-    const knownHostsPath = path.join(sshDir, "known_hosts");
+    const sshFolder = getSshKeysFolder();
+    const knownHostsPath = path.join(sshFolder, "known_hosts");
 
-    // If known_hosts doesn't exist, host is not trusted
+    // If known_hosts file doesn't exist, host is not trusted
     if (!fs.existsSync(knownHostsPath)) {
       return { success: true, isTrusted: false };
     }
@@ -157,12 +162,11 @@ export const trustHost = async (hostname: string) => {
       };
     }
 
-    const homeDir = process.env.HOME || process.env.USERPROFILE || "";
-    const sshDir = path.join(homeDir, ".ssh");
-    const knownHostsPath = path.join(sshDir, "known_hosts");
+    const sshFolder = getSshKeysFolder();
+    const knownHostsPath = path.join(sshFolder, "known_hosts");
 
-    if (!fs.existsSync(sshDir)) {
-      fs.mkdirSync(sshDir, { recursive: true, mode: 0o700 });
+    if (!fs.existsSync(sshFolder)) {
+      fs.mkdirSync(sshFolder, { recursive: true, mode: 0o700 });
     }
 
     // Run ssh-keyscan to get the host key

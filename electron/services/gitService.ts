@@ -417,7 +417,7 @@ export const getStatus = async (repoPath: string) => {
         // Untracked file or directory
         const filePath = line.slice(2);
 
-        // Check if this is a directory (ends with /)
+        // Check if this is a directory
         if (filePath.endsWith("/")) {
           // Recursively list all files within it
           const dirPath = path.join(repoPath, filePath);
