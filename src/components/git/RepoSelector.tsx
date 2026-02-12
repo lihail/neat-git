@@ -16,6 +16,7 @@ import {
   validateRepoName,
   extractCredentialsFromUrl,
   extractHostFromUrl,
+  extractRepoNameFromUrl,
   isSshUrl,
   validateCloneUrl,
   getFullClonePath,
@@ -57,6 +58,30 @@ export const RepoSelector = ({ onSelectRepo, onCancel }: RepoSelectorProps) => {
   const [cloneUrl, setCloneUrl] = useState("");
   const [cloneDestination, setCloneDestination] = useState("");
   const [cloneUrlError, setCloneUrlError] = useState<string | null>(null);
+  const [fullClonePath, setFullClonePath] = useState("");
+  const cloneRepoName = extractRepoNameFromUrl(cloneUrl);
+
+  useEffect(() => {
+    if (!cloneDestination || !cloneRepoName) {
+      setFullClonePath("");
+      return;
+    }
+
+    let isCanceled = false;
+
+    const fetchAndSetFullClonePath = async () => {
+      const fullClonePath = await getFullClonePath(cloneDestination, cloneRepoName);
+      if (!isCanceled) {
+        setFullClonePath(fullClonePath);
+      }
+    };
+
+    fetchAndSetFullClonePath();
+
+    return () => {
+      isCanceled = true;
+    };
+  }, [cloneDestination, cloneRepoName]);
 
   const [showAuthDialog, setShowAuthDialog] = useState(false);
   const [authHost, setAuthHost] = useState("");
@@ -125,7 +150,7 @@ export const RepoSelector = ({ onSelectRepo, onCancel }: RepoSelectorProps) => {
     const isAuthRetry = !!username || !!password;
 
     try {
-      const finalPath = getFullClonePath(cloneDestination, cloneUrl);
+      const finalPath = fullClonePath;
 
       // If no credentials provided, check if URL has embedded credentials
       let effectiveUsername = username;
@@ -501,7 +526,7 @@ export const RepoSelector = ({ onSelectRepo, onCancel }: RepoSelectorProps) => {
           cloneDestination={cloneDestination}
           cloneUrlError={cloneUrlError}
           isLoading={isLoading}
-          fullClonePath={getFullClonePath(cloneDestination, cloneUrl)}
+          fullClonePath={fullClonePath}
           onCloneUrlChange={handleCloneUrlChange}
           onSelectDestination={handleSelectCloneDestination}
           onConfirm={handleConfirmClone}

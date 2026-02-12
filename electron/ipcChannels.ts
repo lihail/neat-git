@@ -42,4 +42,5 @@ export const IPC_CHANNELS = {
   SYSTEM_SHOW_FILE_IN_FILE_EXPLORER: "system:showFileInFileExplorer",
   SYSTEM_OPEN_FILE_IN_EXTERNAL_EDITOR: "system:openFileInExternalEditor",
   SYSTEM_GET_PLATFORM: "system:getPlatform",
+  SYSTEM_GET_FULL_CLONE_PATH: "system:getFullClonePath",
 } as const;

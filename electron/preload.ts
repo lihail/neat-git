@@ -146,9 +146,11 @@ contextBridge.exposeInMainWorld("electronAPI", {
   isHostTrusted: (hostname: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.SSH_IS_HOST_TRUSTED, hostname),
   trustHost: (hostname: string) => ipcRenderer.invoke(IPC_CHANNELS.SSH_TRUST_HOST, hostname),
-  showFileInFileExplorer: (fullPath: string) =>
-    ipcRenderer.invoke(IPC_CHANNELS.SYSTEM_SHOW_FILE_IN_FILE_EXPLORER, fullPath),
-  openFileInExternalEditor: (fullPath: string) =>
-    ipcRenderer.invoke(IPC_CHANNELS.SYSTEM_OPEN_FILE_IN_EXTERNAL_EDITOR, fullPath),
+  showFileInFileExplorer: (repoPath: string, filePath: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.SYSTEM_SHOW_FILE_IN_FILE_EXPLORER, repoPath, filePath),
+  openFileInExternalEditor: (repoPath: string, filePath: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.SYSTEM_OPEN_FILE_IN_EXTERNAL_EDITOR, repoPath, filePath),
   getPlatform: () => ipcRenderer.invoke(IPC_CHANNELS.SYSTEM_GET_PLATFORM),
+  getFullClonePath: (cloneDestination: string, repoName: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.SYSTEM_GET_FULL_CLONE_PATH, cloneDestination, repoName),
 });

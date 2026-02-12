@@ -68,8 +68,9 @@ interface RepoState {
 }
 
 // Helper function to extract repo name from path
+// Split by both forward and back slashes for cross-platform compatibility
 const getRepoNameFromPath = (path: string): string => {
-  const parts = path.split("/");
+  const parts = path.split(/[/\\]/);
   return parts[parts.length - 1] || path;
 };
 
@@ -426,10 +427,8 @@ export const Workspace = () => {
     const existingTab = tabs.find((tab) => tab.path === path);
 
     if (existingTab) {
-      // If tab already exists, just switch to it
       setActiveTabId(existingTab.id);
     } else {
-      // Create new tab
       const newTab: RepoTab = {
         id: `${Date.now()}-${Math.random()}`,
         path,

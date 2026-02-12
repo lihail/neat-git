@@ -90,7 +90,7 @@ export const SshSetupDialog = ({
               ) : (
                 <>
                   <p className="text-sm">
-                    No SSH keys found in your <code>~/.ssh</code> directory.
+                    No SSH keys found in your SSH keys folder.
                   </p>
                   <p className="text-sm text-muted-foreground">
                     Generate a new SSH key to authenticate with Git services.

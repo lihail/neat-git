@@ -186,9 +186,16 @@ export interface ElectronAPI {
     error?: string;
   }>;
   trustHost: (hostname: string) => Promise<{ success: boolean; error?: string }>;
-  showFileInFileExplorer: (fullPath: string) => Promise<{ success: boolean; error?: string }>;
-  openFileInExternalEditor: (fullPath: string) => Promise<{ success: boolean; error?: string }>;
+  showFileInFileExplorer: (
+    repoPath: string,
+    filePath: string
+  ) => Promise<{ success: boolean; error?: string }>;
+  openFileInExternalEditor: (
+    repoPath: string,
+    filePath: string
+  ) => Promise<{ success: boolean; error?: string }>;
   getPlatform: () => Promise<"mac" | "win">;
+  getFullClonePath: (cloneDestination: string, repoName: string) => Promise<string>;
 }
 
 declare global {

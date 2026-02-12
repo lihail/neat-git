@@ -116,7 +116,7 @@ export const validateRepoName = (name: string): string | null => {
   return null;
 };
 
-const extractRepoNameFromUrl = (url: string): string => {
+export const extractRepoNameFromUrl = (url: string): string => {
   try {
     // Remove trailing slashes and .git extension
     const repoPath = url
@@ -219,10 +219,12 @@ export const validateCloneUrl = (url: string): string | null => {
   return null;
 };
 
-export const getFullClonePath = (cloneDestination: string, cloneUrl: string): string => {
-  if (!cloneDestination || !cloneUrl) {
+export const getFullClonePath = async (
+  cloneDestination: string,
+  repoName: string
+): Promise<string> => {
+  if (!cloneDestination || !repoName) {
     return "";
   }
-  const repoName = extractRepoNameFromUrl(cloneUrl);
-  return `${cloneDestination}/${repoName}`;
+  return await window.electronAPI.getFullClonePath(cloneDestination, repoName);
 };
