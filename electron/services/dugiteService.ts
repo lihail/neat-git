@@ -22,8 +22,8 @@ const DEFAULT_COMMAND_TIMEOUT_MS = 30_000; // 30s
 const WINDOWS_AUTH_PROMPT_COMMANDS_TIMEOUT_MS = 3_600_000; // 1h
 const WINDOWS_AUTH_PROMPT_COMMANDS = ["clone", "fetch", "push", "pull"];
 
-// Environment variables to make git fail fast on auth instead of prompting
-const MAC_FAIL_AUTH_FAST_ENV = {
+// Environment variables that prevent from opening auth interactive prompts that would hand the Electron app. On Windows, Git Credential Manager provides a proper GUI dialog, so the app extends timeouts instead and lets the user interact with the prompt
+const MAC_DISABLE_AUTH_PROMPT_ENV = {
   GIT_TERMINAL_PROMPT: "0",
   GIT_ASKPASS: "",
   SSH_ASKPASS: "",
@@ -58,7 +58,7 @@ export const execGitCommand = async (
   try {
     const env = {
       ...process.env,
-      ...(platform === "mac" ? MAC_FAIL_AUTH_FAST_ENV : {}),
+      ...(platform === "mac" ? MAC_DISABLE_AUTH_PROMPT_ENV : {}),
       ...customEnv,
     };
 

@@ -15,16 +15,14 @@ const GIT_INLINE_CREDENTIAL_HELPER =
 const getCredentialHelper = () => {
   const platform = getPlatform();
 
-  let helper = "";
   if (platform === "mac") {
-    helper = GIT_CREDENTIAL_OSXKEYCHAIN_HELPER;
-  } else if (platform === "win") {
-    helper = GIT_CREDENTIAL_MANAGER_HELPER;
-  } else {
-    // Default to Windows arbitrarily
+    return GIT_CREDENTIAL_OSXKEYCHAIN_HELPER;
+  }
+  if (platform === "win") {
     return GIT_CREDENTIAL_MANAGER_HELPER;
   }
-  return helper;
+
+  return "";
 };
 
 export const getCredentialHelperConfig = (
