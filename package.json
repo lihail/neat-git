@@ -161,7 +161,8 @@
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
-      "perMachine": false
+      "perMachine": false,
+      "createStartMenuShortcut": false
     }
   }
 }
