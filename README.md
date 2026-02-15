@@ -1,6 +1,6 @@
 # NeatGit
 
-A modern, beautiful Git client built with Electron, React and TypeScript.
+A modern, beautiful, cross-platform Git client built with Electron, React and TypeScript.
 
 ## Installation
 
@@ -22,7 +22,7 @@ A modern, beautiful Git client built with Electron, React and TypeScript.
 
 ### Requirements
 
-- Git
+- git
 - Node.js
 
 ### Getting Started
@@ -34,7 +34,7 @@ npm install
 npm start
 ```
 
-Running `npm start` will open the app in Electron with hot reload enabled, allowing you to see changes instantly as you develop.
+Running `npm start` will open the app in Electron with hot reload enabled, allowing you to see changes instantly as you develop (unless they are in the electron backend, which requires an app restart).
 
 ### Creating a Release
 
@@ -62,7 +62,7 @@ git push origin <version>
 
 3. Create a release the [releases page](https://github.com/lihail/neat-git/releases) and upload the built applications to that page.
 
-## Issues
+## Issues and Bugs
 
 Please submit any issue or bug reports on the [issues page](https://github.com/lihail/neat-git/issues).
 

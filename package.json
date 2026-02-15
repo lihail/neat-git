@@ -131,7 +131,13 @@
           ]
         }
       ],
-      "icon": "public/favicon.png"
+      "icon": "public/favicon.png",
+      "extraResources": [
+        {
+          "from": "resources/third_party/openssh-portable",
+          "to": "resources/third_party/openssh-portable"
+        }
+      ]
     },
     "mac": {
       "target": [
@@ -154,7 +160,8 @@
     },
     "nsis": {
       "oneClick": false,
-      "allowToChangeInstallationDirectory": true
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false
     }
   }
 }

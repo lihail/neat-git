@@ -3,6 +3,7 @@ import fs from "node:fs";
 import { isValidHostname } from "../utils/url";
 import { spawnAsync } from "../utils/process";
 import { getUserHomeFolder } from "../utils/file";
+import { SSH_KEYGEN_COMMAND_PATH, SSH_KEYSCAN_COMMAND_PATH } from "../utils/sshPaths";
 
 const SSH_KEYS_FOLDER = ".ssh";
 
@@ -80,7 +81,7 @@ export const generateKey = async () => {
     }
 
     // Generate key with empty passphrase
-    await spawnAsync("ssh-keygen", [
+    await spawnAsync(SSH_KEYGEN_COMMAND_PATH, [
       "-t",
       "ed25519",
       "-f",
@@ -137,7 +138,7 @@ export const isHostTrusted = async (hostname: string) => {
 
     // Check if hostname exists in known_hosts
     try {
-      await spawnAsync("ssh-keygen", ["-F", hostname]);
+      await spawnAsync(SSH_KEYGEN_COMMAND_PATH, ["-F", hostname]);
       // If no error, host is found
       return { success: true, isTrusted: true };
     } catch {
@@ -170,7 +171,7 @@ export const trustHost = async (hostname: string) => {
     }
 
     // Run ssh-keyscan to get the host key
-    const { stdout } = await spawnAsync("ssh-keyscan", ["-H", hostname]);
+    const { stdout } = await spawnAsync(SSH_KEYSCAN_COMMAND_PATH, ["-H", hostname]);
 
     fs.appendFileSync(knownHostsPath, stdout);
 
