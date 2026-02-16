@@ -1,4 +1,4 @@
-# NeatGit
+# NeatGit <img src="public/icon.svg" alt="App icon" height="30" style="vertical-align:middle; margin-left:4px">
 
 A modern, beautiful, cross-platform Git client built with Electron, React and TypeScript, available as a native desktop app for Windows and macOS.
 
