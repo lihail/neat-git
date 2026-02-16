@@ -106,7 +106,7 @@ export const SettingsDrawer = () => {
           </SheetHeader>
 
           <div className="mt-6 space-y-8">
-            <section className="space-y-3">
+            {/* <section className="space-y-3">
               <h3 className="text-sm font-medium text-foreground">Appearance</h3>
               <div className="flex items-center gap-4">
                 <label
@@ -128,7 +128,7 @@ export const SettingsDrawer = () => {
                   </SelectContent>
                 </Select>
               </div>
-            </section>
+            </section> */}
 
             <section className="space-y-3">
               <div>

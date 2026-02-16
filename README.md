@@ -109,3 +109,7 @@ Please submit any issue or bug reports on the [issues page](https://github.com/l
 ## License
 
 NeatGit is licensed under the [MIT](https://github.com/lihail/neat-git/blob/main/LICENSE) license.
+
+## Support the Project
+
+NeatGit is completely free and open source. As a way to support development, perks like additional color themes and small bonus features will soon be available for supporters who choose to donate.
