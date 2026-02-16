@@ -1,8 +1,32 @@
 # NeatGit
 
-A modern, beautiful, cross-platform Git client built with Electron, React and TypeScript.
+A modern, beautiful, cross-platform Git client built with Electron, React and TypeScript, available as a native desktop app for Windows and macOS.
 
-## Installation
+⚠️ **Note** ⚠️: NeatGit is currently in early development, and a stable version hasn't been released yet. More features and bug fixes to come soon. Use the app with caution, and please report any bug you encounter by opening an issue.
+
+## Features
+
+- Clone repos, open local ones, or create new ones
+- Stage, unstage and commit changes
+- Pull, push, and fetch changes from remote repos
+- Switch, create and delete branches
+- Advanced visual diff viewer with full, hunk, and split views
+- Stage or unstage individual lines or hunks for precise commits
+- Detect renamed files
+- Full HTTPS and SSH support for interaction with remote repos
+- Work with multiple repos simultaneously
+- View commit history of the current branch
+- Manage stashes
+
+...all wrapped in a user friendly UI.
+
+Quick demos:
+
+<img src="demo-gifs/clone.gif" alt="Clone repo demo" height="400">
+<img src="demo-gifs/switch branch, pull, push.gif" alt="Switch branch demo" height="400">
+<img src="demo-gifs/diff viewer, commit.gif" alt="Diff viewer demo" height="400">
+
+## Download & Install
 
 ### macOS
 
@@ -84,4 +108,4 @@ Please submit any issue or bug reports on the [issues page](https://github.com/l
 
 ## License
 
-NeatGit is licensed under the [MIT](https://github.com/lihail/neat-git/blob/main/LICENSE.TXT) license.
+NeatGit is licensed under the [MIT](https://github.com/lihail/neat-git/blob/main/LICENSE) license.
