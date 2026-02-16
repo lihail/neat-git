@@ -48,7 +48,13 @@ Running `npm start` will open the app in Electron with hot reload enabled, allow
 
 ### Creating a Release
 
-1. Build the app:
+1. If the icon was changed (`public/icon.svg`), run the following command. Otherwise, skip this step:
+
+```sh
+npm run generate-icons
+```
+
+2. Build the app:
 
 ```sh
 # Build for your current platform
@@ -63,14 +69,14 @@ The built applications will be available in the `release` directory.
 
 **Note:** Building for a specific platform typically requires running the build **on that platform** (e.g., build macOS apps on a Mac, Windows apps on Windows).
 
-2. Create a git tag (where `<version>` is, for example, v1.0.0):
+3. Create a git tag (where `<version>` is, for example, v1.0.0):
 
 ```sh
 git tag <version>
 git push origin <version>
 ```
 
-3. Create a release the [releases page](https://github.com/lihail/neat-git/releases) and upload the built applications to that page.
+4. Create a release the [releases page](https://github.com/lihail/neat-git/releases) and upload the built applications to that page.
 
 ## Issues and Bugs
 

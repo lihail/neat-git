@@ -24,6 +24,7 @@
     "electron:build": "npm run electron:build:ts && cross-env ELECTRON=true npm run build && electron-builder",
     "electron:build:win": "npm run electron:build:ts && cross-env ELECTRON=true npm run build && electron-builder --win",
     "electron:build:mac": "npm run electron:build:ts && cross-env ELECTRON=true npm run build && electron-builder --mac",
+    "generate-icons": "node scripts/generate-icons.js",
     "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {
@@ -131,7 +132,7 @@
           ]
         }
       ],
-      "icon": "public/favicon.png",
+      "icon": "public/icon-256.ico",
       "extraResources": [
         {
           "from": "resources/third_party/openssh-portable",
@@ -149,7 +150,7 @@
           ]
         }
       ],
-      "icon": "public/favicon.png",
+      "icon": "public/icon-1024.png",
       "identity": null,
       "extraResources": [
         {

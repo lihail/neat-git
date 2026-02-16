@@ -45,7 +45,7 @@ const indexHtml = path.join(RENDERER_DIST, "index.html");
 async function createWindow() {
   win = new BrowserWindow({
     title: "NeatGit - Modern Git Client",
-    icon: path.join(process.env.VITE_PUBLIC!, "favicon.png"),
+    icon: path.join(process.env.VITE_PUBLIC!, "icon-256.png"),
     width: 1200,
     height: 800,
     minWidth: 800,
