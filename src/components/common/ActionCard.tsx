@@ -1,7 +1,7 @@
 import { type LucideIcon } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { MouseEventHandler } from "react";
+import { MouseEvent, MouseEventHandler } from "react";
 
 interface ActionCardProps {
   icon: LucideIcon;
@@ -22,6 +22,11 @@ export const ActionCard = ({
   isLoading = false,
   onClick,
 }: ActionCardProps) => {
+  const onButtonClick = (event: MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation(); // Prevent from also clicking the card when the button is clicked
+    onClick(event);
+  };
+
   return (
     <Card
       className="p-6 hover:border-primary transition-colors cursor-pointer flex flex-col"
@@ -34,7 +39,12 @@ export const ActionCard = ({
       </div>
       <h2 className="text-xl font-semibold mb-4 text-foreground">{title}</h2>
       <p className="text-sm text-muted-foreground mb-6 flex-1">{description}</p>
-      <Button onClick={onClick} className="w-full gap-2" variant="outline" disabled={isLoading}>
+      <Button
+        onClick={onButtonClick}
+        className="w-full gap-2"
+        variant="outline"
+        disabled={isLoading}
+      >
         <Icon className="h-4 w-4" />
         {isLoading && buttonLoadingText ? buttonLoadingText : buttonText}
       </Button>
