@@ -53,6 +53,7 @@ import { useDiffViewerMode } from "@/hooks/useDiffViewerMode";
 import { useRepoTabs } from "@/hooks/useRepoTabs";
 import { LoadingOverlay } from "@/components/common/LoadingOverlay";
 import { FileChange } from "@/types/git";
+import { ConfirmationDialog } from "@/components/common/ConfirmationDialog";
 
 // State for each repo tab
 interface RepoState {
@@ -109,6 +110,11 @@ export const Workspace = () => {
   const [currentAuthOperation, setCurrentAuthOperation] = useState<
     "fetch" | "pull" | "push" | null
   >(null);
+
+  const [isBranchSwitchConfirmationDialogOpen, setIsBranchSwitchConfirmationDialogOpen] =
+    useState(false);
+  const [branchToSwitchTo, setBranchToSwitchTo] = useState<string>("");
+  const [isStashingAndSwitchingBranch, setIsStashingAndSwitchingBranch] = useState(false);
 
   const { diffViewerMode, setDiffViewerMode } = useDiffViewerMode();
 
@@ -942,75 +948,8 @@ export const Workspace = () => {
         errorMessage.includes("Your local changes to the following files would be overwritten") ||
         errorMessage.includes("Please commit your changes or stash them")
       ) {
-        toast.error("Cannot switch branches", {
-          description: "You have uncommitted changes. Stash them to continue?",
-          style: { minWidth: "500px" },
-          action: {
-            label: "Stash & Switch",
-            onClick: async () => {
-              try {
-                // Create a stash with timestamp
-                const now = new Date();
-                const hours = now.getHours().toString().padStart(2, "0");
-                const minutes = now.getMinutes().toString().padStart(2, "0");
-                const months = [
-                  "Jan",
-                  "Feb",
-                  "Mar",
-                  "Apr",
-                  "May",
-                  "Jun",
-                  "Jul",
-                  "Aug",
-                  "Sep",
-                  "Oct",
-                  "Nov",
-                  "Dec",
-                ];
-                const month = months[now.getMonth()];
-                const day = now.getDate();
-                const stashMessage = `Stash at ${month}. ${day}, ${hours}:${minutes}`;
-
-                const stashResult = await stash(repoPath, stashMessage);
-
-                if (stashResult.success) {
-                  toast.success(`Changes stashed: ${stashMessage}`);
-
-                  // Retry the branch switch
-                  await checkoutBranch(repoPath, branch);
-                  toast.info(`Switched to branch: ${branch}`);
-
-                  // Refresh git status, commit history, branches, and stashes
-                  const statusList = await getStatus(repoPath);
-                  const commitHistory = await getCommitHistory(repoPath);
-                  const branchList = await listLocalBranches(repoPath);
-                  const stashList = await listStashes(repoPath);
-                  updateRepoState(repoPath, {
-                    currentBranch: branch,
-                    files: statusList,
-                    commits: commitHistory,
-                    branches: branchList,
-                    stashes: stashList,
-                  });
-                } else {
-                  toast.error("Failed to stash changes", {
-                    description: stashResult.message,
-                  });
-                }
-              } catch (stashError) {
-                console.error("Error stashing and switching:", stashError);
-                toast.error("Failed to stash and switch", {
-                  description: stashError instanceof Error ? stashError.message : "Unknown error",
-                });
-              }
-            },
-          },
-          cancel: {
-            label: "Cancel",
-            onClick: () => {},
-          },
-          duration: Infinity,
-        });
+        setBranchToSwitchTo(branch);
+        setIsBranchSwitchConfirmationDialogOpen(true);
       } else {
         // For other errors, show the standard error toast
         toast.error("Failed to switch branch", {
@@ -1121,6 +1060,77 @@ export const Workspace = () => {
       // Clear renaming state
       setRenamingRepos((prev) => ({ ...prev, [repoPath]: false }));
     }
+  };
+
+  const handleStashAndSwitchBranch = async () => {
+    if (!repoPath || !currentState) {
+      return;
+    }
+
+    setIsStashingAndSwitchingBranch(true);
+
+    try {
+      // Create a stash with timestamp
+      const now = new Date();
+      const hours = now.getHours().toString().padStart(2, "0");
+      const minutes = now.getMinutes().toString().padStart(2, "0");
+      const months = [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec",
+      ];
+      const month = months[now.getMonth()];
+      const day = now.getDate();
+      const stashMessage = `Stash at ${month}. ${day}, ${hours}:${minutes}`;
+      const stashResult = await stash(repoPath, stashMessage);
+
+      if (stashResult.success) {
+        toast.success(`Changes stashed: ${stashMessage}`);
+
+        // Retry the branch switch
+        await checkoutBranch(repoPath, branchToSwitchTo);
+        toast.info(`Switched to branch: ${branchToSwitchTo}`);
+
+        // Refresh git status, commit history, branches, and stashes
+        const statusList = await getStatus(repoPath);
+        const commitHistory = await getCommitHistory(repoPath);
+        const branchList = await listLocalBranches(repoPath);
+        const stashList = await listStashes(repoPath);
+        updateRepoState(repoPath, {
+          currentBranch: branchToSwitchTo,
+          files: statusList,
+          commits: commitHistory,
+          branches: branchList,
+          stashes: stashList,
+        });
+      } else {
+        toast.error("Failed to stash changes", {
+          description: stashResult.message,
+        });
+      }
+    } catch (error) {
+      console.error("Error stashing and switching:", error);
+      toast.error("Failed to stash and switch", {
+        description: error instanceof Error ? error.message : "Unknown error",
+      });
+    } finally {
+      setIsStashingAndSwitchingBranch(false);
+    }
+  };
+
+  const handleCancelStashAndSwitchBranch = () => {
+    setIsBranchSwitchConfirmationDialogOpen(false);
+    setBranchToSwitchTo("");
+    setIsStashingAndSwitchingBranch(false);
   };
 
   const handleStash = async () => {
@@ -1769,6 +1779,27 @@ export const Workspace = () => {
         }
         error={authDialogError}
       />
+
+      <ConfirmationDialog
+        open={isBranchSwitchConfirmationDialogOpen}
+        onOpenChange={setIsBranchSwitchConfirmationDialogOpen}
+        title="Stash Changes Before Switching Branch"
+        description="You have uncommitted changes"
+        isProcessing={isStashingAndSwitchingBranch}
+        confirmLabel="Stash & Switch Branch"
+        processingLabel="Working..."
+        onConfirm={handleStashAndSwitchBranch}
+        onCancel={handleCancelStashAndSwitchBranch}
+      >
+        <div className="p-4 bg-muted rounded-md">
+          <p className="text-sm">
+            You can't switch to this branch while you have uncommitted changes.
+          </p>
+          <p className="text-sm mt-2 text-muted-foreground">
+            Do you want to stash them and switch to branch <code>{branchToSwitchTo}</code>?
+          </p>
+        </div>
+      </ConfirmationDialog>
     </div>
   );
 };
