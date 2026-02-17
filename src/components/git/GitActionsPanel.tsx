@@ -2,6 +2,7 @@ import { MouseEventHandler, useState } from "react";
 import { Download, Upload, RefreshCw, Archive, GitBranchPlus } from "lucide-react";
 import { ActionButton } from "../common/ActionButton";
 import { NewBranchDialog } from "./NewBranchDialog";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface GitActionsPanelProps {
   onFetch: MouseEventHandler<HTMLButtonElement>;
@@ -14,6 +15,7 @@ interface GitActionsPanelProps {
   isPulling?: boolean;
   isPushing?: boolean;
   existingBranches?: string[];
+  hasUncommittedChanges: boolean;
 }
 
 export const GitActionsPanel = ({
@@ -27,6 +29,7 @@ export const GitActionsPanel = ({
   isPulling = false,
   isPushing = false,
   existingBranches = [],
+  hasUncommittedChanges,
 }: GitActionsPanelProps) => {
   const [isCreatingBranch, setIsCreatingBranch] = useState(false);
 
@@ -57,7 +60,18 @@ export const GitActionsPanel = ({
           iconClassName={isPushing ? "animate-bounce-up" : undefined}
         />
 
-        <ActionButton icon={Archive} label="Stash" onClick={onStash} disabled={isLoading} />
+        {isLoading || !hasUncommittedChanges ? (
+          <Tooltip delayDuration={0}>
+            <TooltipTrigger disabled>
+              <ActionButton icon={Archive} label="Stash" onClick={onStash} disabled />
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              <p>No changes to stash</p>
+            </TooltipContent>
+          </Tooltip>
+        ) : (
+          <ActionButton icon={Archive} label="Stash" onClick={onStash} />
+        )}
 
         <ActionButton
           icon={GitBranchPlus}

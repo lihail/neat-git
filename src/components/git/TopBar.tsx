@@ -28,6 +28,7 @@ interface TopBarProps {
   isPushing?: boolean;
   isAnyRemoteOperationActive?: boolean;
   existingBranches?: string[];
+  hasUncommittedChanges: boolean;
 }
 
 export const TopBar = ({
@@ -48,6 +49,7 @@ export const TopBar = ({
   isPushing = false,
   isAnyRemoteOperationActive = false,
   existingBranches = [],
+  hasUncommittedChanges,
 }: TopBarProps) => {
   return (
     <div className="flex items-end border-b border-border bg-muted/30 p-2">
@@ -73,6 +75,7 @@ export const TopBar = ({
         isPulling={isPulling}
         isPushing={isPushing}
         existingBranches={existingBranches}
+        hasUncommittedChanges={hasUncommittedChanges}
       />
       <Separator orientation="vertical" className="h-10 self-center mx-2 ml-auto" />
       <div className="self-center">

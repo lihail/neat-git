@@ -1138,12 +1138,6 @@ export const Workspace = () => {
       return;
     }
 
-    // Check if there are any changes to stash
-    if (currentState.files.length === 0) {
-      toast.error("No changes to stash");
-      return;
-    }
-
     try {
       const now = new Date();
       const hours = now.getHours().toString().padStart(2, "0");
@@ -1650,6 +1644,7 @@ export const Workspace = () => {
         onFetch={() => handleFetch()}
         onPull={() => handlePull()}
         onPush={() => handlePush()}
+        hasUncommittedChanges={currentState && currentState.files.length > 0}
         isLoading={isLoading}
         isFetching={isFetching}
         isPulling={isPulling}
