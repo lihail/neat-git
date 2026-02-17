@@ -97,7 +97,7 @@ export const FileChangeContextMenu = ({
         className="gap-3 hover:bg-secondary focus:bg-secondary focus:text-foreground"
         onSelect={handleCopyFilePath}
       >
-        <span className="flex-1">Copy File Path</span>
+        <span className="flex-1">Copy Relative File Path</span>
         <Copy className="h-4 w-4" />
       </ContextMenuItem>
     </ContextMenuContent>
