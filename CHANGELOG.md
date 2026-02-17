@@ -8,23 +8,23 @@
 - App now includes its own git, no longer requires git to be installed on the user's machine
 - Fixed bug where all stashes of current repo would be deleted upon app start
 - Added rename/move detection for files, showing an appropriate icon and the old and new file paths
-- Fixed bug where new files in new folders showed truncated paths and threw an error when clicked
+- Fixed bug where new files in new folders would show truncated paths and throw an error when clicked
 - Fixed bug where clicking "Rename" in the rename branch dialog would do nothing
 - Fixed bug where user setup dialog on first app use would not appear
-- Fixed bug where file status icons in staged and unstaged sections showed the same status, even when the actual changes differed
-- Fixed bug where diff viewer showed stale content when selected file was removed from the changed files list
+- Fixed bug where file status icons in staged and unstaged sections would show the same status, even when the actual changes differed
+- Fixed bug where diff viewer would show stale content when selected file was removed from the changed files list
 - Fixed bug where regaining window focus would reload the diff with the wrong view mode or staged/unstaged section if those settings had changed since the window last lost focus
-- Fixed bug where diff viewer showed identical line numbers for consecutive deleted lines in hunks and full view modes
+- Fixed bug where diff viewer would show identical line numbers for consecutive deleted lines in hunks and full view modes
 - App now starts maximized instead of centered in a small window
 - Added validation for existing branch names in the create branch dialog
 - Added the ability to select text in diff viewer
-- Fixed bug where full and hunks diff viewer modes showed only one line number column instead of two (old and new) side by side
-- Fixed bug where diff viewer displayed trailing newline changes at end of files
+- Fixed bug where full and hunks diff viewer modes would show only one line number column instead of two (old and new) side by side
+- Fixed bug where diff viewer would display trailing newline changes at end of files
 - Fixed bug where "Lines x-y" separator in hunks view would scroll horizontally with the content when word wrap is off
 - Added sticky vertical scrolling behavior to "Lines x-y" separators in hunks view
 - Added timeout for git operations to prevent indefinite hangs
 - Added "Save credentials" checkbox when cloning a repository with credentials embedded in the URL
-- Fixed bug where diff viewer forced full mode for staged added files with unstaged changes
+- Fixed bug where diff viewer would force full mode for staged added files with unstaged changes
 - Improved styling consistency across diff viewer section headers (hunks and split view modes)
 - Fixed bug where stored keychain credentials could be used as fallback when user-provided credentials failed authentication
 - Fixed "Save credentials" checkbox not working when authenticating during clone operations - credentials are now properly saved when the option is selected
