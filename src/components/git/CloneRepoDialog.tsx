@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, MouseEventHandler, KeyboardEvent } from "react";
 import { FolderOpen } from "lucide-react";
 import { extractCredentialsFromUrl } from "@/lib/utils";
 import {
@@ -23,7 +23,7 @@ interface CloneRepoDialogProps {
   isLoading: boolean;
   fullClonePath: string;
   onCloneUrlChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onSelectDestination: () => void;
+  onSelectDestination: MouseEventHandler<HTMLButtonElement>;
   onConfirm: (saveCredentials: boolean) => void;
   onCancel: () => void;
 }
@@ -58,10 +58,10 @@ export const CloneRepoDialog = ({
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && !cloneUrlError && !isLoading) {
+  const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Enter" && !cloneUrlError && !isLoading) {
       onConfirm(hasEmbeddedCredentials && saveCredentials);
-    } else if (e.key === "Escape" && !isLoading) {
+    } else if (event.key === "Escape" && !isLoading) {
       onCancel();
     }
   };

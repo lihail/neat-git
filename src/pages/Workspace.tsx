@@ -1637,9 +1637,9 @@ export const Workspace = () => {
         onOpenNewRepo={() => setIsSelectingRepo(true)}
         onCreateBranch={handleCreateBranch}
         onStash={handleStash}
-        onFetch={handleFetch}
-        onPull={handlePull}
-        onPush={handlePush}
+        onFetch={() => handleFetch()}
+        onPull={() => handlePull()}
+        onPush={() => handlePush()}
         isLoading={isLoading}
         isFetching={isFetching}
         isPulling={isPulling}

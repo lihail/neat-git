@@ -8,7 +8,7 @@ import { CloneRepoDialog } from "./CloneRepoDialog";
 import { ActionCard } from "../common/ActionCard";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { useState, useEffect } from "react";
+import { useState, useEffect, MouseEventHandler } from "react";
 import { usePlatform } from "@/hooks/usePlatform";
 import { WINDOWS_AUTH_HINT_DELAY_MS } from "@/hooks/useWindowsAuthToast";
 import { toast } from "@/components/ui/toaster";
@@ -28,7 +28,7 @@ import packageJson from "../../../package.json";
 
 interface RepoSelectorProps {
   onSelectRepo: (path: string) => void;
-  onCancel?: () => void;
+  onCancel?: MouseEventHandler<HTMLButtonElement>;
 }
 
 export const RepoSelector = ({ onSelectRepo, onCancel }: RepoSelectorProps) => {

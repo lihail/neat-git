@@ -1,6 +1,7 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { ChangedFileList } from "./ChangedFileList";
+import { MouseEventHandler } from "react";
 
 export interface FileChange {
   path: string;
@@ -15,7 +16,7 @@ interface ChangesFilesSectionProps {
   repoPath: string;
   selectedFile?: string;
   selectedFileIsStaged?: boolean;
-  onAction: () => void;
+  onAction: MouseEventHandler<HTMLButtonElement>;
   onSelectFile: (path: string, isStaged: boolean) => void;
   onToggleStage: (path: string, shouldStage: boolean) => void;
   onDiscardChanges: (path: string) => void;

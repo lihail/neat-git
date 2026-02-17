@@ -7,6 +7,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { MouseEventHandler } from "react";
 
 interface ConfirmationDialogProps {
   open: boolean;
@@ -17,8 +18,8 @@ interface ConfirmationDialogProps {
   isProcessing: boolean;
   confirmLabel: string;
   processingLabel: string;
-  onConfirm: () => void;
-  onCancel: () => void;
+  onConfirm: MouseEventHandler<HTMLButtonElement>;
+  onCancel: MouseEventHandler<HTMLButtonElement>;
 }
 
 export const ConfirmationDialog = ({

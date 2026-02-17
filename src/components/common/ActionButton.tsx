@@ -1,11 +1,12 @@
 import { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { MouseEventHandler } from "react";
 
 interface ActionButtonProps {
   icon: LucideIcon;
   label: string;
-  onClick: () => void;
+  onClick: MouseEventHandler<HTMLButtonElement>;
   disabled?: boolean;
   iconClassName?: string;
 }

@@ -1,4 +1,4 @@
-import { Fragment, useState } from "react";
+import { Fragment, MouseEventHandler, useState } from "react";
 import { X, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
@@ -13,7 +13,7 @@ interface RepoTabsListProps {
   onSelectTab: (tabId: string) => void;
   onCloseTab: (tabId: string) => void;
   onReorderTabs: (newTabs: RepoTab[]) => void;
-  onOpenNewRepo: () => void;
+  onOpenNewRepo: MouseEventHandler<HTMLButtonElement>;
   isLoading?: boolean;
   isAnyRemoteOperationActive?: boolean;
 }

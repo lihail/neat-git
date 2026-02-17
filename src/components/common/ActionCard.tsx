@@ -1,6 +1,7 @@
 import { type LucideIcon } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { MouseEventHandler } from "react";
 
 interface ActionCardProps {
   icon: LucideIcon;
@@ -9,7 +10,7 @@ interface ActionCardProps {
   buttonText: string;
   buttonLoadingText?: string;
   isLoading?: boolean;
-  onClick: () => void;
+  onClick: MouseEventHandler<HTMLElement>;
 }
 
 export const ActionCard = ({

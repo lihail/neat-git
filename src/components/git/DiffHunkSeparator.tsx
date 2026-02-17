@@ -1,12 +1,13 @@
 import { Button } from "@/components/ui/button";
+import { MouseEventHandler } from "react";
 
 interface DiffHunkSeparatorProps {
   startLine: number;
   endLine: number;
   stickyHorizontal?: boolean;
   isStaged?: boolean;
-  onStageHunk?: () => void;
-  onUnstageHunk?: () => void;
+  onStageHunk?: MouseEventHandler<HTMLButtonElement>;
+  onUnstageHunk?: MouseEventHandler<HTMLButtonElement>;
 }
 
 export const DiffHunkSeparator = ({

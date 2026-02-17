@@ -1,5 +1,6 @@
 import { FileText } from "lucide-react";
 import { ChangesFilesSection, FileChange } from "./ChangesFilesSection";
+import { MouseEventHandler } from "react";
 
 interface ChangedFilesSidebarProps {
   files: FileChange[];
@@ -8,8 +9,8 @@ interface ChangedFilesSidebarProps {
   onSelectFile: (path: string, isStaged: boolean) => void;
   selectedFile?: string;
   selectedFileIsStaged?: boolean;
-  onStageAll: () => void;
-  onUnstageAll: () => void;
+  onStageAll: MouseEventHandler<HTMLButtonElement>;
+  onUnstageAll: MouseEventHandler<HTMLButtonElement>;
   onDiscardChanges: (path: string) => void;
 }
 

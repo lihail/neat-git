@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { MouseEventHandler } from "react";
 
 interface SshSetupDialogProps {
   open: boolean;
@@ -16,11 +17,11 @@ interface SshSetupDialogProps {
   sshHasExistingKeys: boolean;
   sshPublicKey: string;
   sshIsGenerating: boolean;
-  onUseExistingKey: () => void;
-  onGenerateSshKey: () => void;
-  onCopySshKey: () => void;
-  onRetryClone: () => void;
-  onCancel: () => void;
+  onUseExistingKey: MouseEventHandler<HTMLButtonElement>;
+  onGenerateSshKey: MouseEventHandler<HTMLButtonElement>;
+  onCopySshKey: MouseEventHandler<HTMLButtonElement>;
+  onRetryClone: MouseEventHandler<HTMLButtonElement>;
+  onCancel: MouseEventHandler<HTMLButtonElement>;
 }
 
 export const SshSetupDialog = ({
@@ -89,9 +90,7 @@ export const SshSetupDialog = ({
                 </>
               ) : (
                 <>
-                  <p className="text-sm">
-                    No SSH keys found in your SSH keys folder.
-                  </p>
+                  <p className="text-sm">No SSH keys found in your SSH keys folder.</p>
                   <p className="text-sm text-muted-foreground">
                     Generate a new SSH key to authenticate with Git services.
                   </p>

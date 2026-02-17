@@ -1,13 +1,13 @@
-import { useState } from "react";
+import { MouseEventHandler, useState } from "react";
 import { Download, Upload, RefreshCw, Archive, GitBranchPlus } from "lucide-react";
 import { ActionButton } from "../common/ActionButton";
 import { NewBranchDialog } from "./NewBranchDialog";
 
 interface GitActionsPanelProps {
-  onFetch: () => void;
-  onPull: () => void;
-  onPush: () => void;
-  onStash: () => void;
+  onFetch: MouseEventHandler<HTMLButtonElement>;
+  onPull: MouseEventHandler<HTMLButtonElement>;
+  onPush: MouseEventHandler<HTMLButtonElement>;
+  onStash: MouseEventHandler<HTMLButtonElement>;
   onCreateBranch: (branchName: string) => void;
   isLoading?: boolean;
   isFetching?: boolean;

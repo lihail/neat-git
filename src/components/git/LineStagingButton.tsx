@@ -1,9 +1,10 @@
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { MouseEventHandler } from "react";
 
 interface LineStagingButtonProps {
   isStaged?: boolean;
-  onClick: () => void;
+  onClick: MouseEventHandler<HTMLButtonElement>;
   sticky?: boolean;
 }
 

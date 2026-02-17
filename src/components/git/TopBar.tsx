@@ -2,6 +2,7 @@ import { GitActionsPanel } from "./GitActionsPanel";
 import { RepoTabsList } from "./RepoTabsList";
 import { Separator } from "@/components/ui/separator";
 import { SettingsDrawer } from "@/components/common/SettingsDrawer";
+import { MouseEventHandler } from "react";
 
 export interface RepoTab {
   id: string;
@@ -15,12 +16,12 @@ interface TopBarProps {
   onSelectTab: (tabId: string) => void;
   onCloseTab: (tabId: string) => void;
   onReorderTabs: (newTabs: RepoTab[]) => void;
-  onOpenNewRepo: () => void;
+  onOpenNewRepo: MouseEventHandler<HTMLButtonElement>;
   onCreateBranch: (branchName: string) => void;
-  onStash: () => void;
-  onFetch: () => void;
-  onPull: () => void;
-  onPush: () => void;
+  onStash: MouseEventHandler<HTMLButtonElement>;
+  onFetch: MouseEventHandler<HTMLButtonElement>;
+  onPull: MouseEventHandler<HTMLButtonElement>;
+  onPush: MouseEventHandler<HTMLButtonElement>;
   isLoading?: boolean;
   isFetching?: boolean;
   isPulling?: boolean;
