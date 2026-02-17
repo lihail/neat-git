@@ -564,10 +564,10 @@ export const RepoSelector = ({ onSelectRepo, onCancel }: RepoSelectorProps) => {
           open={showSshTrustDialog}
           onOpenChange={setShowSshTrustDialog}
           title="Trust SSH Host"
-          description="First time connecting to this host."
+          description="First time connecting to this host"
           isProcessing={sshIsTrusting}
           confirmLabel="Trust Host"
-          processingLabel="Trusting..."
+          processingLabel="Working..."
           onConfirm={handleTrustHost}
           onCancel={handleCancelTrustHost}
         >
