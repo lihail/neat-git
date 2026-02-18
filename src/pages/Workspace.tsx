@@ -1791,7 +1791,8 @@ export const Workspace = () => {
             You can't switch to this branch while you have uncommitted changes.
           </p>
           <p className="text-sm mt-2 text-muted-foreground">
-            Do you want to stash them and switch to branch <code>{branchToSwitchTo}</code>?
+            Do you want to stash them and switch to branch{" "}
+            <code className="font-semibold">{branchToSwitchTo}</code>?
           </p>
         </div>
       </ConfirmationDialog>
