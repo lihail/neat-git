@@ -2,7 +2,6 @@ import path from "node:path";
 import fs from "node:fs";
 import * as git from "isomorphic-git";
 import { execGitCommand } from "./dugiteService";
-import { listFilesRecursively } from "../utils/file";
 import { getCredentialHelperConfig, storeCredentials } from "../utils/credentialStore";
 import { isHttpRemote } from "../utils/url";
 import { getPlatform } from "../utils/platform";
