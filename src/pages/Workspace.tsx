@@ -1100,6 +1100,8 @@ export const Workspace = () => {
         await checkoutBranch(repoPath, branchToSwitchTo);
         toast.info(`Switched to branch: ${branchToSwitchTo}`);
 
+        setIsBranchSwitchConfirmationDialogOpen(false);
+
         // Refresh git status, commit history, branches, and stashes
         const statusList = await getStatus(repoPath);
         const commitHistory = await getCommitHistory(repoPath);
