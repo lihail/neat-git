@@ -830,13 +830,9 @@ export const commit = async (repoPath: string, message: string, description: str
     // Combine message and description
     const fullMessage = description ? `${message}\n\n${description}` : message;
 
-    // Get git config for author (use defaults if not set)
-    let authorName = "User";
-    let authorEmail = "user@example.com";
-
     const config = await readGlobalConfig();
-    authorName = config.userName || "User";
-    authorEmail = config.userEmail || "user@example.com";
+    const authorName = config.userName || "User";
+    const authorEmail = config.userEmail || "user@example.com";
 
     const sha = await git.commit({
       fs,
