@@ -5,6 +5,7 @@ import { execGitCommand } from "./dugiteService";
 import { getCredentialHelperConfig, storeCredentials } from "../utils/credentialStore";
 import { isHttpRemote } from "../utils/url";
 import { getPlatform } from "../utils/platform";
+import { isGitRepository } from "../utils/file";
 
 type FileStatus = {
   path: string;
@@ -115,8 +116,7 @@ export const listLocalBranches = async (repoPath: string) => {
       throw new Error(`Repository path does not exist: ${repoPath}`);
     }
 
-    const gitPath = path.join(repoPath, ".git");
-    if (!fs.existsSync(gitPath)) {
+    if (!isGitRepository(repoPath)) {
       throw new Error(`Not a valid Git repository: ${repoPath}`);
     }
 
@@ -277,8 +277,7 @@ export const listRemoteBranches = async (repoPath: string) => {
       throw new Error(`Repository path does not exist: ${repoPath}`);
     }
 
-    const gitPath = path.join(repoPath, ".git");
-    if (!fs.existsSync(gitPath)) {
+    if (!isGitRepository(repoPath)) {
       throw new Error(`Not a valid Git repository: ${repoPath}`);
     }
 
@@ -311,8 +310,7 @@ export const getStatus = async (repoPath: string) => {
       throw new Error(`Repository path does not exist: ${repoPath}`);
     }
 
-    const gitPath = path.join(repoPath, ".git");
-    if (!fs.existsSync(gitPath)) {
+    if (!isGitRepository(repoPath)) {
       throw new Error(`Not a valid Git repository: ${repoPath}`);
     }
 
@@ -2251,8 +2249,7 @@ export const fetch = async (
       };
     }
 
-    const gitPath = path.join(repoPath, ".git");
-    if (!fs.existsSync(gitPath)) {
+    if (!isGitRepository(repoPath)) {
       return {
         success: false,
         error: "Not a valid Git repository.",
@@ -2393,8 +2390,7 @@ export const push = async (
       };
     }
 
-    const gitPath = path.join(repoPath, ".git");
-    if (!fs.existsSync(gitPath)) {
+    if (!isGitRepository(repoPath)) {
       return {
         success: false,
         error: "Not a valid Git repository.",
@@ -2553,8 +2549,7 @@ const pull = async (
       };
     }
 
-    const gitPath = path.join(repoPath, ".git");
-    if (!fs.existsSync(gitPath)) {
+    if (!isGitRepository(repoPath)) {
       return {
         success: false,
         error: "Not a valid Git repository.",

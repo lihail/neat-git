@@ -1,6 +1,7 @@
 import { BrowserWindow, dialog } from "electron";
 import path from "node:path";
 import fs from "node:fs";
+import { isGitRepository } from "../utils/file";
 
 const openFolderDialog = async (
   win: BrowserWindow,
@@ -19,8 +20,7 @@ const openFolderDialog = async (
   const selectedPath = result.filePaths[0];
 
   if (validateGitRepository) {
-    const gitPath = path.join(selectedPath, ".git");
-    if (fs.existsSync(gitPath)) {
+    if (isGitRepository(selectedPath)) {
       return { success: true, path: selectedPath };
     }
     return { success: false, error: "Selected folder is not a Git repository" };

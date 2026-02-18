@@ -1,3 +1,5 @@
+import fs from "node:fs";
+import path from "node:path";
 import { getPlatform } from "./platform";
 
 export const getUserHomeFolder = () => {
@@ -9,4 +11,9 @@ export const getUserHomeFolder = () => {
     return process.env.HOME || "";
   }
   return "";
+};
+
+export const isGitRepository = (folderPath: string): boolean => {
+  const gitPath = path.join(folderPath, ".git");
+  return fs.existsSync(gitPath);
 };
