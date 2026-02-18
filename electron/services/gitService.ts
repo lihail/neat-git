@@ -185,7 +185,9 @@ export const listLocalBranches = async (repoPath: string) => {
           });
 
           // Try to resolve the remote tracking branch
-          const remoteBranchName = `refs/remotes/origin/${name}`;
+          const remoteBranchName = upstreamName
+            ? `refs/remotes/origin/${upstreamName}`
+            : `refs/remotes/origin/${name}`;
           try {
             const remoteOid = await git.resolveRef({
               fs,
