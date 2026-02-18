@@ -395,7 +395,7 @@ export const SidebarAccordion = ({
                       </div>
                     </TooltipTrigger>
                     {!branchHasUpstream && (
-                      <TooltipContent>
+                      <TooltipContent side="bottom">
                         <p>This branch is not tracking a remote branch</p>
                       </TooltipContent>
                     )}
