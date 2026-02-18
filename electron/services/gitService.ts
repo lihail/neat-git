@@ -1313,7 +1313,7 @@ export const stash = async (repoPath: string, message: string) => {
       });
     }
 
-    await git.stash({ fs, dir: repoPath, op: "push", message });
+    await execGitCommand(["stash", "push", "--include-untracked", "-m", message], repoPath);
 
     // Fix isomorphic-git's reflog entry (it has bugs with chaining and author format)
     const gitDir = path.join(repoPath, ".git");
