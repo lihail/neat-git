@@ -508,3 +508,12 @@ export const getRemoteUrl = async (
     throw error;
   }
 };
+
+export const doesRepoExist = async (repoPath: string): Promise<boolean> => {
+  try {
+    return await window.electronAPI.isGitRepository(repoPath);
+  } catch (error) {
+    console.error("Error checking repository existence:", error);
+    return false;
+  }
+};

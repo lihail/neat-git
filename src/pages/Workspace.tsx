@@ -42,6 +42,7 @@ import {
   pullNonCurrentBranch,
   push,
   getRemoteUrl,
+  doesRepoExist,
   type Branch,
   type DiffLine,
   type Commit,
@@ -232,6 +233,40 @@ export const Workspace = () => {
   const isRemoteOperationActive = isFetching || isPulling || isPushing;
 
   useWindowsAuthDialogToast(isRemoteOperationActive);
+
+  // Verify repository still exists when a tab is activated or on app load
+  useEffect(() => {
+    if (!repoPath) {
+      return;
+    }
+
+    let isCanceled = false;
+
+    const verifyRepo = async () => {
+      try {
+        const exists = await doesRepoExist(repoPath);
+        if (isCanceled) {
+          return;
+        }
+        if (!exists) {
+          toast.error("Repository not found");
+          const tab = tabs.find((t) => t.path === repoPath);
+          if (tab) {
+            handleCloseTab(tab.id);
+          }
+        }
+      } catch (error) {
+        console.error("Error verifying repository existence:", error);
+      }
+    };
+
+    verifyRepo();
+
+    return () => {
+      isCanceled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [repoPath, activeTabId, tabs]);
 
   // Helper to update state for a specific repo
   const updateRepoState = (path: string, updates: Partial<RepoState>) => {

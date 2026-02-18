@@ -30,6 +30,7 @@ export const IPC_CHANNELS = {
   GIT_CREATE_REPOSITORY: "git:createRepository",
   GIT_CLONE: "git:clone",
   GIT_GET_REMOTE_URL: "git:getRemoteUrl",
+  GIT_IS_REPOSITORY: "git:isRepository",
   GIT_FETCH: "git:fetch",
   GIT_PUSH: "git:push",
   GIT_PULL_CURRENT_BRANCH: "git:pullCurrentBranch",

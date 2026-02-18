@@ -140,6 +140,7 @@ export interface ElectronAPI {
     sshHostname?: string;
   }>;
   getRemoteUrl: (repoPath: string) => Promise<{ success: boolean; url?: string; error?: string }>;
+  isGitRepository: (repoPath: string) => Promise<boolean>;
   fetch: (
     repoPath: string,
     username?: string | null,

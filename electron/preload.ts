@@ -99,6 +99,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
       saveCredentials
     ),
   getRemoteUrl: (repoPath: string) => ipcRenderer.invoke(IPC_CHANNELS.GIT_GET_REMOTE_URL, repoPath),
+  isGitRepository: (repoPath: string) => ipcRenderer.invoke(IPC_CHANNELS.GIT_IS_REPOSITORY, repoPath),
   fetch: (
     repoPath: string,
     username?: string | null,

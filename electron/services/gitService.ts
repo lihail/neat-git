@@ -110,6 +110,15 @@ export const getCurrentBranch = async (repoPath: string) => {
   }
 };
 
+export const isRepository = async (repoPath: string) => {
+  try {
+    return isGitRepository(repoPath);
+  } catch (error) {
+    console.error("Error checking repository existence:", error);
+    return false;
+  }
+};
+
 export const listLocalBranches = async (repoPath: string) => {
   try {
     if (!fs.existsSync(repoPath)) {

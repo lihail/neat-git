@@ -5,6 +5,7 @@ import {
   getCurrentBranch,
   listLocalBranches,
   listRemoteBranches,
+  isRepository,
   getStatus,
   stageFile,
   stageAllFiles,
@@ -227,6 +228,10 @@ export const registerGitHandlers = () => {
 
   ipcMain.handle(IPC_CHANNELS.GIT_GET_REMOTE_URL, async (_, repoPath: string) => {
     return await getRemoteUrl(repoPath);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.GIT_IS_REPOSITORY, async (_, repoPath: string) => {
+    return await isRepository(repoPath);
   });
 
   ipcMain.handle(
