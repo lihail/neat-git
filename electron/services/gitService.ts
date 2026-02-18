@@ -1286,35 +1286,6 @@ export const stash = async (repoPath: string, message: string) => {
       return { success: false, message: "No changes to stash" };
     }
 
-    // Ensure git config has author info (isomorphic-git stash requires it)
-    const authorName = await git.getConfig({
-      fs,
-      dir: repoPath,
-      path: "user.name",
-    });
-    const authorEmail = await git.getConfig({
-      fs,
-      dir: repoPath,
-      path: "user.email",
-    });
-
-    if (!authorName) {
-      await git.setConfig({
-        fs,
-        dir: repoPath,
-        path: "user.name",
-        value: "User",
-      });
-    }
-    if (!authorEmail) {
-      await git.setConfig({
-        fs,
-        dir: repoPath,
-        path: "user.email",
-        value: "user@example.com",
-      });
-    }
-
     await execGitCommand(["stash", "push", "--include-untracked", "-m", message], repoPath);
 
     // Fix isomorphic-git's reflog entry (it has bugs with chaining and author format)
