@@ -46,13 +46,16 @@ const readGlobalConfig = async () => {
   };
 };
 
-const doesCurrentBranchHaveUpstream = async (repoPath: string) => {
+const getUpstreamNameOfCurrentBranch = async (repoPath: string): Promise<string | null> => {
   // This command fails if the branch has no upstream
   const result = await execGitCommand(
     ["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"],
     repoPath
   );
-  return result.success;
+  if (result.success) {
+    return result.output.trim();
+  }
+  return null;
 };
 
 export const getGlobalConfig = async () => {
@@ -682,8 +685,12 @@ export const renameBranch = async (
       ref: newName,
     });
 
-    // If also renaming remote, push new branch and delete old one using git CLI
-    if (alsoRenameRemote && upstreamBranch) {
+    if (!upstreamBranch) {
+      return { success: true };
+    }
+
+    if (alsoRenameRemote) {
+      // If also renaming remote, push new branch and delete old one using git CLI
       try {
         // Extract the actual remote branch name from upstream (e.g., "origin/feature-a" -> "feature-a")
         const remoteBranchName = upstreamBranch.includes("/")
@@ -719,7 +726,7 @@ export const renameBranch = async (
         console.error("Error renaming branch on remote:", remoteError);
         throw remoteError;
       }
-    } else if (upstreamBranch && !alsoRenameRemote) {
+    } else {
       // Not renaming on remote, just restore the existing upstream tracking
       const setUpstreamResult = await execGitCommand(
         ["branch", `--set-upstream-to=${upstreamBranch}`, newName],
@@ -2455,17 +2462,20 @@ export const push = async (
       };
     }
     const remoteUrl = remoteResult.output.trim();
-
     const isHttpUrl = isHttpRemote(remoteUrl);
 
-    const pushArgs: string[] = [];
+    let upstreamBranchName = await getUpstreamNameOfCurrentBranch(repoPath);
+    if (upstreamBranchName) {
+      upstreamBranchName = upstreamBranchName.replace(/^origin\//, "");
+    }
 
+    const pushArgs: string[] = [];
     const credentialConfig = getCredentialHelperConfig(isHttpUrl, username, password);
     pushArgs.push(...credentialConfig.args);
     pushArgs.push("push");
-
-    const branchHasUpstream = await doesCurrentBranchHaveUpstream(repoPath);
-    if (!branchHasUpstream) {
+    if (upstreamBranchName) {
+      pushArgs.push(...["origin", `HEAD:${upstreamBranchName}`]);
+    } else {
       pushArgs.push(...["--set-upstream", "origin", "HEAD"]);
     }
 
