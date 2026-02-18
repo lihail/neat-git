@@ -46,6 +46,15 @@ const readGlobalConfig = async () => {
   };
 };
 
+const doesCurrentBranchHaveUpstream = async (repoPath: string) => {
+  // This command fails if the branch has no upstream
+  const result = await execGitCommand(
+    ["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"],
+    repoPath
+  );
+  return result.success;
+};
+
 export const getGlobalConfig = async () => {
   try {
     const config = await readGlobalConfig();
@@ -2455,6 +2464,11 @@ export const push = async (
     pushArgs.push(...credentialConfig.args);
     pushArgs.push("push");
 
+    const branchHasUpstream = await doesCurrentBranchHaveUpstream(repoPath);
+    if (!branchHasUpstream) {
+      pushArgs.push(...["--set-upstream", "origin", "HEAD"]);
+    }
+
     const pushResult = await execGitCommand(pushArgs, repoPath, credentialConfig.env);
 
     if (pushResult.success && isHttpUrl && username && password && saveCredentials) {
@@ -2537,8 +2551,6 @@ export const push = async (
       } else {
         cleanError = "Push rejected. The remote may have changes or you may need to pull first.";
       }
-    } else if (lowerError.includes("no upstream") || lowerError.includes("no tracking")) {
-      cleanError = "No upstream branch configured. Use 'git push --set-upstream' first.";
     } else {
       // Extract the actual error message
       const lines = errorMessage.split("\n");
