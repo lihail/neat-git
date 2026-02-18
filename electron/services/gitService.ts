@@ -319,9 +319,10 @@ export const getStatus = async (repoPath: string) => {
 
     // Use git status --porcelain=v2 for rename detection
     // -M flag enables rename detection with default 50% similarity threshold
+    // -uall shows each untracked file, separately, not just directory names
     // -c core.fileMode=false ignores permission-only changes
     const statusResult = await execGitCommand(
-      ["-c", "core.fileMode=false", "status", "--porcelain=v2", "-M"],
+      ["-c", "core.fileMode=false", "status", "--porcelain=v2", "-M", "-uall"],
       repoPath
     );
     if (!statusResult.success) {
@@ -428,30 +429,14 @@ export const getStatus = async (repoPath: string) => {
           unstagedStatus,
         });
       } else if (line.startsWith("? ")) {
-        // Untracked file or directory
+        // Untracked file
         const filePath = line.slice(2);
-
-        // Check if this is a directory
-        if (filePath.endsWith("/")) {
-          // Recursively list all files within it
-          const dirPath = path.join(repoPath, filePath);
-          const untrackedFiles = listFilesRecursively(dirPath, filePath);
-          for (const untrackedFile of untrackedFiles) {
-            fileMap.set(untrackedFile, {
-              path: untrackedFile,
-              status: "added",
-              hasStaged: false,
-              hasUnstaged: true,
-            });
-          }
-        } else {
-          fileMap.set(filePath, {
-            path: filePath,
-            status: "added",
-            hasStaged: false,
-            hasUnstaged: true,
-          });
-        }
+        fileMap.set(filePath, {
+          path: filePath,
+          status: "added",
+          hasStaged: false,
+          hasUnstaged: true,
+        });
       }
     }
 
