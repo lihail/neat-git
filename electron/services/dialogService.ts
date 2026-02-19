@@ -1,6 +1,4 @@
 import { BrowserWindow, dialog } from "electron";
-import path from "node:path";
-import fs from "node:fs";
 import { isGitRepository } from "../utils/file";
 
 const openFolderDialog = async (

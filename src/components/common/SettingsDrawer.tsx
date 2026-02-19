@@ -2,28 +2,28 @@ import { useState, useEffect, useRef } from "react";
 import { HandHeart, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+// import {
+//   Select,
+//   SelectContent,
+//   SelectItem,
+//   SelectTrigger,
+//   SelectValue,
+// } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { getGlobalConfig, setGlobalConfig } from "@/lib/git";
-import { themes, type ThemeId } from "@/lib/themes";
-import { useTheme } from "@/hooks/useTheme";
+// import { themes, type ThemeId } from "@/lib/themes";
+// import { useTheme } from "@/hooks/useTheme";
 import { toast } from "@/components/ui/toaster";
 import { SupportNeatGitDialog } from "./SupportNeatGitDialog";
 
-const themeIds = Object.keys(themes) as ThemeId[];
+// const themeIds = Object.keys(themes) as ThemeId[];
 
 export const SettingsDrawer = () => {
   const [open, setOpen] = useState(false);
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
-  const { themeId, setThemeId } = useTheme();
+  // const { themeId, setThemeId } = useTheme();
   const [loading, setLoading] = useState(false);
   const [isSupportNeatGitDialogOpen, setIsSupportNeatGitDialogOpen] = useState(false);
 
