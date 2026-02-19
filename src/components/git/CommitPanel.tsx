@@ -33,8 +33,8 @@ export const CommitPanel = ({ stagedFilesCount, onCommit }: CommitPanelProps) =>
         disabled={!message.trim() || stagedFilesCount === 0}
         className="w-full gap-2"
       >
-        <GitCommit className="h-4 w-4" />
         Commit
+        <GitCommit className="h-4 w-4" />
       </Button>
     </div>
   );
