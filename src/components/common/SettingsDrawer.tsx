@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Settings } from "lucide-react";
+import { HandHeart, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -15,6 +15,7 @@ import { getGlobalConfig, setGlobalConfig } from "@/lib/git";
 import { themes, type ThemeId } from "@/lib/themes";
 import { useTheme } from "@/hooks/useTheme";
 import { toast } from "@/components/ui/toaster";
+import { SupportNeatGitDialog } from "./SupportNeatGitDialog";
 
 const themeIds = Object.keys(themes) as ThemeId[];
 
@@ -24,6 +25,7 @@ export const SettingsDrawer = () => {
   const [userEmail, setUserEmail] = useState("");
   const { themeId, setThemeId } = useTheme();
   const [loading, setLoading] = useState(false);
+  const [isSupportNeatGitDialogOpen, setIsSupportNeatGitDialogOpen] = useState(false);
 
   // Track the last saved values to avoid unnecessary writes
   const savedValues = useRef({ userName: "", userEmail: "" });
@@ -100,12 +102,12 @@ export const SettingsDrawer = () => {
       </Tooltip>
 
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="right">
+        <SheetContent side="right" className="flex flex-col h-full">
           <SheetHeader>
             <SheetTitle>Settings</SheetTitle>
           </SheetHeader>
 
-          <div className="mt-6 space-y-8">
+          <div className="mt-6 space-y-8 flex-1 overflow-y-auto">
             {/* <section className="space-y-3">
               <h3 className="text-sm font-medium text-foreground">Appearance</h3>
               <div className="flex items-center gap-4">
@@ -180,8 +182,25 @@ export const SettingsDrawer = () => {
               )}
             </section>
           </div>
+          <section className="mt-auto">
+            <div className="pt-4 border-t">
+              <Button
+                variant="default"
+                onClick={() => setIsSupportNeatGitDialogOpen(true)}
+                className="w-full"
+              >
+                Support NeatGit
+                <HandHeart className="h-4 w-4" />
+              </Button>
+            </div>
+          </section>
         </SheetContent>
       </Sheet>
+
+      <SupportNeatGitDialog
+        open={isSupportNeatGitDialogOpen}
+        onOpenChange={setIsSupportNeatGitDialogOpen}
+      />
     </>
   );
 };
