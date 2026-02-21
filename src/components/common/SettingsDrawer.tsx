@@ -22,6 +22,7 @@ import { getGlobalConfig, setGlobalConfig } from "@/lib/git";
 // import { useTheme } from "@/hooks/useTheme";
 import { toast } from "@/components/ui/toaster";
 import { SupportNeatGitDialog } from "./SupportNeatGitDialog";
+import { Separator } from "../ui/separator";
 
 // const themeIds = Object.keys(themes) as ThemeId[];
 
@@ -190,7 +191,8 @@ export const SettingsDrawer = () => {
             </section>
           </div>
           <section className="mt-auto">
-            <div className="pt-4 border-t">
+            <Separator orientation="horizontal" className="w-full" />
+            <div className="pt-4">
               <Button
                 variant="default"
                 onClick={() => setIsSupportNeatGitDialogOpen(true)}
