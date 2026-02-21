@@ -10,7 +10,13 @@ import { Input } from "@/components/ui/input";
 //   SelectValue,
 // } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { getGlobalConfig, setGlobalConfig } from "@/lib/git";
 // import { themes, type ThemeId } from "@/lib/themes";
 // import { useTheme } from "@/hooks/useTheme";
@@ -105,6 +111,7 @@ export const SettingsDrawer = () => {
         <SheetContent side="right" className="flex flex-col h-full">
           <SheetHeader>
             <SheetTitle>Settings</SheetTitle>
+            <SheetDescription>Application preferences</SheetDescription>
           </SheetHeader>
 
           <div className="mt-6 space-y-8 flex-1 overflow-y-auto">
