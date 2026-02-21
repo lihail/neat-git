@@ -62,7 +62,7 @@ export const GitActionsPanel = ({
 
         {isLoading || !hasUncommittedChanges ? (
           <Tooltip delayDuration={0}>
-            <TooltipTrigger disabled>
+            <TooltipTrigger asChild>
               <ActionButton icon={Archive} label="Stash" onClick={onStash} disabled />
             </TooltipTrigger>
             <TooltipContent side="bottom">

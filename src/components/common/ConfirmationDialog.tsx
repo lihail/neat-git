@@ -13,7 +13,7 @@ interface ConfirmationDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   title: string;
-  description?: string;
+  description: string;
   children?: React.ReactNode;
   isProcessing: boolean;
   confirmLabel: string;
@@ -45,7 +45,7 @@ export const ConfirmationDialog = ({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
-          {description && <DialogDescription>{description}</DialogDescription>}
+          <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
 
         {children && <div className="space-y-4 py-4">{children}</div>}
