@@ -440,25 +440,10 @@ export const getStatus = async (repoPath: string) => {
 
 export const stageFile = async (repoPath: string, filepath: string) => {
   try {
-    // Check if the file exists in the working directory
-    const fullPath = path.join(repoPath, filepath);
-    const fileExists = fs.existsSync(fullPath);
+    const stageResult = await execGitCommand(["add", "--", filepath], repoPath);
 
-    if (!fileExists) {
-      // File was deleted - stage the deletion using git.remove
-      // This removes the file from the index (stages the deletion)
-      await git.remove({
-        fs,
-        dir: repoPath,
-        filepath,
-      });
-    } else {
-      // File exists - stage normally
-      await git.add({
-        fs,
-        dir: repoPath,
-        filepath,
-      });
+    if (!stageResult.success) {
+      throw new Error(`Failed to stage file: ${stageResult.error.message}`);
     }
 
     return { success: true };
@@ -470,34 +455,10 @@ export const stageFile = async (repoPath: string, filepath: string) => {
 
 export const stageAllFiles = async (repoPath: string) => {
   try {
-    const statusMatrix = await git.statusMatrix({
-      fs,
-      dir: repoPath,
-    });
+    const stageResult = await execGitCommand(["add", "--all"], repoPath);
 
-    for (const [filepath, _head, workdir, stage] of statusMatrix) {
-      // Check if the file has unstaged changes (workdir !== stage)
-      // workdir=0 means deleted, workdir=2 means modified/new
-      if (workdir !== stage) {
-        const fullPath = path.join(repoPath, filepath);
-        const fileExists = fs.existsSync(fullPath);
-
-        if (!fileExists) {
-          // File was deleted - stage the deletion using git.remove
-          await git.remove({
-            fs,
-            dir: repoPath,
-            filepath,
-          });
-        } else {
-          // File exists - stage normally
-          await git.add({
-            fs,
-            dir: repoPath,
-            filepath,
-          });
-        }
-      }
+    if (!stageResult.success) {
+      throw new Error(`Failed to stage all files: ${stageResult.error.message}`);
     }
 
     return { success: true };
@@ -512,32 +473,27 @@ export const unstageChange = async (
   filepath: string,
   oldFilePath: string | null
 ) => {
+  const paths = oldFilePath ? [filepath, oldFilePath] : [filepath];
   try {
-    const paths = oldFilePath ? [filepath, oldFilePath] : [filepath];
-    await Promise.all(paths.map((path) => git.resetIndex({ fs, dir: repoPath, filepath: path })));
+    const unstageResult = await execGitCommand(["reset", "HEAD", "--", ...paths], repoPath);
+
+    if (!unstageResult.success) {
+      throw new Error(`Failed to unstage change: ${unstageResult.error.message}`);
+    }
+
     return { success: true };
   } catch (error) {
-    console.error("Error unstaging change:", error);
+    console.error(`Error unstaging change in paths ${paths.join(", ")}:`, error);
     throw error;
   }
 };
 
 export const unstageAllFiles = async (repoPath: string) => {
   try {
-    const statusMatrix = await git.statusMatrix({
-      fs,
-      dir: repoPath,
-    });
+    const unstageResult = await execGitCommand(["reset", "HEAD"], repoPath);
 
-    for (const [filepath, head, _workdir, stage] of statusMatrix) {
-      // Check if the file is staged (stage !== head or stage === 2)
-      if (stage === 2 || (stage !== head && stage !== 1)) {
-        await git.resetIndex({
-          fs,
-          dir: repoPath,
-          filepath,
-        });
-      }
+    if (!unstageResult.success) {
+      throw new Error(`Failed to unstage all files: ${unstageResult.error.message}`);
     }
 
     return { success: true };
