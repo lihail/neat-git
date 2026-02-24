@@ -4,7 +4,7 @@ import { ChangedFileList } from "./ChangedFileList";
 import { MouseEventHandler } from "react";
 import { FileChange } from "@/types/git";
 
-interface ChangesFilesSectionProps {
+interface ChangedFilesSectionProps {
   files: FileChange[];
   isStaged: boolean;
   repoPath: string;
@@ -16,7 +16,7 @@ interface ChangesFilesSectionProps {
   onDiscardChanges: (path: string) => void;
 }
 
-export const ChangesFilesSection = ({
+export const ChangedFilesSection = ({
   files,
   isStaged,
   repoPath,
@@ -26,7 +26,7 @@ export const ChangesFilesSection = ({
   onSelectFile,
   onToggleStage,
   onDiscardChanges,
-}: ChangesFilesSectionProps) => {
+}: ChangedFilesSectionProps) => {
   return (
     <div className={`flex flex-1 flex-col min-h-0${isStaged ? "" : " border-b border-border"}`}>
       <div className="border-b border-border px-4 py-2 flex items-center justify-between bg-secondary/40">

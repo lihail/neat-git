@@ -1,5 +1,5 @@
 import { FileText } from "lucide-react";
-import { ChangesFilesSection } from "./ChangesFilesSection";
+import { ChangedFilesSection } from "./ChangedFilesSection";
 import { MouseEventHandler } from "react";
 import { FileChange } from "@/types/git";
 
@@ -40,7 +40,7 @@ export const ChangedFilesSidebar = ({
         </h2>
       </div>
 
-      <ChangesFilesSection
+      <ChangedFilesSection
         files={unstagedFiles}
         isStaged={false}
         repoPath={repoPath}
@@ -52,7 +52,7 @@ export const ChangedFilesSidebar = ({
         onDiscardChanges={onDiscardChanges}
       />
 
-      <ChangesFilesSection
+      <ChangedFilesSection
         files={stagedFiles}
         isStaged={true}
         repoPath={repoPath}
