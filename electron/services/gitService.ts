@@ -6,15 +6,7 @@ import { getCredentialHelperConfig, storeCredentials } from "../utils/credential
 import { isHttpRemote } from "../utils/url";
 import { getPlatform } from "../utils/platform";
 import { isGitRepository } from "../utils/file";
-
-type FileStatus = {
-  path: string;
-  status: "modified" | "added" | "deleted";
-  hasStaged: boolean;
-  hasUnstaged: boolean;
-  stagedOldPath?: string;
-  unstagedStatus?: "modified" | "added" | "deleted";
-};
+import type { FileChange } from '../../src/types/electron';
 
 type DiffLineInfo = {
   type: string;
@@ -336,7 +328,7 @@ export const getStatus = async (repoPath: string) => {
     }
     const statusOutput = statusResult.output;
 
-    const fileMap = new Map<string, FileStatus>();
+    const fileMap = new Map<string, FileChange>();
 
     const lines = statusOutput.trim().split("\n").filter(Boolean);
 
