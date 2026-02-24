@@ -14,7 +14,7 @@ export interface FileChange {
   status: "modified" | "added" | "deleted";
   hasStaged: boolean;
   hasUnstaged: boolean;
-  oldPath?: string;
+  stagedOldPath?: string;
   unstagedStatus?: "modified" | "added" | "deleted";
 }
 

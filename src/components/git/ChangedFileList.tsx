@@ -22,7 +22,7 @@ const getStatusIcon = (file: FileChange, isStaged: boolean) => {
   const effectiveStatus = !isStaged && file.unstagedStatus ? file.unstagedStatus : file.status;
 
   // Show as rename only in staged section (renames are always staged)
-  const showAsRename = file.oldPath && isStaged;
+  const showAsRename = file.stagedOldPath && isStaged;
 
   if (effectiveStatus === "modified") {
     return <FileEdit className="h-4 w-4 flex-shrink-0 text-git-modify" />;
@@ -105,9 +105,11 @@ export const ChangedFileList = ({
                   <div className="flex items-center gap-2 flex-1 min-w-0">
                     {getStatusIcon(file, isStaged)}
                     {/* Show rename format only in staged section (renames are always staged) */}
-                    {file.oldPath && isStaged ? (
+                    {file.stagedOldPath && isStaged ? (
                       <span className="truncate font-mono text-xs">
-                        <span className="text-muted-foreground">{getFileName(file.oldPath)}</span>
+                        <span className="text-muted-foreground">
+                          {getFileName(file.stagedOldPath)}
+                        </span>
                         <span className="text-primary mx-1">→</span>
                         <span>{getFileName(file.path)}</span>
                       </span>

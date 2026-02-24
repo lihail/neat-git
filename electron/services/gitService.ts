@@ -12,7 +12,7 @@ type FileStatus = {
   status: "modified" | "added" | "deleted";
   hasStaged: boolean;
   hasUnstaged: boolean;
-  oldPath?: string;
+  stagedOldPath?: string;
   unstagedStatus?: "modified" | "added" | "deleted";
 };
 
@@ -431,7 +431,7 @@ export const getStatus = async (repoPath: string) => {
           status,
           hasStaged,
           hasUnstaged,
-          oldPath: oldFilePath,
+          stagedOldPath: oldFilePath,
           unstagedStatus,
         });
       } else if (line.startsWith("? ")) {
