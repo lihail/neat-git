@@ -401,7 +401,7 @@ export const getStatus = async (repoPath: string) => {
         const xy = parts[1];
         const renameInfo = parts[8]; // e.g., "R100" or "R095"
         const pathPart = parts.slice(9).join(" ");
-        const [newFilePath, oldFilePath] = pathPart.split("\t");
+        const [newFilePath, stagedOldFilePath] = pathPart.split("\t");
 
         const stagedCode = xy[0];
         const unstagedCode = xy[1];
@@ -431,7 +431,7 @@ export const getStatus = async (repoPath: string) => {
           status,
           hasStaged,
           hasUnstaged,
-          stagedOldPath: oldFilePath,
+          stagedOldPath: stagedOldFilePath,
           unstagedStatus,
         });
       } else if (line.startsWith("? ")) {
