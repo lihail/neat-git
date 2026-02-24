@@ -20,7 +20,7 @@
     "preview": "vite preview",
     "electron:build:ts": "node scripts/build-electron.js",
     "electron": "npm run electron:build:ts && wait-on tcp:8080 && cross-env NODE_ENV=development ELECTRON=true electron .",
-    "electron:dev": "concurrently --kill-others-on-fail --kill-others \"cross-env NODE_ENV=development ELECTRON=true vite\" \"npm run electron:build:ts && wait-on tcp:8080 && cross-env NODE_ENV=development ELECTRON=true electron .\"",
+    "electron:dev": "concurrently --kill-others-on-fail --kill-others \"cross-env NODE_ENV=development ELECTRON=true vite\" \"cross-env NODE_ENV=development npm run electron:build:ts && wait-on tcp:8080 && cross-env NODE_ENV=development ELECTRON=true electron . --inspect=9229\"",
     "electron:build": "npm run lint && npm run electron:build:ts && cross-env ELECTRON=true npm run build && electron-builder",
     "electron:build:win": "npm run lint && npm run electron:build:ts && cross-env ELECTRON=true npm run build && electron-builder --win",
     "electron:build:mac": "npm run lint && npm run electron:build:ts && cross-env ELECTRON=true npm run build && electron-builder --mac",

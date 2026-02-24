@@ -4,7 +4,9 @@
 
 A modern, beautiful, cross-platform Git client built with Electron, React and TypeScript, available as a native desktop app for Windows and macOS.
 
-⚠️ **Note** ⚠️: NeatGit is currently in early development, and a stable version hasn't been released yet. More features and bug fixes to come soon. Use the app with caution, and please report any bug you encounter by opening an issue.
+## Note ⚠️
+
+NeatGit is currently in early development, and a stable version hasn't been released yet - more features and bug fixes to come soon. Use the app with caution (data loss might occur!), and please report any bug you encounter by opening an issue.
 
 ## Features
 
@@ -21,8 +23,6 @@ A modern, beautiful, cross-platform Git client built with Electron, React and Ty
 - Manage stashes
 
 ...all wrapped in a user friendly UI.
-
-Quick demos:
 
 <img src="demo-gifs/clone.gif" alt="Clone repo demo" height="400">
 <img src="demo-gifs/switch branch, pull, push.gif" alt="Switch branch demo" height="400">
@@ -72,6 +72,16 @@ npm start
 
 Running `npm start` will open the app in Electron with hot reload enabled, allowing you to see changes instantly as you develop (unless they are in the electron backend, which requires an app restart).
 
+### Electron Backend Debugging
+
+To debug the Electron main process (backend code in `electron`):
+
+1. Set breakpoints in the backend wherever you want.
+2. Run `npm start`.
+3. In VS Code or Cursor, open the Run and Debug panel, select the "Attach to Electron Backend" configuration, and click the green play button to attach the debugger.
+
+The code should now stop at the breakpoints.
+
 ### Creating a Release
 
 1. If the icon was changed (`public/icon.svg`), run the following command. Otherwise, skip this step:
@@ -104,7 +114,7 @@ git push origin <version>
 
 4. Create a release the [releases page](https://github.com/lihail/neat-git/releases) and upload the built applications to that page.
 
-## Issues and Bugs
+## Issues & Bugs
 
 Please submit any issue or bug reports on the [issues page](https://github.com/lihail/neat-git/issues).
 
