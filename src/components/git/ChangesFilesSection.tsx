@@ -2,13 +2,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { ChangedFileList } from "./ChangedFileList";
 import { MouseEventHandler } from "react";
-
-export interface FileChange {
-  path: string;
-  status: "added" | "deleted" | "modified";
-  hasStaged: boolean;
-  hasUnstaged: boolean;
-}
+import { FileChange } from "@/types/git";
 
 interface ChangesFilesSectionProps {
   files: FileChange[];

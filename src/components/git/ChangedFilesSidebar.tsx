@@ -1,6 +1,7 @@
 import { FileText } from "lucide-react";
-import { ChangesFilesSection, FileChange } from "./ChangesFilesSection";
+import { ChangesFilesSection } from "./ChangesFilesSection";
 import { MouseEventHandler } from "react";
+import { FileChange } from "@/types/git";
 
 interface ChangedFilesSidebarProps {
   files: FileChange[];
