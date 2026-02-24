@@ -1350,41 +1350,42 @@ export const Workspace = () => {
       return;
     }
 
-    // Check if we're selecting the same file in a different section
-    const isSameFileNewSection =
-      currentState.selectedFile === filePath && currentState.selectedFileIsStaged !== isStaged;
-
-    // Find the file to get oldPath for renamed files
-    const fileData = currentState.files.find((f) => f.path === filePath);
-    // Only use oldPath when viewing staged (renames are always staged)
-    const effectiveOldPath = isStaged ? fileData?.stagedOldPath : undefined;
-
     // Update selection state
     updateRepoState(repoPath, {
       selectedFile: filePath,
       selectedFileIsStaged: isStaged,
     });
 
-    // If same file but different section, manually reload the diff
-    if (isSameFileNewSection) {
-      setLoadingDiff(true);
-      try {
-        const diff = await getDiff(
-          repoPath,
-          filePath,
-          isStaged,
-          getContextLinesForMode(diffViewerMode),
-          effectiveOldPath
-        );
-        updateRepoState(repoPath, { diffLines: diff });
-      } catch (error) {
-        console.error("Error loading diff:", error);
-        toast.error("Failed to load diff", {
-          description: error instanceof Error ? error.message : "Unknown error",
-        });
-      } finally {
-        setLoadingDiff(false);
-      }
+    const isSameFileSelectedInDifferentSection =
+      currentState.selectedFile === filePath && currentState.selectedFileIsStaged !== isStaged;
+
+    if (!isSameFileSelectedInDifferentSection) {
+      return;
+    }
+
+    // If same file but different section, or a different file, reload the diff
+
+    setLoadingDiff(true);
+    // Find the file to get staged old path for renamed files
+    const fileData = currentState.files.find((f) => f.path === filePath);
+    // Only use stagedOldPath when viewing staged (renames are always staged)
+    const effectiveOldPath = isStaged ? fileData?.stagedOldPath : undefined;
+    try {
+      const diff = await getDiff(
+        repoPath,
+        filePath,
+        isStaged,
+        getContextLinesForMode(diffViewerMode),
+        effectiveOldPath
+      );
+      updateRepoState(repoPath, { diffLines: diff });
+    } catch (error) {
+      console.error("Error loading diff:", error);
+      toast.error("Failed to load diff", {
+        description: error instanceof Error ? error.message : "Unknown error",
+      });
+    } finally {
+      setLoadingDiff(false);
     }
   };
 

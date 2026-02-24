@@ -14,7 +14,7 @@ interface DiffViewerProps {
   filePath?: string;
   oldFilePath?: string;
   lines: DiffLine[];
-  fileStatus?: "modified" | "added" | "deleted";
+  fileStatus?: "modified" | "added" | "deleted" | "renamed-only";
   isStaged?: boolean;
   isLoading?: boolean;
   wordWrap?: boolean;
@@ -96,9 +96,8 @@ export const DiffViewer = ({
     );
   }
 
+  const isPureRename = fileStatus === "renamed-only";
   const isEmptyFile = lines.length === 0 || lines.every((line) => line.content.trim() === "");
-
-  const isPureRename = oldFilePath && fileStatus === "added";
 
   return (
     <div className="flex h-full flex-col relative">

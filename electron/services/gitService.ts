@@ -6,7 +6,7 @@ import { getCredentialHelperConfig, storeCredentials } from "../utils/credential
 import { isHttpRemote } from "../utils/url";
 import { getPlatform } from "../utils/platform";
 import { isGitRepository } from "../utils/file";
-import type { FileChange } from '../../src/types/electron';
+import type { FileChange } from "../../src/types/electron";
 
 type DiffLineInfo = {
   type: string;
@@ -326,11 +326,10 @@ export const getStatus = async (repoPath: string) => {
     if (!statusResult.success) {
       throw new Error(`git status failed: ${statusResult.error.message}`);
     }
-    const statusOutput = statusResult.output;
 
     const fileMap = new Map<string, FileChange>();
 
-    const lines = statusOutput.trim().split("\n").filter(Boolean);
+    const lines = statusResult.output.trim().split("\n").filter(Boolean);
 
     for (const line of lines) {
       // Porcelain v2 format:
@@ -349,7 +348,6 @@ export const getStatus = async (repoPath: string) => {
         const hasStaged = stagedCode !== ".";
         const hasUnstaged = unstagedCode !== ".";
 
-        // Determine staged status based on staged code
         let status: "modified" | "added" | "deleted";
         if (stagedCode === "D") {
           status = "deleted";
@@ -358,7 +356,6 @@ export const getStatus = async (repoPath: string) => {
         } else if (stagedCode === "M" || stagedCode === "T") {
           status = "modified";
         } else {
-          // Fallback for when there's no staged change - use unstaged code
           if (unstagedCode === "D") {
             status = "deleted";
           } else if (unstagedCode === "A") {
@@ -368,14 +365,13 @@ export const getStatus = async (repoPath: string) => {
           }
         }
 
-        // Determine unstaged status if there are unstaged changes
         let unstagedStatus: "modified" | "added" | "deleted" | undefined;
         if (hasUnstaged) {
           if (unstagedCode === "D") {
             unstagedStatus = "deleted";
           } else if (unstagedCode === "A") {
             unstagedStatus = "added";
-          } else if (unstagedCode === "M" || unstagedCode === "T") {
+          } else {
             unstagedStatus = "modified";
           }
         }
@@ -400,21 +396,18 @@ export const getStatus = async (repoPath: string) => {
         const hasStaged = stagedCode !== ".";
         const hasUnstaged = unstagedCode !== ".";
 
-        // Staged status: based on rename similarity
-        // - If similarity < 100%, the rename included content changes → "modified"
-        // - Otherwise it's a pure rename → "added"
         const similarity = parseInt(renameInfo.slice(1), 10);
-        const status: "modified" | "added" | "deleted" = similarity === 100 ? "added" : "modified";
+        const status = similarity === 100 ? "renamed-only" : "modified";
 
-        // Unstaged status: based on unstaged code (only if there are unstaged changes)
         let unstagedStatus: "modified" | "added" | "deleted" | undefined;
+
         if (hasUnstaged) {
           if (unstagedCode === "D") {
             unstagedStatus = "deleted";
-          } else if (unstagedCode === "M") {
-            unstagedStatus = "modified";
           } else if (unstagedCode === "A") {
             unstagedStatus = "added";
+          } else {
+            unstagedStatus = "modified";
           }
         }
 
@@ -467,9 +460,10 @@ export const stageFile = async (repoPath: string, filepath: string) => {
         filepath,
       });
     }
+
     return { success: true };
   } catch (error) {
-    console.error("Error staging file:", error);
+    console.error(`Error staging file in path ${filepath}:`, error);
     throw error;
   }
 };
@@ -548,7 +542,7 @@ export const unstageAllFiles = async (repoPath: string) => {
 
     return { success: true };
   } catch (error) {
-    console.error("Error resetting HEAD:", error);
+    console.error("Error unstaging all files:", error);
     throw error;
   }
 };

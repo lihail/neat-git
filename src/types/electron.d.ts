@@ -11,11 +11,11 @@ export interface Branch {
 
 export interface FileChange {
   path: string;
-  status: "modified" | "added" | "deleted";
+  status: "modified" | "added" | "deleted" | "renamed-only";
+  unstagedStatus?: "modified" | "added" | "deleted" | "renamed-only";
   hasStaged: boolean;
   hasUnstaged: boolean;
   stagedOldPath?: string;
-  unstagedStatus?: "modified" | "added" | "deleted";
 }
 
 export interface Commit {
