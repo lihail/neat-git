@@ -18,7 +18,7 @@ export const SupportNeatGitDialog = ({ open, onOpenChange }: SupportNeatGitDialo
         <DialogHeader>
           <DialogTitle>Support NeatGit</DialogTitle>
           <DialogDescription>
-            Support the development by donating to the developer via Ko-fi. Thank you for
+            Support the app by donating to the developer via Ko-fi. Thank you for
             considering a donation!
           </DialogDescription>
         </DialogHeader>
