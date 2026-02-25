@@ -9,7 +9,7 @@ interface ChangedFilesSectionProps {
   isStaged: boolean;
   repoPath: string;
   selectedFile?: string;
-  selectedFileIsStaged?: boolean;
+  isSelectedFileChangeStaged?: boolean;
   onAction: MouseEventHandler<HTMLButtonElement>;
   onSelectFile: (path: string, isStaged: boolean) => void;
   onToggleStage: (path: string, shouldStage: boolean) => void;
@@ -21,7 +21,7 @@ export const ChangedFilesSection = ({
   isStaged,
   repoPath,
   selectedFile,
-  selectedFileIsStaged,
+  isSelectedFileChangeStaged,
   onAction,
   onSelectFile,
   onToggleStage,
@@ -53,7 +53,7 @@ export const ChangedFilesSection = ({
               isStaged={isStaged}
               repoPath={repoPath}
               selectedFile={selectedFile}
-              selectedFileIsStaged={selectedFileIsStaged}
+              isSelectedFileChangeStaged={isSelectedFileChangeStaged}
               onSelectFile={onSelectFile}
               onToggleStage={onToggleStage}
               onDiscardChanges={onDiscardChanges}

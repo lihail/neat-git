@@ -9,7 +9,7 @@ interface ChangedFilesSidebarProps {
   onToggleStage: (path: string, shouldStage: boolean) => void;
   onSelectFile: (path: string, isStaged: boolean) => void;
   selectedFile?: string;
-  selectedFileIsStaged?: boolean;
+  isSelectedFileChangeStaged?: boolean;
   onStageAll: MouseEventHandler<HTMLButtonElement>;
   onUnstageAll: MouseEventHandler<HTMLButtonElement>;
   onDiscardChanges: (path: string) => void;
@@ -21,7 +21,7 @@ export const ChangedFilesSidebar = ({
   onToggleStage,
   onSelectFile,
   selectedFile,
-  selectedFileIsStaged,
+  isSelectedFileChangeStaged,
   onStageAll,
   onUnstageAll,
   onDiscardChanges,
@@ -45,7 +45,7 @@ export const ChangedFilesSidebar = ({
         isStaged={false}
         repoPath={repoPath}
         selectedFile={selectedFile}
-        selectedFileIsStaged={selectedFileIsStaged}
+        isSelectedFileChangeStaged={isSelectedFileChangeStaged}
         onAction={onStageAll}
         onSelectFile={onSelectFile}
         onToggleStage={onToggleStage}
@@ -57,7 +57,7 @@ export const ChangedFilesSidebar = ({
         isStaged={true}
         repoPath={repoPath}
         selectedFile={selectedFile}
-        selectedFileIsStaged={selectedFileIsStaged}
+        isSelectedFileChangeStaged={isSelectedFileChangeStaged}
         onAction={onUnstageAll}
         onSelectFile={onSelectFile}
         onToggleStage={onToggleStage}

@@ -11,7 +11,7 @@ interface ChangedFileListProps {
   isStaged: boolean;
   repoPath: string;
   selectedFile?: string;
-  selectedFileIsStaged?: boolean;
+  isSelectedFileChangeStaged?: boolean;
   onSelectFile: (path: string, isStaged: boolean) => void;
   onToggleStage: (path: string, shouldStage: boolean) => void;
   onDiscardChanges: (path: string) => void;
@@ -48,7 +48,7 @@ export const ChangedFileList = ({
   isStaged,
   repoPath,
   selectedFile,
-  selectedFileIsStaged,
+  isSelectedFileChangeStaged,
   onSelectFile,
   onToggleStage,
   onDiscardChanges,
@@ -75,7 +75,9 @@ export const ChangedFileList = ({
               className={cn(
                 "flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm transition-colors",
                 discardingFile !== file.path && "hover:bg-secondary group cursor-pointer",
-                selectedFile === file.path && selectedFileIsStaged === isStaged && "bg-secondary"
+                selectedFile === file.path &&
+                  isSelectedFileChangeStaged === isStaged &&
+                  "bg-secondary"
               )}
             >
               {discardingFile === file.path ? (
