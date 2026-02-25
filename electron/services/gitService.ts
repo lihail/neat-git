@@ -15,6 +15,9 @@ type DiffLineInfo = {
   newLineNumber?: number;
 };
 
+const RENAME_SIMILARITY_PERFECT_SCORE = 100;
+const RENAME_SIMILARITY_THRESHOLD = 50;
+
 const readGlobalConfig = async () => {
   let userName = "";
   let userEmail = "";
@@ -330,6 +333,8 @@ export const getStatus = async (repoPath: string) => {
     const fileMap = new Map<string, FileChange>();
 
     const lines = statusResult.output.trim().split("\n").filter(Boolean);
+    const deletedUnstagedFiles = new Set<string>();
+    const untrackedFiles = new Set<string>();
 
     for (const line of lines) {
       // Porcelain v2 format:
@@ -383,6 +388,11 @@ export const getStatus = async (repoPath: string) => {
           hasUnstaged,
           unstagedStatus,
         });
+
+        // Collect only pure unstaged deletions
+        if (!hasStaged && unstagedCode === "D") {
+          deletedUnstagedFiles.add(filePath);
+        }
       } else if (line.startsWith("2 ")) {
         // Renamed entry: 2 <XY> <sub> <mH> <mI> <mW> <hH> <hI> <X><score> <path>\t<origPath>
         const parts = line.split(" ");
@@ -397,7 +407,7 @@ export const getStatus = async (repoPath: string) => {
         const hasUnstaged = unstagedCode !== ".";
 
         const similarity = parseInt(renameInfo.slice(1), 10);
-        const status = similarity === 100 ? "renamed-only" : "modified";
+        const status = similarity === RENAME_SIMILARITY_PERFECT_SCORE ? "renamed-only" : "modified";
 
         let unstagedStatus: "modified" | "added" | "deleted" | undefined;
 
@@ -427,6 +437,67 @@ export const getStatus = async (repoPath: string) => {
           status: "added",
           hasStaged: false,
           hasUnstaged: true,
+        });
+
+        untrackedFiles.add(filePath);
+      }
+    }
+
+    // Unstaged rename detection
+
+    for (const deletedUnstagedOldPath of deletedUnstagedFiles) {
+      // Get old content from HEAD
+      const showResult = await execGitCommand(["show", `HEAD:${deletedUnstagedOldPath}`], repoPath);
+
+      if (!showResult.success) {
+        continue;
+      }
+
+      const oldContent = showResult.output;
+
+      let mostSimilarFile: string | undefined;
+      let bestSimilarity = 0;
+
+      for (const newPath of untrackedFiles) {
+        const newFull = path.join(repoPath, newPath);
+        if (!fs.existsSync(newFull)) {
+          continue;
+        }
+
+        const newContent = fs.readFileSync(newFull, "utf8").replace(/\r\n?|\n/g, "\n");
+
+        if (newContent === oldContent) {
+          mostSimilarFile = newPath;
+          bestSimilarity = RENAME_SIMILARITY_PERFECT_SCORE;
+          break;
+        }
+
+        const similarity =
+          oldContent.length > 0
+            ? (Math.min(oldContent.length, newContent.length) /
+                Math.max(oldContent.length, newContent.length)) *
+              RENAME_SIMILARITY_PERFECT_SCORE
+            : 0;
+
+        if (similarity > bestSimilarity) {
+          bestSimilarity = similarity;
+          mostSimilarFile = newPath;
+        }
+      }
+
+      if (mostSimilarFile && bestSimilarity >= RENAME_SIMILARITY_THRESHOLD) {
+        fileMap.delete(deletedUnstagedOldPath);
+        fileMap.delete(mostSimilarFile);
+        untrackedFiles.delete(mostSimilarFile);
+
+        fileMap.set(mostSimilarFile, {
+          path: mostSimilarFile,
+          unstagedOldPath: deletedUnstagedOldPath,
+          status: bestSimilarity === RENAME_SIMILARITY_PERFECT_SCORE ? "renamed-only" : "modified",
+          hasStaged: false,
+          hasUnstaged: true,
+          unstagedStatus:
+            bestSimilarity === RENAME_SIMILARITY_PERFECT_SCORE ? "renamed-only" : "modified",
         });
       }
     }

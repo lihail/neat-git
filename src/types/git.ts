@@ -50,6 +50,7 @@ export interface FileChange {
   hasStaged: boolean;
   hasUnstaged: boolean;
   stagedOldPath?: string;
+  unstagedOldPath?: string;
 }
 
 export interface DiffLine {

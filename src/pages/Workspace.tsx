@@ -344,7 +344,6 @@ export const Workspace = () => {
   }, [repoPath]);
 
   // Memoize the selected file's staged old path for renamed files
-  // Only use stagedOldPath when viewing staged (renames are always staged)
   const selectedFileStagedOldPath = useMemo(() => {
     if (!currentState?.selectedFile) {
       return undefined;

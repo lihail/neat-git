@@ -21,22 +21,27 @@ const getStatusIcon = (file: FileChange, isStaged: boolean) => {
   // Use unstagedStatus for unstaged section if available, otherwise fall back to status
   const effectiveStatus = !isStaged && file.unstagedStatus ? file.unstagedStatus : file.status;
 
-  // Show as rename only in staged section (renames are always staged)
-  const showAsRename = effectiveStatus === "renamed-only" && isStaged;
-
   if (effectiveStatus === "modified") {
     return <FileEdit className="h-4 w-4 flex-shrink-0 text-git-modify" />;
   }
   if (effectiveStatus === "deleted") {
     return <FileX className="h-4 w-4 flex-shrink-0 text-git-delete" />;
   }
-  if (showAsRename) {
+  if (effectiveStatus === "renamed-only") {
     return <FileInput className="h-4 w-4 flex-shrink-0 text-git-rename" />;
   }
   return <FilePlus className="h-4 w-4 flex-shrink-0 text-git-add" />;
 };
 
-const getFileName = (path: string) => path.split("/").pop() || path;
+const getFileName = (path: string) => {
+  if (!path) {
+    return "";
+  }
+  if (path.includes("/")) {
+    return path.split("/").pop();
+  }
+  return path;
+};
 
 export const ChangedFileList = ({
   files,
@@ -104,11 +109,10 @@ export const ChangedFileList = ({
                 <>
                   <div className="flex items-center gap-2 flex-1 min-w-0">
                     {getStatusIcon(file, isStaged)}
-                    {/* Show rename format only in staged section (renames are always staged) */}
-                    {file.status === "renamed-only" && isStaged ? (
+                    {file.status === "renamed-only" ? (
                       <span className="truncate font-mono text-xs">
                         <span className="text-muted-foreground">
-                          {getFileName(file.stagedOldPath)}
+                          {getFileName(isStaged ? file.stagedOldPath : file.unstagedOldPath)}
                         </span>
                         <span className="text-primary mx-1">→</span>
                         <span>{getFileName(file.path)}</span>
