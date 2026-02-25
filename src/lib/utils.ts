@@ -1,6 +1,7 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import languageMap from "language-map";
+import { FileChange } from "@/types/git";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -217,6 +218,11 @@ export const validateCloneUrl = (url: string): string | null => {
   }
 
   return null;
+};
+
+export const getFileChangeOldPath = (files: FileChange[], filePath: string, isStaged: boolean) => {
+  const file = files.find((f) => f.path === filePath);
+  return isStaged ? file?.stagedOldPath : file?.unstagedOldPath;
 };
 
 export const getFullClonePath = async (

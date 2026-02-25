@@ -65,9 +65,12 @@ export const registerGitHandlers = () => {
     return await getStatus(repoPath);
   });
 
-  ipcMain.handle(IPC_CHANNELS.GIT_STAGE_FILE, async (_, repoPath: string, filepath: string) => {
-    return await stageFile(repoPath, filepath);
-  });
+  ipcMain.handle(
+    IPC_CHANNELS.GIT_STAGE_FILE,
+    async (_, repoPath: string, filepath: string, oldFilePath: string | null) => {
+      return await stageFile(repoPath, filepath, oldFilePath);
+    }
+  );
 
   ipcMain.handle(IPC_CHANNELS.GIT_STAGE_ALL_FILES, async (_, repoPath: string) => {
     return await stageAllFiles(repoPath);

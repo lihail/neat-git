@@ -31,8 +31,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
   checkout: (repoPath: string, branchName: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.GIT_CHECKOUT, repoPath, branchName),
   getStatus: (repoPath: string) => ipcRenderer.invoke(IPC_CHANNELS.GIT_GET_STATUS, repoPath),
-  stageFile: (repoPath: string, filepath: string) =>
-    ipcRenderer.invoke(IPC_CHANNELS.GIT_STAGE_FILE, repoPath, filepath),
+  stageFile: (repoPath: string, filepath: string, oldFilePath?: string | null) =>
+    ipcRenderer.invoke(IPC_CHANNELS.GIT_STAGE_FILE, repoPath, filepath, oldFilePath),
   stageAllFiles: (repoPath: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.GIT_STAGE_ALL_FILES, repoPath),
   unstageChange: (repoPath: string, filepath: string, oldFilePath?: string | null) =>
@@ -99,7 +99,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
       saveCredentials
     ),
   getRemoteUrl: (repoPath: string) => ipcRenderer.invoke(IPC_CHANNELS.GIT_GET_REMOTE_URL, repoPath),
-  isGitRepository: (repoPath: string) => ipcRenderer.invoke(IPC_CHANNELS.GIT_IS_REPOSITORY, repoPath),
+  isGitRepository: (repoPath: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.GIT_IS_REPOSITORY, repoPath),
   fetch: (
     repoPath: string,
     username?: string | null,

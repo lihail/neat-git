@@ -69,14 +69,12 @@ interface RepoState {
   diffLines: DiffLine[];
 }
 
-// Helper function to extract repo name from path
 // Split by both forward and back slashes for cross-platform compatibility
 const getRepoNameFromPath = (path: string): string => {
   const parts = path.split(/[/\\]/);
   return parts[parts.length - 1] || path;
 };
 
-// Helper function to convert view mode to context lines
 const getContextLinesForMode = (mode: DiffViewerMode): number => {
   switch (mode) {
     case "full":
@@ -528,7 +526,7 @@ export const Workspace = () => {
       const wasInBothSections = fileBeforeAction?.hasStaged && fileBeforeAction?.hasUnstaged;
 
       if (shouldStage) {
-        await stageFile(repoPath, path);
+        await stageFile(repoPath, path, fileBeforeAction?.unstagedOldPath);
       } else {
         await unstageChange(repoPath, path, fileBeforeAction?.stagedOldPath);
       }

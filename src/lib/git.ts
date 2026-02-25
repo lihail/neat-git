@@ -65,9 +65,15 @@ export const getStatus = async (repoPath: string): Promise<FileChange[]> => {
   }
 };
 
-export const stageFile = async (repoPath: string, filepath: string): Promise<void> => {
+export const stageFile = async (
+  repoPath: string,
+  filepath: string,
+  oldFilePath?: string
+): Promise<void> => {
   try {
-    await window.electronAPI.stageFile(repoPath, filepath);
+    // Ensure all parameters are serializable
+    const safeOldFilePath = oldFilePath !== undefined ? String(oldFilePath) : null;
+    await window.electronAPI.stageFile(repoPath, filepath, safeOldFilePath);
   } catch (error) {
     console.error("Error staging file:", error);
     throw error;

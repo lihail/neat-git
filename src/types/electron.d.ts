@@ -75,7 +75,11 @@ export interface ElectronAPI {
   ) => Promise<{ success: true }>;
   checkout: (repoPath: string, branchName: string) => Promise<{ success: true }>;
   getStatus: (repoPath: string) => Promise<FileChange[]>;
-  stageFile: (repoPath: string, filepath: string) => Promise<{ success: true }>;
+  stageFile: (
+    repoPath: string,
+    filepath: string,
+    oldFilePath?: string | null
+  ) => Promise<{ success: true }>;
   stageAllFiles: (repoPath: string) => Promise<{ success: true }>;
   unstageChange: (
     repoPath: string,

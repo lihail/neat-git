@@ -509,9 +509,10 @@ export const getStatus = async (repoPath: string) => {
   }
 };
 
-export const stageFile = async (repoPath: string, filepath: string) => {
+export const stageFile = async (repoPath: string, filepath: string, oldFilePath: string | null) => {
+  const paths = oldFilePath ? [filepath, oldFilePath] : [filepath];
   try {
-    const stageResult = await execGitCommand(["add", "--", filepath], repoPath);
+    const stageResult = await execGitCommand(["add", "--", ...paths], repoPath);
 
     if (!stageResult.success) {
       throw new Error(`Failed to stage file: ${stageResult.error.message}`);
@@ -519,7 +520,7 @@ export const stageFile = async (repoPath: string, filepath: string) => {
 
     return { success: true };
   } catch (error) {
-    console.error(`Error staging file in path ${filepath}:`, error);
+    console.error(`Error staging file in paths ${paths.join(", ")}:`, error);
     throw error;
   }
 };
