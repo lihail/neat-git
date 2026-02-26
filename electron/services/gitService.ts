@@ -320,7 +320,7 @@ export const getStatus = async (repoPath: string) => {
 
     // Use git status --porcelain=v2 for rename detection
     // -M flag enables rename detection with default 50% similarity threshold
-    // -uall shows each untracked file, separately, not just directory names
+    // -uall shows each untracked file separately, not just directory names
     // -c core.fileMode=false ignores permission-only changes
     const statusResult = await execGitCommand(
       ["-c", "core.fileMode=false", "status", "--porcelain=v2", "-M", "-uall"],
@@ -389,8 +389,7 @@ export const getStatus = async (repoPath: string) => {
           unstagedStatus,
         });
 
-        // Collect only pure unstaged deletions
-        if (!hasStaged && unstagedCode === "D") {
+        if (unstagedCode === "D") {
           deletedUnstagedFiles.add(filePath);
         }
       } else if (line.startsWith("2 ")) {
@@ -434,7 +433,7 @@ export const getStatus = async (repoPath: string) => {
         const filePath = line.slice(2);
         fileMap.set(filePath, {
           path: filePath,
-          status: "added",
+          unstagedStatus: "added",
           hasStaged: false,
           hasUnstaged: true,
         });
@@ -446,11 +445,13 @@ export const getStatus = async (repoPath: string) => {
     // Unstaged rename detection
 
     for (const deletedUnstagedOldPath of deletedUnstagedFiles) {
-      // Get old content from HEAD
-      const showResult = await execGitCommand(["show", `HEAD:${deletedUnstagedOldPath}`], repoPath);
+      let showResult = await execGitCommand(["show", `HEAD:${deletedUnstagedOldPath}`], repoPath);
 
       if (!showResult.success) {
-        continue;
+        showResult = await execGitCommand(["show", `:${deletedUnstagedOldPath}`], repoPath);
+        if (!showResult.success) {
+          continue;
+        }
       }
 
       const oldContent = showResult.output;
@@ -486,10 +487,11 @@ export const getStatus = async (repoPath: string) => {
       }
 
       if (mostSimilarFile && bestSimilarity >= RENAME_SIMILARITY_THRESHOLD) {
-        fileMap.delete(deletedUnstagedOldPath);
-        fileMap.delete(mostSimilarFile);
-        untrackedFiles.delete(mostSimilarFile);
-
+        const deletedUnstagedFile = fileMap.get(deletedUnstagedOldPath);
+        if (deletedUnstagedFile) {
+          deletedUnstagedFile.hasUnstaged = false;
+          deletedUnstagedFile.unstagedStatus = undefined;
+        }
         fileMap.set(mostSimilarFile, {
           path: mostSimilarFile,
           unstagedOldPath: deletedUnstagedOldPath,
