@@ -7,6 +7,13 @@ import { isHttpRemote } from "../utils/url";
 import { getPlatform } from "../utils/platform";
 import { isGitRepository } from "../utils/file";
 import type { FileChange } from "../../src/types/electron";
+import {
+  parseOrdinaryChange,
+  parseRenameChange,
+  parseUntrackedFileChange,
+  RENAME_SIMILARITY_PERFECT_SCORE,
+  RENAME_SIMILARITY_THRESHOLD,
+} from "../utils/gitStatus";
 
 type DiffLineInfo = {
   type: string;
@@ -14,9 +21,6 @@ type DiffLineInfo = {
   oldLineNumber?: number;
   newLineNumber?: number;
 };
-
-const RENAME_SIMILARITY_PERFECT_SCORE = 100;
-const RENAME_SIMILARITY_THRESHOLD = 50;
 
 const readGlobalConfig = async () => {
   let userName = "";
@@ -308,7 +312,62 @@ export const listRemoteBranches = async (repoPath: string) => {
   }
 };
 
-export const getStatus = async (repoPath: string) => {
+const detectUnstagedRename = async (
+  deletedPath: string,
+  untrackedFiles: string[],
+  repoPath: string
+): Promise<{ newPath: string; similarity: number } | null> => {
+  let showResult = await execGitCommand(["show", `HEAD:${deletedPath}`], repoPath);
+  if (!showResult.success) {
+    showResult = await execGitCommand(["show", `:${deletedPath}`], repoPath);
+    if (!showResult.success) {
+      return null;
+    }
+  }
+  const oldContent = showResult.output;
+
+  let mostSimilarFile: string | undefined;
+  let bestSimilarity = 0;
+
+  for (const candidate of untrackedFiles) {
+    const fullPath = path.join(repoPath, candidate);
+    if (!fs.existsSync(fullPath)) {
+      continue;
+    }
+
+    const newContent = fs.readFileSync(fullPath, "utf8").replace(/\r\n?|\n/g, "\n");
+
+    if (newContent === oldContent) {
+      return {
+        newPath: candidate,
+        similarity: RENAME_SIMILARITY_PERFECT_SCORE,
+      };
+    }
+
+    const similarity =
+      oldContent.length > 0
+        ? (Math.min(oldContent.length, newContent.length) /
+            Math.max(oldContent.length, newContent.length)) *
+          RENAME_SIMILARITY_PERFECT_SCORE
+        : 0;
+
+    if (similarity > bestSimilarity) {
+      bestSimilarity = similarity;
+      mostSimilarFile = candidate;
+    }
+  }
+
+  if (mostSimilarFile && bestSimilarity >= RENAME_SIMILARITY_THRESHOLD) {
+    return {
+      newPath: mostSimilarFile,
+      similarity: bestSimilarity,
+    };
+  }
+
+  return null;
+};
+
+export const getStatus = async (repoPath: string): Promise<FileChange[]> => {
   try {
     if (!fs.existsSync(repoPath)) {
       throw new Error(`Repository path does not exist: ${repoPath}`);
@@ -330,178 +389,62 @@ export const getStatus = async (repoPath: string) => {
       throw new Error(`git status failed: ${statusResult.error.message}`);
     }
 
-    const fileMap = new Map<string, FileChange>();
-
     const lines = statusResult.output.trim().split("\n").filter(Boolean);
+
+    const fileMap = new Map<string, FileChange>();
     const deletedUnstagedFiles = new Set<string>();
     const untrackedFiles = new Set<string>();
 
     for (const line of lines) {
+      let change: FileChange | null = null;
+
       // Porcelain v2 format:
       // 1 <XY> ... <path> - ordinary changed entries
       // 2 <XY> ... <path>\t<origPath> - renamed/copied entries
       // ? <path> - untracked files
-
       if (line.startsWith("1 ")) {
-        // Ordinary changed entry: 1 <XY> <sub> <mH> <mI> <mW> <hH> <hI> <path>
-        const parts = line.split(" ");
-        const xy = parts[1];
-        const filePath = parts.slice(8).join(" ");
-
-        const stagedCode = xy[0];
-        const unstagedCode = xy[1];
-        const hasStaged = stagedCode !== ".";
-        const hasUnstaged = unstagedCode !== ".";
-
-        let status: "modified" | "added" | "deleted";
-        if (stagedCode === "D") {
-          status = "deleted";
-        } else if (stagedCode === "A") {
-          status = "added";
-        } else if (stagedCode === "M" || stagedCode === "T") {
-          status = "modified";
-        } else {
-          if (unstagedCode === "D") {
-            status = "deleted";
-          } else if (unstagedCode === "A") {
-            status = "added";
-          } else {
-            status = "modified";
-          }
-        }
-
-        let unstagedStatus: "modified" | "added" | "deleted" | undefined;
-        if (hasUnstaged) {
-          if (unstagedCode === "D") {
-            unstagedStatus = "deleted";
-          } else if (unstagedCode === "A") {
-            unstagedStatus = "added";
-          } else {
-            unstagedStatus = "modified";
-          }
-        }
-
-        fileMap.set(filePath, {
-          path: filePath,
-          status,
-          hasStaged,
-          hasUnstaged,
-          unstagedStatus,
-        });
-
-        if (unstagedCode === "D") {
-          deletedUnstagedFiles.add(filePath);
+        change = parseOrdinaryChange(line);
+        if (change.hasUnstaged && change.unstagedStatus === "deleted") {
+          deletedUnstagedFiles.add(change.path);
         }
       } else if (line.startsWith("2 ")) {
-        // Renamed entry: 2 <XY> <sub> <mH> <mI> <mW> <hH> <hI> <X><score> <path>\t<origPath>
-        const parts = line.split(" ");
-        const xy = parts[1];
-        const renameInfo = parts[8]; // e.g., "R100" or "R095"
-        const pathPart = parts.slice(9).join(" ");
-        const [newFilePath, stagedOldFilePath] = pathPart.split("\t");
-
-        const stagedCode = xy[0];
-        const unstagedCode = xy[1];
-        const hasStaged = stagedCode !== ".";
-        const hasUnstaged = unstagedCode !== ".";
-
-        const similarity = parseInt(renameInfo.slice(1), 10);
-        const status = similarity === RENAME_SIMILARITY_PERFECT_SCORE ? "renamed-only" : "modified";
-
-        let unstagedStatus: "modified" | "added" | "deleted" | undefined;
-
-        if (hasUnstaged) {
-          if (unstagedCode === "D") {
-            unstagedStatus = "deleted";
-          } else if (unstagedCode === "A") {
-            unstagedStatus = "added";
-          } else {
-            unstagedStatus = "modified";
-          }
-        }
-
-        fileMap.set(newFilePath, {
-          path: newFilePath,
-          status,
-          hasStaged,
-          hasUnstaged,
-          stagedOldPath: stagedOldFilePath,
-          unstagedStatus,
-        });
+        change = parseRenameChange(line);
       } else if (line.startsWith("? ")) {
-        // Untracked file
-        const filePath = line.slice(2);
-        fileMap.set(filePath, {
-          path: filePath,
-          unstagedStatus: "added",
-          hasStaged: false,
-          hasUnstaged: true,
-        });
+        change = parseUntrackedFileChange(line);
+        untrackedFiles.add(change.path);
+      }
 
-        untrackedFiles.add(filePath);
+      if (change) {
+        fileMap.set(change.path, change);
       }
     }
 
-    // Unstaged rename detection
-
-    for (const deletedUnstagedOldPath of deletedUnstagedFiles) {
-      let showResult = await execGitCommand(["show", `HEAD:${deletedUnstagedOldPath}`], repoPath);
-
-      if (!showResult.success) {
-        showResult = await execGitCommand(["show", `:${deletedUnstagedOldPath}`], repoPath);
-        if (!showResult.success) {
-          continue;
-        }
+    // Phase 2 - Unstaged renames detection: Try to match unstaged deletions to their corresponding untracked files
+    for (const oldPath of deletedUnstagedFiles) {
+      const renameMatch = await detectUnstagedRename(oldPath, [...untrackedFiles], repoPath);
+      if (!renameMatch) {
+        continue;
       }
 
-      const oldContent = showResult.output;
-
-      let mostSimilarFile: string | undefined;
-      let bestSimilarity = 0;
-
-      for (const newPath of untrackedFiles) {
-        const newFull = path.join(repoPath, newPath);
-        if (!fs.existsSync(newFull)) {
-          continue;
-        }
-
-        const newContent = fs.readFileSync(newFull, "utf8").replace(/\r\n?|\n/g, "\n");
-
-        if (newContent === oldContent) {
-          mostSimilarFile = newPath;
-          bestSimilarity = RENAME_SIMILARITY_PERFECT_SCORE;
-          break;
-        }
-
-        const similarity =
-          oldContent.length > 0
-            ? (Math.min(oldContent.length, newContent.length) /
-                Math.max(oldContent.length, newContent.length)) *
-              RENAME_SIMILARITY_PERFECT_SCORE
-            : 0;
-
-        if (similarity > bestSimilarity) {
-          bestSimilarity = similarity;
-          mostSimilarFile = newPath;
-        }
+      // Remove unstaged deletion flag from old file
+      const oldEntry = fileMap.get(oldPath);
+      if (oldEntry) {
+        oldEntry.hasUnstaged = false;
+        oldEntry.unstagedStatus = undefined;
       }
 
-      if (mostSimilarFile && bestSimilarity >= RENAME_SIMILARITY_THRESHOLD) {
-        const deletedUnstagedFile = fileMap.get(deletedUnstagedOldPath);
-        if (deletedUnstagedFile) {
-          deletedUnstagedFile.hasUnstaged = false;
-          deletedUnstagedFile.unstagedStatus = undefined;
-        }
-        fileMap.set(mostSimilarFile, {
-          path: mostSimilarFile,
-          unstagedOldPath: deletedUnstagedOldPath,
-          status: bestSimilarity === RENAME_SIMILARITY_PERFECT_SCORE ? "renamed-only" : "modified",
-          hasStaged: false,
-          hasUnstaged: true,
-          unstagedStatus:
-            bestSimilarity === RENAME_SIMILARITY_PERFECT_SCORE ? "renamed-only" : "modified",
-        });
-      }
+      // Add renamed entry for the new (untracked) file
+      const status =
+        renameMatch.similarity === RENAME_SIMILARITY_PERFECT_SCORE ? "renamed-only" : "modified";
+
+      fileMap.set(renameMatch.newPath, {
+        path: renameMatch.newPath,
+        unstagedOldPath: oldPath,
+        status,
+        hasStaged: false,
+        hasUnstaged: true,
+        unstagedStatus: status,
+      });
     }
 
     return Array.from(fileMap.values());
