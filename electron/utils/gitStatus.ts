@@ -3,6 +3,17 @@ import { FileChange } from "../../src/types/electron";
 export const RENAME_SIMILARITY_PERFECT_SCORE = 100;
 export const RENAME_SIMILARITY_THRESHOLD = 50;
 
+const getStatusByCode = (code: string): FileChange["status"] | undefined => {
+  if (code === ".") {
+    return undefined;
+  } else if (code === "D") {
+    return "deleted";
+  } else if (code === "A") {
+    return "added";
+  }
+  return "modified";
+};
+
 export const parseOrdinaryChange = (line: string): FileChange => {
   // Ordinary changed entry: 1 <XY> <sub> <mH> <mI> <mW> <hH> <hI> <path>
   const parts = line.split(" ");
@@ -15,40 +26,15 @@ export const parseOrdinaryChange = (line: string): FileChange => {
   const hasStaged = stagedCode !== ".";
   const hasUnstaged = unstagedCode !== ".";
 
-  let status: FileChange["status"];
-  if (stagedCode === "D") {
-    status = "deleted";
-  } else if (stagedCode === "A") {
-    status = "added";
-  } else if (stagedCode === "M" || stagedCode === "T") {
-    status = "modified";
-  } else {
-    if (unstagedCode === "D") {
-      status = "deleted";
-    } else if (unstagedCode === "A") {
-      status = "added";
-    } else {
-      status = "modified";
-    }
-  }
-
-  let unstagedStatus: FileChange["unstagedStatus"] = undefined;
-  if (hasUnstaged) {
-    if (unstagedCode === "D") {
-      unstagedStatus = "deleted";
-    } else if (unstagedCode === "A") {
-      unstagedStatus = "added";
-    } else {
-      unstagedStatus = "modified";
-    }
-  }
+  const status = getStatusByCode(stagedCode);
+  const unstagedStatus = getStatusByCode(unstagedCode);
 
   return {
     path: filePath,
     status,
+    unstagedStatus,
     hasStaged,
     hasUnstaged,
-    unstagedStatus,
   };
 };
 
@@ -69,24 +55,15 @@ export const parseRenameChange = (line: string): FileChange => {
   const similarity = parseInt(renameInfo.slice(1), 10);
   const status = similarity === RENAME_SIMILARITY_PERFECT_SCORE ? "renamed-only" : "modified";
 
-  let unstagedStatus: FileChange["unstagedStatus"];
-  if (hasUnstaged) {
-    if (unstagedCode === "D") {
-      unstagedStatus = "deleted";
-    } else if (unstagedCode === "A") {
-      unstagedStatus = "added";
-    } else {
-      unstagedStatus = "modified";
-    }
-  }
+  const unstagedStatus = getStatusByCode(unstagedCode);
 
   return {
     path: newPath,
     status,
+    unstagedStatus,
     hasStaged,
     hasUnstaged,
     stagedOldPath: oldPath,
-    unstagedStatus,
   };
 };
 
@@ -95,8 +72,8 @@ export const parseUntrackedFileChange = (line: string): FileChange => {
 
   return {
     path: filePath,
+    unstagedStatus: "added",
     hasStaged: false,
     hasUnstaged: true,
-    unstagedStatus: "added",
   };
 };

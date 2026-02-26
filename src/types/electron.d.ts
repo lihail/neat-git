@@ -11,7 +11,7 @@ export interface Branch {
 
 export interface FileChange {
   path: string;
-  status: "modified" | "added" | "deleted" | "renamed-only";
+  status?: "modified" | "added" | "deleted" | "renamed-only";
   unstagedStatus?: "modified" | "added" | "deleted" | "renamed-only";
   hasStaged: boolean;
   hasUnstaged: boolean;
