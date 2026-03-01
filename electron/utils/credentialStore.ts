@@ -2,7 +2,7 @@ import { getPlatform } from "./platform";
 import { GIT_CREDENTIAL_OSXKEYCHAIN_HELPER } from "./gitCredentialOsxkeychain";
 import { GIT_CREDENTIAL_MANAGER_HELPER } from "./gitCredentialManager";
 import { isHttpRemote } from "./url";
-import { execGitCommand } from "../services/dugiteService";
+import { execGitCommand } from "./dugite";
 
 interface CredentialHelperConfig {
   args: string[];

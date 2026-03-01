@@ -1,5 +1,5 @@
 import { exec as dugiteExec } from "dugite";
-import { getPlatform } from "../utils/platform";
+import { getPlatform } from "./platform";
 
 interface GitCommandSuccess {
   success: true;
