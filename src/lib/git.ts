@@ -523,3 +523,15 @@ export const doesRepoExist = async (repoPath: string): Promise<boolean> => {
     return false;
   }
 };
+
+export const getFullClonePath = async (
+  cloneDestination: string,
+  repoName: string
+): Promise<string> => {
+  try {
+    return await window.electronAPI.getFullClonePath(cloneDestination, repoName);
+  } catch (error) {
+    console.error("Error getting full clone path:", error);
+    throw error;
+  }
+};

@@ -19,10 +19,9 @@ import {
   extractRepoNameFromUrl,
   isSshUrl,
   validateCloneUrl,
-  getFullClonePath,
 } from "@/lib/utils";
 import { openSelectGitRepositoryFolderDialog, openSelectParentFolderDialog } from "@/lib/system";
-import { clone, createRepository } from "@/lib/git";
+import { clone, createRepository, getFullClonePath } from "@/lib/git";
 import { isHostTrusted, trustHost, findSshKeys, readSshPublicKey, generateSshKey } from "@/lib/ssh";
 import packageJson from "../../../package.json";
 

@@ -224,13 +224,3 @@ export const getFileChangeOldPath = (files: FileChange[], filePath: string, isSt
   const file = files.find((f) => f.path === filePath);
   return isStaged ? file?.stagedOldPath : file?.unstagedOldPath;
 };
-
-export const getFullClonePath = async (
-  cloneDestination: string,
-  repoName: string
-): Promise<string> => {
-  if (!cloneDestination || !repoName) {
-    return "";
-  }
-  return await window.electronAPI.getFullClonePath(cloneDestination, repoName);
-};
