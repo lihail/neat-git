@@ -1,4 +1,7 @@
+import path from "node:path";
+import fs from "node:fs";
 import { FileChange } from "../../src/types/electron";
+import { execGitCommand } from "./dugite";
 
 export const RENAME_SIMILARITY_PERFECT_SCORE = 100;
 export const RENAME_SIMILARITY_THRESHOLD = 50;
@@ -68,6 +71,7 @@ export const parseRenameChange = (line: string): FileChange => {
 };
 
 export const parseUntrackedFileChange = (line: string): FileChange => {
+  // Untracked file: ? <path>
   const filePath = line.slice(2);
 
   return {
@@ -76,4 +80,74 @@ export const parseUntrackedFileChange = (line: string): FileChange => {
     hasStaged: false,
     hasUnstaged: true,
   };
+};
+
+export const detectUnstagedRenames = async (
+  stagedFiles: Set<string>,
+  repoPath: string
+): Promise<FileChange[]> => {
+  // Use a temporary index file so we don't touch the user's real staging area
+  const tempIndex = path.join(".git", `index_rename_check_${Date.now()}`);
+  process.env.GIT_INDEX_FILE = tempIndex;
+
+  try {
+    // Copy the real index to our temp index
+    if (fs.existsSync(".git/index")) {
+      fs.copyFileSync(".git/index", tempIndex);
+    }
+
+    // Stage everything (including the deletion and the new untracked file)
+    // This makes Git see: "old.js is gone" and "new.js is here"
+    const stageResult = await execGitCommand(["add", "-A"], repoPath);
+    if (!stageResult.success) {
+      throw new Error(`Failed to stage all files: ${stageResult.error.message}`);
+    }
+
+    const diffResult = await execGitCommand(
+      [
+        "-c",
+        "core.quotepath=false",
+        "diff",
+        "--cached",
+        "--name-status",
+        `-M${RENAME_SIMILARITY_THRESHOLD}%`,
+      ],
+      repoPath
+    );
+    if (!diffResult.success) {
+      throw new Error(`Failed to get diff: ${diffResult.error.message}`);
+    }
+
+    const unstagedRenames: FileChange[] = diffResult.output
+      .trim()
+      .split("\n")
+      .filter((line) => line.startsWith("R"))
+      .map((line) => {
+        const [_statusPart, oldFile, newFile] = line.split("\t");
+        return {
+          // score: parseInt(statusPart.slice(1), 10), // TODO: Currently unused
+          oldFile,
+          newFile,
+        };
+      })
+      // Only keep the pair if BOTH files were NOT staged in the real index
+      .filter((pair) => !stagedFiles.has(pair.oldFile) && !stagedFiles.has(pair.newFile))
+      .map((pair) => ({
+        path: pair.newFile,
+        unstagedStatus: "renamed-only",
+        hasStaged: false,
+        hasUnstaged: true,
+        unstagedOldPath: pair.oldFile,
+      }));
+
+    return unstagedRenames;
+  } catch {
+    return [];
+  } finally {
+    // Cleanup the temporary index
+    delete process.env.GIT_INDEX_FILE;
+    if (fs.existsSync(tempIndex)) {
+      fs.unlinkSync(tempIndex);
+    }
+  }
 };

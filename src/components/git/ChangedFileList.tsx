@@ -111,7 +111,8 @@ export const ChangedFileList = ({
                 <>
                   <div className="flex items-center gap-2 flex-1 min-w-0">
                     {getStatusIcon(file, isStaged)}
-                    {file.status === "renamed-only" ? (
+                    {(!isStaged && file.unstagedStatus === "renamed-only") ||
+                    (isStaged && file.status === "renamed-only") ? (
                       <span className="truncate font-mono text-xs">
                         <span className="text-muted-foreground">
                           {getFileName(isStaged ? file.stagedOldPath : file.unstagedOldPath)}
