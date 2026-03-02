@@ -334,8 +334,8 @@ export const getStatus = async (repoPath: string): Promise<FileChange[]> => {
     }
 
     const lines = statusResult.output.trim().split("\n").filter(Boolean);
-    const fileMap: FileChange[] = [];
-    const stagedFiles = new Set<string>();
+    const fileChanges: FileChange[] = [];
+    const stagedFiles = new Map<string, FileChange>();
 
     for (const line of lines) {
       let change: FileChange | null = null;
@@ -344,15 +344,15 @@ export const getStatus = async (repoPath: string): Promise<FileChange[]> => {
         change = parseOrdinaryChange(line);
 
         if (change.hasStaged) {
-          stagedFiles.add(change.path);
+          stagedFiles.set(change.path, change);
         }
       } else if (line.startsWith("2 ")) {
         change = parseRenameChange(line);
 
         if (change.hasStaged) {
-          stagedFiles.add(change.path);
+          stagedFiles.set(change.path, change);
           if (change.stagedOldPath) {
-            stagedFiles.add(change.stagedOldPath);
+            stagedFiles.set(change.stagedOldPath, change);
           }
         }
       } else if (line.startsWith("? ")) {
@@ -360,7 +360,7 @@ export const getStatus = async (repoPath: string): Promise<FileChange[]> => {
       }
 
       if (change) {
-        fileMap.push(change);
+        fileChanges.push(change);
       }
     }
 
@@ -375,9 +375,24 @@ export const getStatus = async (repoPath: string): Promise<FileChange[]> => {
       }
     }
 
-    const filteredFileMap = fileMap.filter((file) => !pathsToExclude.has(file.path));
+    const filteredFileChanges: FileChange[] = [];
 
-    return [...filteredFileMap, ...unstagedRenames];
+    // Create a new array that filters out added and deleted file changes that are part of a rename
+    for (const fileChange of fileChanges) {
+      if (!pathsToExclude.has(fileChange.path)) {
+        filteredFileChanges.push(fileChange);
+        continue;
+      }
+      // Remove the unstaged version of the file change
+      fileChange.hasUnstaged = false;
+      delete fileChange.unstagedStatus;
+
+      if (fileChange.hasStaged) {
+        filteredFileChanges.push(fileChange);
+      }
+    }
+
+    return [...filteredFileChanges, ...unstagedRenames];
   } catch (error) {
     console.error("Error getting git status:", error);
     throw error;
