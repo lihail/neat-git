@@ -23,7 +23,7 @@ export const FileChangeContextMenu = ({
   onToggleStage,
   onDiscard,
 }: FileChangeContextMenuProps) => {
-  const isUntracked = change.status === "added" && !isStaged && !change.hasStaged;
+  const isUntracked = change.unstagedStatus === "added" && !isStaged && !change.hasStaged;
   const isDeleted = isStaged
     ? change.status === "deleted"
     : (change.unstagedStatus ?? change.status) === "deleted";

@@ -95,9 +95,13 @@ export const unstageChange = async (
   }
 };
 
-export const discardChanges = async (repoPath: string, filepath: string): Promise<void> => {
+export const discardChanges = async (
+  repoPath: string,
+  filepath: string,
+  oldFilePath?: string
+): Promise<void> => {
   try {
-    await window.electronAPI.discardChanges(repoPath, filepath);
+    await window.electronAPI.discardChanges(repoPath, filepath, oldFilePath);
   } catch (error) {
     console.error("Error discarding changes:", error);
     throw error;

@@ -13,7 +13,7 @@ interface ChangedFilesSectionProps {
   onAction: MouseEventHandler<HTMLButtonElement>;
   onSelectFile: (path: string, isStaged: boolean) => void;
   onToggleStage: (path: string, shouldStage: boolean) => void;
-  onDiscardChanges: (path: string) => void;
+  onDiscardChanges: (path: string, oldPath?: string) => void;
 }
 
 export const ChangedFilesSection = ({

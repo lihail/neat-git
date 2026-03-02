@@ -39,8 +39,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
     ipcRenderer.invoke(IPC_CHANNELS.GIT_UNSTAGE_CHANGE, repoPath, filepath, oldFilePath),
   unstageAllFiles: (repoPath: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.GIT_UNSTAGE_ALL_FILES, repoPath),
-  discardChanges: (repoPath: string, filepath: string) =>
-    ipcRenderer.invoke(IPC_CHANNELS.GIT_DISCARD_CHANGES, repoPath, filepath),
+  discardChanges: (repoPath: string, filepath: string, oldFilePath?: string | null) =>
+    ipcRenderer.invoke(IPC_CHANNELS.GIT_DISCARD_CHANGES, repoPath, filepath, oldFilePath),
   stageLines: (
     repoPath: string,
     filepath: string,

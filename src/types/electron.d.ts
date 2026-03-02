@@ -87,7 +87,11 @@ export interface ElectronAPI {
     oldFilePath?: string | null
   ) => Promise<{ success: true }>;
   unstageAllFiles: (repoPath: string) => Promise<{ success: true }>;
-  discardChanges: (repoPath: string, filepath: string) => Promise<{ success: true }>;
+  discardChanges: (
+    repoPath: string,
+    filepath: string,
+    oldFilePath?: string | null
+  ) => Promise<{ success: true }>;
   stageLines: (
     repoPath: string,
     filepath: string,

@@ -577,7 +577,7 @@ export const Workspace = () => {
     }
   };
 
-  const handleDiscardChanges = async (filePath: string) => {
+  const handleDiscardChanges = async (filePath: string, oldFilePath?: string) => {
     if (!repoPath || !currentState) {
       return;
     }
@@ -586,7 +586,7 @@ export const Workspace = () => {
       const fileData = currentState.files.find((f) => f.path === filePath);
       const wasUntracked = fileData?.status === "added" && !fileData?.hasStaged;
 
-      await discardChanges(repoPath, filePath);
+      await discardChanges(repoPath, filePath, oldFilePath);
 
       toast.success(wasUntracked ? `Deleted "${filePath}"` : `Discarded changes to "${filePath}"`);
 

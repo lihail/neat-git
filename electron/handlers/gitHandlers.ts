@@ -89,8 +89,8 @@ export const registerGitHandlers = () => {
 
   ipcMain.handle(
     IPC_CHANNELS.GIT_DISCARD_CHANGES,
-    async (_, repoPath: string, filepath: string) => {
-      return await discardChanges(repoPath, filepath);
+    async (_, repoPath: string, filepath: string, oldFilePath: string | null) => {
+      return await discardChanges(repoPath, filepath, oldFilePath);
     }
   );
 

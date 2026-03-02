@@ -14,7 +14,7 @@ interface ChangedFileListProps {
   isSelectedFileChangeStaged?: boolean;
   onSelectFile: (path: string, isStaged: boolean) => void;
   onToggleStage: (path: string, shouldStage: boolean) => void;
-  onDiscardChanges: (path: string) => void;
+  onDiscardChanges: (path: string, oldPath?: string) => void;
 }
 
 const getStatusIcon = (file: FileChange, isStaged: boolean) => {
@@ -91,7 +91,7 @@ export const ChangedFileList = ({
                       variant="destructive"
                       className="h-7 px-2 text-xs"
                       onClick={() => {
-                        onDiscardChanges(file.path);
+                        onDiscardChanges(file.path, file.unstagedOldPath);
                         setDiscardingFile(null);
                       }}
                     >

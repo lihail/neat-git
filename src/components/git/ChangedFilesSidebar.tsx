@@ -12,7 +12,7 @@ interface ChangedFilesSidebarProps {
   isSelectedFileChangeStaged?: boolean;
   onStageAll: MouseEventHandler<HTMLButtonElement>;
   onUnstageAll: MouseEventHandler<HTMLButtonElement>;
-  onDiscardChanges: (path: string) => void;
+  onDiscardChanges: (path: string, oldPath?: string) => void;
 }
 
 export const ChangedFilesSidebar = ({

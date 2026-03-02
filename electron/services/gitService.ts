@@ -1264,27 +1264,34 @@ export const deleteStash = async (repoPath: string, index: number) => {
   }
 };
 
-export const discardChanges = async (repoPath: string, filepath: string) => {
+export const discardChanges = async (
+  repoPath: string,
+  filepath: string,
+  oldFilePath: string | null
+) => {
   try {
     const fullPath = path.join(repoPath, filepath);
-    const fileExists = fs.existsSync(fullPath);
 
-    // Check if the file is tracked (exists in HEAD or index)
     const lsFilesResult = await execGitCommand(["ls-files", "--", filepath], repoPath);
     const isTracked = lsFilesResult.success && lsFilesResult.output.trim().length > 0;
 
     if (!isTracked) {
-      // Untracked file — delete it
+      const fileExists = fs.existsSync(fullPath);
       if (fileExists) {
-        fs.unlinkSync(fullPath);
+        fs.rmSync(fullPath, {
+          recursive: true, // Delete folders and their contents
+          force: true, // Don't throw an error if the path doesn't exist
+        });
       }
-      return { success: true };
+      if (!oldFilePath) {
+        return { success: true };
+      }
     }
 
-    // Tracked file — restore from index (discard unstaged changes)
-    const checkoutResult = await execGitCommand(["checkout", "--", filepath], repoPath);
-    if (!checkoutResult.success) {
-      throw new Error(`Failed to discard changes: ${checkoutResult.error.message}`);
+    const filePathToRestore = oldFilePath ?? filepath;
+    const restoreResult = await execGitCommand(["restore", "--", filePathToRestore], repoPath);
+    if (!restoreResult.success) {
+      throw new Error(`Failed to discard changes: ${restoreResult.error.message}`);
     }
 
     return { success: true };
