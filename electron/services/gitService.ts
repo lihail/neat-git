@@ -805,25 +805,34 @@ export const getDiff = async (
   oldFilePath: string | null
 ) => {
   try {
-    let diffArgs: string[];
+    const diffArgs = ["diff"];
 
     if (staged && oldFilePath) {
-      // For staged renamed files, compare HEAD's old path with staged new path
-      diffArgs = ["diff", `-U${contextLines}`, `HEAD:${oldFilePath}`, `:${filepath}`];
-    } else if (staged) {
-      diffArgs = ["diff", "--cached", `-U${contextLines}`, "--", filepath];
+      // Staged rename
+      diffArgs.push(`-U${contextLines}`, `HEAD:${oldFilePath}`, `:${filepath}`);
+    } else if (!staged && oldFilePath) {
+      // Unstaged rename
+      diffArgs.push(`-U${contextLines}`, `HEAD:${oldFilePath}`, `${filepath}`);
+    } else if (staged && !oldFilePath) {
+      // Staged non rename change
+      diffArgs.push("--cached", `-U${contextLines}`, "--", filepath);
     } else {
-      diffArgs = ["diff", `-U${contextLines}`, "--", filepath];
+      // Unstaged non rename change
+      diffArgs.push(`-U${contextLines}`, "--", filepath);
     }
 
     const diffResult = await execGitCommand(diffArgs, repoPath);
     if (!diffResult.success) {
       return [];
     }
-    const diffOutput = diffResult.output;
+    const diffOutput = diffResult.output.trim();
 
-    // If no diff output, check if it's a new file
-    if (!diffOutput.trim()) {
+    if (!diffOutput) {
+      const isPureRename = Boolean(oldFilePath);
+      if (isPureRename) {
+        return [];
+      }
+
       // Check if file is new/untracked by checking if it exists in git
       const fullPath = path.join(repoPath, filepath);
       if (fs.existsSync(fullPath)) {

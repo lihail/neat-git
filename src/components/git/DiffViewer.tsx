@@ -96,7 +96,7 @@ export const DiffViewer = ({
     );
   }
 
-  const isPureRename = fileStatus === "renamed-only";
+  const isPureRename = fileStatus === "renamed-only" && lines.length === 0;
   const isEmptyFile = lines.length === 0 || lines.every((line) => line.content.trim() === "");
 
   return (
