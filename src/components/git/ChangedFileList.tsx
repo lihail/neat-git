@@ -20,7 +20,7 @@ interface ChangedFileListProps {
 const getStatusIcon = (file: FileChange, isStaged: boolean) => {
   const effectiveStatus = !isStaged && file.unstagedStatus ? file.unstagedStatus : file.status;
 
-  if (effectiveStatus === "modified") {
+  if (effectiveStatus === "modified" || effectiveStatus === "renamed-modified") {
     return <FileEdit className="h-4 w-4 flex-shrink-0 text-git-modify" />;
   }
   if (effectiveStatus === "deleted") {

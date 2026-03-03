@@ -1675,6 +1675,8 @@ export const Workspace = () => {
     selectedFileStatus = undefined;
   }
 
+  const selectedFile = currentState?.files.find((f) => f.path === currentState.selectedFile);
+
   return (
     <div className="flex h-screen flex-col bg-background">
       <TopBar
@@ -1732,6 +1734,7 @@ export const Workspace = () => {
             )}
           >
             <DiffViewer
+              selectedFile={selectedFile}
               filePath={currentState.selectedFile}
               oldFilePath={selectedFileOldPath}
               lines={currentState.diffLines}

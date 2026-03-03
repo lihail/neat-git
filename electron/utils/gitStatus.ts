@@ -1,12 +1,12 @@
 import path from "node:path";
 import fs from "node:fs";
-import { FileChange } from "../../src/types/electron";
+import { FileChange, FileChangeStatus } from "../../src/types/electron";
 import { execGitCommand } from "./dugite";
 
 export const RENAME_SIMILARITY_PERFECT_SCORE = 100;
 export const RENAME_SIMILARITY_THRESHOLD = 50;
 
-const getStatusByCode = (code: string): FileChange["status"] | undefined => {
+const getStatusByCode = (code: string): FileChangeStatus | undefined => {
   if (code === ".") {
     return undefined;
   } else if (code === "D") {
@@ -94,7 +94,8 @@ export const parseRenameChange = (line: string): FileChange => {
   const hasUnstaged = unstagedCode !== ".";
 
   const similarity = parseInt(renameInfo.slice(1), 10);
-  const status = similarity === RENAME_SIMILARITY_PERFECT_SCORE ? "renamed-only" : "modified";
+  const status =
+    similarity === RENAME_SIMILARITY_PERFECT_SCORE ? "renamed-only" : "renamed-modified";
 
   const unstagedStatus = getStatusByCode(unstagedCode);
 
@@ -184,7 +185,7 @@ export const detectUnstagedRenames = async (
       .map((pair) => ({
         path: pair.newFilePath,
         unstagedStatus:
-          pair.similarity === RENAME_SIMILARITY_PERFECT_SCORE ? "renamed-only" : "modified",
+          pair.similarity === RENAME_SIMILARITY_PERFECT_SCORE ? "renamed-only" : "renamed-modified",
         hasStaged: false,
         hasUnstaged: true,
         unstagedOldPath: pair.oldFilePath,

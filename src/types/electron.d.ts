@@ -9,10 +9,17 @@ export interface Branch {
   upstream?: string;
 }
 
+export type FileChangeStatus =
+  | "modified"
+  | "added"
+  | "deleted"
+  | "renamed-only"
+  | "renamed-modified";
+
 export interface FileChange {
   path: string;
-  status?: "modified" | "added" | "deleted" | "renamed-only";
-  unstagedStatus?: "modified" | "added" | "deleted" | "renamed-only";
+  status?: FileChangeStatus;
+  unstagedStatus?: FileChangeStatus;
   hasStaged: boolean;
   hasUnstaged: boolean;
   stagedOldPath?: string;

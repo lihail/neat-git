@@ -827,12 +827,12 @@ export const getDiff = async (
     }
     const diffOutput = diffResult.output.trim();
 
-    if (!diffOutput) {
-      const isPureRename = Boolean(oldFilePath);
-      if (isPureRename) {
-        return [];
-      }
+    const isPureRename = !diffOutput && oldFilePath;
+    if (isPureRename) {
+      return [];
+    }
 
+    if (!diffOutput) {
       // Check if file is new/untracked by checking if it exists in git
       const fullPath = path.join(repoPath, filepath);
       if (fs.existsSync(fullPath)) {

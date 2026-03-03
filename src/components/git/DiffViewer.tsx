@@ -9,12 +9,14 @@ import { DiffHunkView } from "./DiffHunkView";
 import { DiffFullView } from "./DiffFullView";
 import { EmptyStateCard } from "../common/EmptyStateCard";
 import type { DiffLine } from "@/lib/git";
+import { FileChange, FileChangeStatus } from "@/types/git";
 
 interface DiffViewerProps {
+  selectedFile: FileChange;
   filePath?: string;
   oldFilePath?: string;
   lines: DiffLine[];
-  fileStatus?: "modified" | "added" | "deleted" | "renamed-only";
+  fileStatus?: FileChangeStatus;
   isStaged?: boolean;
   isLoading?: boolean;
   wordWrap?: boolean;
@@ -22,13 +24,14 @@ interface DiffViewerProps {
   viewMode?: DiffViewerMode;
   onViewModeChange: (value: DiffViewerMode) => void;
   onViewModeChangeStart: () => void;
-  onStageLines?: (lineIndices: number[]) => void;
-  onUnstageLines?: (lineIndices: number[]) => void;
-  onStageHunk?: (hunkIndex: number) => void;
-  onUnstageHunk?: (hunkIndex: number) => void;
+  onStageLines: (lineIndices: number[]) => void;
+  onUnstageLines: (lineIndices: number[]) => void;
+  onStageHunk: (hunkIndex: number) => void;
+  onUnstageHunk: (hunkIndex: number) => void;
 }
 
 export const DiffViewer = ({
+  selectedFile,
   filePath,
   oldFilePath,
   lines,
@@ -83,11 +86,6 @@ export const DiffViewer = ({
     return computeLineGroups(lines);
   }, [lines, fileStatus]);
 
-  const canStageLines = fileStatus === "modified" && !isStaged && Boolean(onStageLines);
-  const canUnstageLines = fileStatus === "modified" && isStaged && Boolean(onUnstageLines);
-  const canStageHunk = fileStatus === "modified" && !isStaged && Boolean(onStageHunk);
-  const canUnstageHunk = fileStatus === "modified" && isStaged && Boolean(onUnstageHunk);
-
   if (!filePath) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -96,8 +94,12 @@ export const DiffViewer = ({
     );
   }
 
-  const isPureRename = fileStatus === "renamed-only" && lines.length === 0;
+  const isPureRename = fileStatus === "renamed-only";
   const isEmptyFile = lines.length === 0 || lines.every((line) => line.content.trim() === "");
+  const canPartiallyStage =
+    !isStaged && selectedFile.hasUnstaged && selectedFile.unstagedStatus === "modified";
+  const canPartiallyUnstage =
+    isStaged && selectedFile.hasStaged && selectedFile.status === "modified";
 
   return (
     <div className="flex h-full flex-col relative">
@@ -159,10 +161,10 @@ export const DiffViewer = ({
           wordWrap={wordWrap}
           lineGroupMap={lineGroupMap}
           isStaged={isStaged}
-          onStageHunk={canStageHunk ? onStageHunk : undefined}
-          onUnstageHunk={canUnstageHunk ? onUnstageHunk : undefined}
-          onStageLines={canStageLines ? onStageLines : undefined}
-          onUnstageLines={canUnstageLines ? onUnstageLines : undefined}
+          onStageHunk={canPartiallyStage ? onStageHunk : undefined}
+          onUnstageHunk={canPartiallyUnstage ? onUnstageHunk : undefined}
+          onStageLines={canPartiallyStage ? onStageLines : undefined}
+          onUnstageLines={canPartiallyUnstage ? onUnstageLines : undefined}
         />
       ) : effectiveViewMode === "split" && splitLines ? (
         <DiffSplitView
@@ -171,8 +173,8 @@ export const DiffViewer = ({
           wordWrap={wordWrap}
           lineGroupMap={lineGroupMap}
           isStaged={isStaged}
-          onStageLines={canStageLines ? onStageLines : undefined}
-          onUnstageLines={canUnstageLines ? onUnstageLines : undefined}
+          onStageLines={canPartiallyStage ? onStageLines : undefined}
+          onUnstageLines={canPartiallyUnstage ? onUnstageLines : undefined}
         />
       ) : (
         <DiffFullView
@@ -181,8 +183,8 @@ export const DiffViewer = ({
           wordWrap={wordWrap}
           lineGroupMap={lineGroupMap}
           isStaged={isStaged}
-          onStageLines={canStageLines ? onStageLines : undefined}
-          onUnstageLines={canUnstageLines ? onUnstageLines : undefined}
+          onStageLines={canPartiallyStage ? onStageLines : undefined}
+          onUnstageLines={canPartiallyUnstage ? onUnstageLines : undefined}
         />
       )}
     </div>
