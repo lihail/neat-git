@@ -1665,16 +1665,6 @@ export const Workspace = () => {
     );
   }
 
-  let selectedFileStatus;
-  if (currentState?.selectedFile) {
-    const selectedFile = currentState.files.find((f) => f.path === currentState.selectedFile);
-    selectedFileStatus = currentState.isSelectedFileChangeStaged
-      ? selectedFile?.status
-      : selectedFile?.unstagedStatus;
-  } else {
-    selectedFileStatus = undefined;
-  }
-
   const selectedFile = currentState?.files.find((f) => f.path === currentState.selectedFile);
 
   return (
@@ -1736,10 +1726,7 @@ export const Workspace = () => {
             {selectedFile && (
               <DiffViewer
                 selectedFile={selectedFile}
-                filePath={currentState.selectedFile}
-                oldFilePath={selectedFileOldPath}
                 lines={currentState.diffLines}
-                fileStatus={selectedFileStatus}
                 isStaged={currentState.isSelectedFileChangeStaged}
                 isLoading={loadingDiff}
                 wordWrap={wordWrap}

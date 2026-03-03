@@ -9,14 +9,11 @@ import { DiffHunkView } from "./DiffHunkView";
 import { DiffFullView } from "./DiffFullView";
 import { EmptyStateCard } from "../common/EmptyStateCard";
 import type { DiffLine } from "@/lib/git";
-import { FileChange, FileChangeStatus } from "@/types/git";
+import { FileChange } from "@/types/git";
 
 interface DiffViewerProps {
   selectedFile: FileChange;
-  filePath?: string;
-  oldFilePath?: string;
   lines: DiffLine[];
-  fileStatus?: FileChangeStatus;
   isStaged?: boolean;
   isLoading?: boolean;
   wordWrap?: boolean;
@@ -32,10 +29,7 @@ interface DiffViewerProps {
 
 export const DiffViewer = ({
   selectedFile,
-  filePath,
-  oldFilePath,
   lines,
-  fileStatus,
   isStaged = false,
   isLoading = false,
   wordWrap = false,
@@ -48,6 +42,10 @@ export const DiffViewer = ({
   onStageHunk,
   onUnstageHunk,
 }: DiffViewerProps) => {
+  const { path: filePath } = selectedFile;
+  const oldFilePath = isStaged ? selectedFile.stagedOldPath : selectedFile.unstagedOldPath;
+  const fileStatus = isStaged ? selectedFile?.status : selectedFile?.unstagedStatus;
+
   const language = useMemo(() => {
     return filePath ? detectLanguageFromPath(filePath) : "text";
   }, [filePath]);
