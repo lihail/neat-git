@@ -171,8 +171,9 @@ export const detectUnstagedRenames = async (
       .split("\n")
       .filter((line) => line.startsWith("R"))
       .map((line) => {
-        const [_statusPart, oldFilePath, newFilePath] = line.split("\t");
+        const [statusPart, oldFilePath, newFilePath] = line.split("\t");
         return {
+          similarity: parseInt(statusPart.slice(1), 10),
           oldFilePath,
           newFilePath,
         };
@@ -182,7 +183,8 @@ export const detectUnstagedRenames = async (
       .filter((pair) => isValidUnstagedRenameFilePair(pair, stagedFiles))
       .map((pair) => ({
         path: pair.newFilePath,
-        unstagedStatus: "renamed-only",
+        unstagedStatus:
+          pair.similarity === RENAME_SIMILARITY_PERFECT_SCORE ? "renamed-only" : "modified",
         hasStaged: false,
         hasUnstaged: true,
         unstagedOldPath: pair.oldFilePath,

@@ -18,7 +18,6 @@ interface ChangedFileListProps {
 }
 
 const getStatusIcon = (file: FileChange, isStaged: boolean) => {
-  // Use unstagedStatus for unstaged section if available, otherwise fall back to status
   const effectiveStatus = !isStaged && file.unstagedStatus ? file.unstagedStatus : file.status;
 
   if (effectiveStatus === "modified") {
@@ -111,8 +110,7 @@ export const ChangedFileList = ({
                 <>
                   <div className="flex items-center gap-2 flex-1 min-w-0">
                     {getStatusIcon(file, isStaged)}
-                    {(!isStaged && file.unstagedStatus === "renamed-only") ||
-                    (isStaged && file.status === "renamed-only") ? (
+                    {(!isStaged && file.unstagedOldPath) || (isStaged && file.stagedOldPath) ? (
                       <span className="truncate font-mono text-xs">
                         <span className="text-muted-foreground">
                           {getFileName(isStaged ? file.stagedOldPath : file.unstagedOldPath)}
