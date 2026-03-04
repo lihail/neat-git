@@ -913,7 +913,7 @@ export const Workspace = () => {
     }
   };
 
-  const handleCommit = async (message: string, description?: string) => {
+  const handleCommit = async (message: string) => {
     if (!repoPath || !currentState) {
       return;
     }
@@ -926,7 +926,7 @@ export const Workspace = () => {
     }
 
     try {
-      const result = await commit(repoPath, message, description);
+      const result = await commit(repoPath, message);
 
       if (result.success) {
         toast.success(`Committed ${stagedCount} file${stagedCount !== 1 ? "s" : ""}: ${message}`);

@@ -720,7 +720,7 @@ export const checkout = async (repoPath: string, branchName: string) => {
   }
 };
 
-export const commit = async (repoPath: string, message: string, description: string | null) => {
+export const commit = async (repoPath: string, message: string) => {
   try {
     // Check status matrix to see what's staged
     const statusMatrix = await git.statusMatrix({
@@ -738,9 +738,6 @@ export const commit = async (repoPath: string, message: string, description: str
       return { success: false, message: "No changes staged for commit" };
     }
 
-    // Combine message and description
-    const fullMessage = description ? `${message}\n\n${description}` : message;
-
     const config = await readGlobalConfig();
     const authorName = config.userName || "User";
     const authorEmail = config.userEmail || "user@example.com";
@@ -748,7 +745,7 @@ export const commit = async (repoPath: string, message: string, description: str
     const sha = await git.commit({
       fs,
       dir: repoPath,
-      message: fullMessage,
+      message,
       author: {
         name: authorName,
         email: authorEmail,
@@ -762,7 +759,7 @@ export const commit = async (repoPath: string, message: string, description: str
   }
 };
 
-export const log = async (repoPath: string, limit: number = 50) => {
+export const log = async (repoPath: string, limit: number) => {
   try {
     // Check if there are any commits by trying to resolve HEAD
     try {
@@ -800,8 +797,8 @@ export const log = async (repoPath: string, limit: number = 50) => {
 export const getDiff = async (
   repoPath: string,
   filepath: string,
-  staged: boolean = false,
-  contextLines: number = 999999,
+  staged: boolean,
+  contextLines: number,
   oldFilePath: string | null
 ) => {
   try {
@@ -2167,7 +2164,6 @@ export const fetch = async (
   password: string | null,
   saveCredentials: boolean
 ) => {
-  // Wrap entire handler to ensure we NEVER throw across IPC boundary
   try {
     // Verify the repo path exists
     if (!fs.existsSync(repoPath)) {
@@ -2308,7 +2304,6 @@ export const push = async (
   password: string | null,
   saveCredentials: boolean
 ) => {
-  // Wrap entire handler to ensure we NEVER throw across IPC boundary
   try {
     // Verify the repo path exists
     if (!fs.existsSync(repoPath)) {
@@ -2467,7 +2462,6 @@ const pull = async (
   saveCredentials: boolean,
   branchName?: string
 ) => {
-  // Wrap entire handler to ensure we NEVER throw across IPC boundary
   try {
     // Verify the repo path exists
     if (!fs.existsSync(repoPath)) {

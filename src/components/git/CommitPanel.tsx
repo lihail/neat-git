@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 
 interface CommitPanelProps {
   stagedFilesCount: number;
-  onCommit: (message: string, description?: string) => void;
+  onCommit: (message: string) => void;
 }
 
 export const CommitPanel = ({ stagedFilesCount, onCommit }: CommitPanelProps) => {

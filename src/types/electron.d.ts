@@ -85,19 +85,19 @@ export interface ElectronAPI {
   stageFile: (
     repoPath: string,
     filepath: string,
-    oldFilePath?: string | null
+    oldFilePath: string | null
   ) => Promise<{ success: true }>;
   stageAllFiles: (repoPath: string) => Promise<{ success: true }>;
   unstageChange: (
     repoPath: string,
     filepath: string,
-    oldFilePath?: string | null
+    oldFilePath: string | null
   ) => Promise<{ success: true }>;
   unstageAllFiles: (repoPath: string) => Promise<{ success: true }>;
   discardChanges: (
     repoPath: string,
     filepath: string,
-    oldFilePath?: string | null
+    oldFilePath: string | null
   ) => Promise<{ success: true }>;
   stageLines: (
     repoPath: string,
@@ -121,16 +121,15 @@ export interface ElectronAPI {
   ) => Promise<{ success: boolean; error?: string }>;
   commit: (
     repoPath: string,
-    message: string,
-    description?: string | null
+    message: string
   ) => Promise<{ success: boolean; sha?: string; message?: string }>;
-  log: (repoPath: string, limit?: number) => Promise<Commit[]>;
+  log: (repoPath: string, limit: number) => Promise<Commit[]>;
   getDiff: (
     repoPath: string,
     filepath: string,
-    staged?: boolean,
-    contextLines?: number,
-    oldFilePath?: string | null
+    staged: boolean,
+    contextLines: number,
+    oldFilePath: string | null
   ) => Promise<DiffLine[]>;
   listStashes: (repoPath: string) => Promise<Stash[]>;
   stash: (repoPath: string, message: string) => Promise<{ success: boolean; message: string }>;
@@ -143,9 +142,9 @@ export interface ElectronAPI {
   clone: (
     url: string,
     destination: string,
-    username?: string | null,
-    password?: string | null,
-    saveCredentials?: boolean
+    username: string | null,
+    password: string | null,
+    saveCredentials: boolean
   ) => Promise<{
     success: boolean;
     path?: string;
@@ -159,28 +158,28 @@ export interface ElectronAPI {
   isGitRepository: (repoPath: string) => Promise<boolean>;
   fetch: (
     repoPath: string,
-    username?: string | null,
-    password?: string | null,
-    saveCredentials?: boolean
+    username: string | null,
+    password: string | null,
+    saveCredentials: boolean
   ) => Promise<{ success: boolean; error?: string; needsAuth?: boolean }>;
   push: (
     repoPath: string,
-    username?: string | null,
-    password?: string | null,
-    saveCredentials?: boolean
+    username: string | null,
+    password: string | null,
+    saveCredentials: boolean
   ) => Promise<{ success: boolean; error?: string; needsAuth?: boolean }>;
   pullCurrentBranch: (
     repoPath: string,
-    username?: string | null,
-    password?: string | null,
-    saveCredentials?: boolean
+    username: string | null,
+    password: string | null,
+    saveCredentials: boolean
   ) => Promise<{ success: boolean; error?: string; needsAuth?: boolean }>;
   pullNonCurrentBranch: (
     repoPath: string,
     branchName: string,
-    username?: string | null,
-    password?: string | null,
-    saveCredentials?: boolean
+    username: string | null,
+    password: string | null,
+    saveCredentials: boolean
   ) => Promise<{ success: boolean; error?: string; needsAuth?: boolean }>;
   findSshKeys: () => Promise<{
     success: boolean;

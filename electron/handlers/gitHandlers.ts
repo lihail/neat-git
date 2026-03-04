@@ -119,14 +119,11 @@ export const registerGitHandlers = () => {
     return await checkout(repoPath, branchName);
   });
 
-  ipcMain.handle(
-    IPC_CHANNELS.GIT_COMMIT,
-    async (_, repoPath: string, message: string, description: string | null) => {
-      return await commit(repoPath, message, description);
-    }
-  );
+  ipcMain.handle(IPC_CHANNELS.GIT_COMMIT, async (_, repoPath: string, message: string) => {
+    return await commit(repoPath, message);
+  });
 
-  ipcMain.handle(IPC_CHANNELS.GIT_LOG, async (_, repoPath: string, limit: number = 50) => {
+  ipcMain.handle(IPC_CHANNELS.GIT_LOG, async (_, repoPath: string, limit: number) => {
     return await log(repoPath, limit);
   });
 
@@ -136,8 +133,8 @@ export const registerGitHandlers = () => {
       _,
       repoPath: string,
       filepath: string,
-      staged: boolean = false,
-      contextLines: number = 999999,
+      staged: boolean,
+      contextLines: number,
       oldFilePath: string | null
     ) => {
       return await getDiff(repoPath, filepath, staged, contextLines, oldFilePath);

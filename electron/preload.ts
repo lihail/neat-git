@@ -1,7 +1,7 @@
 import { contextBridge, ipcRenderer } from "electron";
 import { IPC_CHANNELS } from "./ipcChannels";
 
-// --------- Expose a type-safe API to the Renderer process ---------
+// Expose a type-safe API to the Renderer process
 contextBridge.exposeInMainWorld("electronAPI", {
   openSelectGitRepositoryFolderDialog: () =>
     ipcRenderer.invoke(IPC_CHANNELS.DIALOG_OPEN_SELECT_GIT_REPOSITORY_FOLDER),
@@ -31,15 +31,15 @@ contextBridge.exposeInMainWorld("electronAPI", {
   checkout: (repoPath: string, branchName: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.GIT_CHECKOUT, repoPath, branchName),
   getStatus: (repoPath: string) => ipcRenderer.invoke(IPC_CHANNELS.GIT_GET_STATUS, repoPath),
-  stageFile: (repoPath: string, filepath: string, oldFilePath?: string | null) =>
+  stageFile: (repoPath: string, filepath: string, oldFilePath: string | null) =>
     ipcRenderer.invoke(IPC_CHANNELS.GIT_STAGE_FILE, repoPath, filepath, oldFilePath),
   stageAllFiles: (repoPath: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.GIT_STAGE_ALL_FILES, repoPath),
-  unstageChange: (repoPath: string, filepath: string, oldFilePath?: string | null) =>
+  unstageChange: (repoPath: string, filepath: string, oldFilePath: string | null) =>
     ipcRenderer.invoke(IPC_CHANNELS.GIT_UNSTAGE_CHANGE, repoPath, filepath, oldFilePath),
   unstageAllFiles: (repoPath: string) =>
     ipcRenderer.invoke(IPC_CHANNELS.GIT_UNSTAGE_ALL_FILES, repoPath),
-  discardChanges: (repoPath: string, filepath: string, oldFilePath?: string | null) =>
+  discardChanges: (repoPath: string, filepath: string, oldFilePath: string | null) =>
     ipcRenderer.invoke(IPC_CHANNELS.GIT_DISCARD_CHANGES, repoPath, filepath, oldFilePath),
   stageLines: (
     repoPath: string,
@@ -55,16 +55,16 @@ contextBridge.exposeInMainWorld("electronAPI", {
     ipcRenderer.invoke(IPC_CHANNELS.GIT_STAGE_HUNK, repoPath, filepath, hunkIndex),
   unstageHunk: (repoPath: string, filepath: string, hunkIndex: number) =>
     ipcRenderer.invoke(IPC_CHANNELS.GIT_UNSTAGE_HUNK, repoPath, filepath, hunkIndex),
-  commit: (repoPath: string, message: string, description?: string | null) =>
-    ipcRenderer.invoke(IPC_CHANNELS.GIT_COMMIT, repoPath, message, description),
-  log: (repoPath: string, limit?: number) =>
+  commit: (repoPath: string, message: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.GIT_COMMIT, repoPath, message),
+  log: (repoPath: string, limit: number) =>
     ipcRenderer.invoke(IPC_CHANNELS.GIT_LOG, repoPath, limit),
   getDiff: (
     repoPath: string,
     filepath: string,
-    staged?: boolean,
-    contextLines?: number,
-    oldFilePath?: string | null
+    staged: boolean,
+    contextLines: number,
+    oldFilePath: string | null
   ) =>
     ipcRenderer.invoke(
       IPC_CHANNELS.GIT_GET_DIFF,
@@ -86,9 +86,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
   clone: (
     url: string,
     destination: string,
-    username?: string | null,
-    password?: string | null,
-    saveCredentials?: boolean
+    username: string | null,
+    password: string | null,
+    saveCredentials: boolean
   ) =>
     ipcRenderer.invoke(
       IPC_CHANNELS.GIT_CLONE,
@@ -103,21 +103,21 @@ contextBridge.exposeInMainWorld("electronAPI", {
     ipcRenderer.invoke(IPC_CHANNELS.GIT_IS_REPOSITORY, repoPath),
   fetch: (
     repoPath: string,
-    username?: string | null,
-    password?: string | null,
-    saveCredentials?: boolean
+    username: string | null,
+    password: string | null,
+    saveCredentials: boolean
   ) => ipcRenderer.invoke(IPC_CHANNELS.GIT_FETCH, repoPath, username, password, saveCredentials),
   push: (
     repoPath: string,
-    username?: string | null,
-    password?: string | null,
-    saveCredentials?: boolean
+    username: string | null,
+    password: string | null,
+    saveCredentials: boolean
   ) => ipcRenderer.invoke(IPC_CHANNELS.GIT_PUSH, repoPath, username, password, saveCredentials),
   pullCurrentBranch: (
     repoPath: string,
-    username?: string | null,
-    password?: string | null,
-    saveCredentials?: boolean
+    username: string | null,
+    password: string | null,
+    saveCredentials: boolean
   ) =>
     ipcRenderer.invoke(
       IPC_CHANNELS.GIT_PULL_CURRENT_BRANCH,
@@ -129,9 +129,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
   pullNonCurrentBranch: (
     repoPath: string,
     branchName: string,
-    username?: string | null,
-    password?: string | null,
-    saveCredentials?: boolean
+    username: string | null,
+    password: string | null,
+    saveCredentials: boolean
   ) =>
     ipcRenderer.invoke(
       IPC_CHANNELS.GIT_PULL_NON_CURRENT_BRANCH,

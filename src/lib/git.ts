@@ -101,7 +101,9 @@ export const discardChanges = async (
   oldFilePath?: string
 ): Promise<void> => {
   try {
-    await window.electronAPI.discardChanges(repoPath, filepath, oldFilePath);
+    // Ensure all parameters are serializable
+    const safeOldFilePath = oldFilePath !== undefined ? String(oldFilePath) : null;
+    await window.electronAPI.discardChanges(repoPath, filepath, safeOldFilePath);
   } catch (error) {
     console.error("Error discarding changes:", error);
     throw error;
@@ -118,15 +120,10 @@ export const listRemoteBranches = async (repoPath: string): Promise<Branch[]> =>
   }
 };
 
-/**
- * Get diff for a file
- * @param staged - If true, shows staged changes (HEAD vs staging area). If false, shows unstaged changes (staging area vs working directory)
- * @param contextLines - Number of context lines to show around changes (999999 for full file, 3 for hunks)
- */
 export const getDiff = async (
   repoPath: string,
   filepath: string,
-  staged: boolean = false,
+  staged: boolean,
   contextLines: number = 999999,
   oldFilePath?: string
 ): Promise<DiffLine[]> => {
@@ -221,13 +218,10 @@ export const getCommitHistory = async (repoPath: string, limit: number = 50): Pr
 
 export const commit = async (
   repoPath: string,
-  message: string,
-  description?: string
+  message: string
 ): Promise<{ success: boolean; sha?: string; message?: string }> => {
   try {
-    // Ensure all parameters are serializable
-    const safeDescription = description !== undefined ? String(description) : null;
-    return await window.electronAPI.commit(repoPath, message, safeDescription);
+    return await window.electronAPI.commit(repoPath, message);
   } catch (error) {
     console.error("Error committing:", error);
     throw error;
