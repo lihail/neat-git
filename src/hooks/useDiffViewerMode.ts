@@ -1,6 +1,6 @@
-import { type DiffViewerMode } from "@/components/git/DiffViewerModeToggle";
 import { useEffect, useState } from "react";
 import { getDiffViewerMode, saveDiffViewerMode } from "@/lib/localStorage";
+import { DiffViewerMode } from "@/types/git";
 
 export const useDiffViewerMode = () => {
   const [diffViewerMode, setDiffViewerMode] = useState<DiffViewerMode>(() => {

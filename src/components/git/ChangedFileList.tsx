@@ -12,7 +12,7 @@ interface ChangedFileListProps {
   repoPath: string;
   selectedFile?: string;
   isSelectedFileChangeStaged?: boolean;
-  onSelectFile: (path: string, isStaged: boolean) => void;
+  onSelectFile: (file: FileChange, isStaged: boolean) => void;
   onToggleStage: (path: string, shouldStage: boolean) => void;
   onDiscardChanges: (path: string, oldPath?: string) => void;
 }
@@ -70,7 +70,7 @@ export const ChangedFileList = ({
         <ContextMenu key={`${file.path}-${isStaged ? "staged" : "unstaged"}`}>
           <ContextMenuTrigger asChild disabled={discardingFile === file.path}>
             <div
-              onClick={() => discardingFile !== file.path && onSelectFile(file.path, isStaged)}
+              onClick={() => discardingFile !== file.path && onSelectFile(file, isStaged)}
               className={cn(
                 "flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm transition-colors",
                 discardingFile !== file.path && "hover:bg-secondary group cursor-pointer",

@@ -135,9 +135,17 @@ export const registerGitHandlers = () => {
       filepath: string,
       staged: boolean,
       contextLines: number,
-      oldFilePath: string | null
+      oldFilePath: string | null,
+      isAddedUnstagedAfterDeletedStaged: boolean
     ) => {
-      return await getDiff(repoPath, filepath, staged, contextLines, oldFilePath);
+      return await getDiff(
+        repoPath,
+        filepath,
+        staged,
+        contextLines,
+        oldFilePath,
+        isAddedUnstagedAfterDeletedStaged
+      );
     }
   );
 

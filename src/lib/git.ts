@@ -125,17 +125,20 @@ export const getDiff = async (
   filepath: string,
   staged: boolean,
   contextLines: number = 999999,
-  oldFilePath?: string
+  oldFilePath?: string,
+  isAddedUnstagedAfterDeletedStaged?: boolean
 ): Promise<DiffLine[]> => {
   try {
     // Ensure all parameters are serializable
     const safeOldFilePath = oldFilePath !== undefined ? String(oldFilePath) : null;
+    const safeIsAddedUnstagedAfterDeletedStaged = Boolean(isAddedUnstagedAfterDeletedStaged);
     const diff = await window.electronAPI.getDiff(
       repoPath,
       filepath,
       staged,
       contextLines,
-      safeOldFilePath
+      safeOldFilePath,
+      safeIsAddedUnstagedAfterDeletedStaged
     );
     return diff || [];
   } catch (error) {

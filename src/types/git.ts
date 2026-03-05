@@ -74,3 +74,5 @@ export interface LineGroupMap {
   lineToGroup: Map<number, number>;
   groups: Map<number, number[]>;
 }
+
+export type DiffViewerMode = "full" | "hunks" | "split";

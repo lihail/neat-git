@@ -129,7 +129,8 @@ export interface ElectronAPI {
     filepath: string,
     staged: boolean,
     contextLines: number,
-    oldFilePath: string | null
+    oldFilePath: string | null,
+    isAddedUnstagedAfterDeletedStaged: boolean
   ) => Promise<DiffLine[]>;
   listStashes: (repoPath: string) => Promise<Stash[]>;
   stash: (repoPath: string, message: string) => Promise<{ success: boolean; message: string }>;

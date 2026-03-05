@@ -11,7 +11,7 @@ interface ChangedFilesSectionProps {
   selectedFile?: string;
   isSelectedFileChangeStaged?: boolean;
   onAction: MouseEventHandler<HTMLButtonElement>;
-  onSelectFile: (path: string, isStaged: boolean) => void;
+  onSelectFile: (file: FileChange, isStaged: boolean) => void;
   onToggleStage: (path: string, shouldStage: boolean) => void;
   onDiscardChanges: (path: string, oldPath?: string) => void;
 }

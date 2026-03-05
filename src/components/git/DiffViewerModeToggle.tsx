@@ -1,7 +1,6 @@
 import { FileText, List, Columns2 } from "lucide-react";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-
-export type DiffViewerMode = "full" | "hunks" | "split";
+import { DiffViewerMode } from "@/types/git";
 
 interface DiffViewerModeToggleProps {
   value: DiffViewerMode;

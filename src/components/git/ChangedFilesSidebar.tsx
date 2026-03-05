@@ -7,7 +7,7 @@ interface ChangedFilesSidebarProps {
   files: FileChange[];
   repoPath: string;
   onToggleStage: (path: string, shouldStage: boolean) => void;
-  onSelectFile: (path: string, isStaged: boolean) => void;
+  onSelectFile: (file: FileChange, isStaged: boolean) => void;
   selectedFile?: string;
   isSelectedFileChangeStaged?: boolean;
   onStageAll: MouseEventHandler<HTMLButtonElement>;

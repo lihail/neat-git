@@ -1,7 +1,7 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import languageMap from "language-map";
-import { FileChange } from "@/types/git";
+import { DiffViewerMode, FileChange } from "@/types/git";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -223,4 +223,38 @@ export const validateCloneUrl = (url: string): string | null => {
 export const getFileChangeOldPath = (files: FileChange[], filePath: string, isStaged: boolean) => {
   const file = files.find((f) => f.path === filePath);
   return isStaged ? file?.stagedOldPath : file?.unstagedOldPath;
+};
+
+// Split by both forward and back slashes for cross-platform compatibility
+export const getRepoNameFromPath = (path: string): string => {
+  const parts = path.split(/[/\\]/);
+  return parts[parts.length - 1] || path;
+};
+
+export const getContextLinesForMode = (mode: DiffViewerMode): number => {
+  switch (mode) {
+    case "full":
+      return 999999; // Show entire file
+    case "hunks":
+      return 3; // Show 3 lines of context around changes
+    case "split":
+      return 999999; // Split view also shows full file
+    default:
+      return 999999;
+  }
+};
+
+export const isAddedUnstagedAfterDeletedStaged = (
+  file: FileChange,
+  isStaged: boolean,
+  allFiles: FileChange[]
+): boolean => {
+  if (isStaged || file.unstagedStatus !== "added") {
+    return false;
+  }
+  const hasStagedDeletion = allFiles.some(
+    (otherFile) =>
+      otherFile.path === file.path && otherFile.hasStaged && otherFile.status === "deleted"
+  );
+  return hasStagedDeletion;
 };

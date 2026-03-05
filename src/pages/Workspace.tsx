@@ -5,13 +5,18 @@ import { RepoSelector } from "@/components/git/RepoSelector";
 import { SidebarAccordion } from "@/components/git/SidebarAccordion";
 import { ChangedFilesSidebar } from "@/components/git/ChangedFilesSidebar";
 import { DiffViewer } from "@/components/git/DiffViewer";
-import { type DiffViewerMode } from "@/components/git/DiffViewerModeToggle";
 import { CommitPanel } from "@/components/git/CommitPanel";
 import { TopBar, type RepoTab } from "@/components/git/TopBar";
 import { GitSetupDialog } from "@/components/git/GitSetupDialog";
 import { AuthenticationDialog } from "@/components/common/AuthenticationDialog";
 import { toast } from "@/components/ui/toaster";
-import { cn, getFileChangeOldPath } from "@/lib/utils";
+import {
+  cn,
+  getContextLinesForMode,
+  getFileChangeOldPath,
+  getRepoNameFromPath,
+  isAddedUnstagedAfterDeletedStaged,
+} from "@/lib/utils";
 import {
   listLocalBranches,
   listRemoteBranches,
@@ -65,28 +70,10 @@ interface RepoState {
   stashes: Stash[];
   files: FileChange[];
   selectedFile?: string;
+  selectedFileChange?: FileChange;
   isSelectedFileChangeStaged?: boolean; // Track if viewing staged or unstaged diff
   diffLines: DiffLine[];
 }
-
-// Split by both forward and back slashes for cross-platform compatibility
-const getRepoNameFromPath = (path: string): string => {
-  const parts = path.split(/[/\\]/);
-  return parts[parts.length - 1] || path;
-};
-
-const getContextLinesForMode = (mode: DiffViewerMode): number => {
-  switch (mode) {
-    case "full":
-      return 999999; // Show entire file
-    case "hunks":
-      return 3; // Show 3 lines of context around changes
-    case "split":
-      return 999999; // Split view also shows full file
-    default:
-      return 999999;
-  }
-};
 
 export const Workspace = () => {
   const { isWindows } = usePlatform();
@@ -365,7 +352,12 @@ export const Workspace = () => {
             currentState.selectedFile!,
             currentState.isSelectedFileChangeStaged ?? false,
             getContextLinesForMode(diffViewerMode),
-            selectedFileOldPath
+            selectedFileOldPath,
+            isAddedUnstagedAfterDeletedStaged(
+              currentState.selectedFileChange,
+              currentState.isSelectedFileChangeStaged ?? false,
+              currentState.files
+            )
           );
           updateRepoState(repoPath, { diffLines: diff });
         } catch (error) {
@@ -403,21 +395,20 @@ export const Workspace = () => {
         // Check if selected file still exists and adjust section if needed
         let newIsSelectedFileChangeStaged = currentState?.isSelectedFileChangeStaged;
         if (currentState?.selectedFile) {
-          const selectedFileStatus = statusList.find((f) => f.path === currentState.selectedFile);
-          if (selectedFileStatus) {
+          if (currentState.selectedFileChange) {
             // If viewing unstaged but file no longer has unstaged changes, switch to staged
             if (
               currentState.isSelectedFileChangeStaged === false &&
-              !selectedFileStatus.hasUnstaged &&
-              selectedFileStatus.hasStaged
+              !currentState.selectedFileChange.hasUnstaged &&
+              currentState.selectedFileChange.hasStaged
             ) {
               newIsSelectedFileChangeStaged = true;
             }
             // If viewing staged but file no longer has staged changes, switch to unstaged
             else if (
               currentState.isSelectedFileChangeStaged === true &&
-              !selectedFileStatus.hasStaged &&
-              selectedFileStatus.hasUnstaged
+              !currentState.selectedFileChange.hasStaged &&
+              currentState.selectedFileChange.hasUnstaged
             ) {
               newIsSelectedFileChangeStaged = false;
             }
@@ -444,6 +435,11 @@ export const Workspace = () => {
               statusList,
               currentState.selectedFile,
               newIsSelectedFileChangeStaged
+            ),
+            isAddedUnstagedAfterDeletedStaged(
+              currentState.selectedFileChange,
+              newIsSelectedFileChangeStaged ?? false,
+              currentState.files
             )
           );
           updateRepoState(repoPath, { diffLines: diff });
@@ -463,6 +459,8 @@ export const Workspace = () => {
     currentState?.selectedFile,
     currentState?.isSelectedFileChangeStaged,
     diffViewerMode,
+    currentState?.selectedFileChange,
+    currentState?.files,
   ]);
 
   // Tab management functions
@@ -1345,13 +1343,16 @@ export const Workspace = () => {
       }))
     : [];
 
-  const handleSelectFile = async (filePath: string, isStaged: boolean) => {
+  const handleSelectFile = async (file: FileChange, isStaged: boolean) => {
     if (!repoPath || !currentState) {
       return;
     }
 
+    const filePath = file.path;
+
     // Update selection state
     updateRepoState(repoPath, {
+      selectedFileChange: file,
       selectedFile: filePath,
       isSelectedFileChangeStaged: isStaged,
     });
@@ -1373,7 +1374,8 @@ export const Workspace = () => {
         filePath,
         isStaged,
         getContextLinesForMode(diffViewerMode),
-        getFileChangeOldPath(currentState.files, filePath, isStaged)
+        getFileChangeOldPath(currentState.files, filePath, isStaged),
+        isAddedUnstagedAfterDeletedStaged(file, isStaged, currentState.files)
       );
       updateRepoState(repoPath, { diffLines: diff });
     } catch (error) {

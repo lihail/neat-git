@@ -3,13 +3,13 @@ import { Button } from "@/components/ui/button";
 import { cn, detectLanguageFromPath } from "@/lib/utils";
 import { groupLinesByHunks, pairSplitLines, computeLineGroups } from "@/lib/gitDiff";
 import { useMemo } from "react";
-import { DiffViewerModeToggle, type DiffViewerMode } from "./DiffViewerModeToggle";
+import { DiffViewerModeToggle } from "./DiffViewerModeToggle";
 import { DiffSplitView } from "./DiffSplitView";
 import { DiffHunkView } from "./DiffHunkView";
 import { DiffFullView } from "./DiffFullView";
 import { EmptyStateCard } from "../common/EmptyStateCard";
 import type { DiffLine } from "@/lib/git";
-import { FileChange } from "@/types/git";
+import { DiffViewerMode, FileChange } from "@/types/git";
 
 interface DiffViewerProps {
   selectedFile: FileChange;

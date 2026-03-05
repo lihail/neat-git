@@ -799,17 +799,22 @@ export const getDiff = async (
   filepath: string,
   staged: boolean,
   contextLines: number,
-  oldFilePath: string | null
+  oldFilePath: string | null,
+  isAddedUnstagedAfterDeletedStaged: boolean
 ) => {
   try {
     const diffArgs = ["diff"];
 
-    if (staged && oldFilePath) {
+    if (isAddedUnstagedAfterDeletedStaged) {
+      // Unstaged added file which was previously deleted and staged. This is a special case
+      // that needs to be handled differently in the diff command
+      diffArgs.push(`-U${contextLines}`, "--no-index", "/dev/null", "--", filepath);
+    } else if (staged && oldFilePath) {
       // Staged rename
       diffArgs.push(`-U${contextLines}`, `HEAD:${oldFilePath}`, `:${filepath}`);
     } else if (!staged && oldFilePath) {
       // Unstaged rename
-      diffArgs.push(`-U${contextLines}`, `HEAD:${oldFilePath}`, `${filepath}`);
+      diffArgs.push(`-U${contextLines}`, `HEAD:${oldFilePath}`, filepath);
     } else if (staged && !oldFilePath) {
       // Staged non rename change
       diffArgs.push("--cached", `-U${contextLines}`, "--", filepath);

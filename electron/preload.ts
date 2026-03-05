@@ -64,7 +64,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
     filepath: string,
     staged: boolean,
     contextLines: number,
-    oldFilePath: string | null
+    oldFilePath: string | null,
+    isAddedUnstagedAfterDeletedStaged: boolean
   ) =>
     ipcRenderer.invoke(
       IPC_CHANNELS.GIT_GET_DIFF,
@@ -72,7 +73,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
       filepath,
       staged,
       contextLines,
-      oldFilePath
+      oldFilePath,
+      isAddedUnstagedAfterDeletedStaged
     ),
   listStashes: (repoPath: string) => ipcRenderer.invoke(IPC_CHANNELS.GIT_LIST_STASHES, repoPath),
   stash: (repoPath: string, message: string) =>
