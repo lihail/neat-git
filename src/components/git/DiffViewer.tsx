@@ -42,8 +42,7 @@ export const DiffViewer = ({
   onStageHunk,
   onUnstageHunk,
 }: DiffViewerProps) => {
-  const { path: filePath } = selectedFile;
-  const oldFilePath = isStaged ? selectedFile.stagedOldPath : selectedFile.unstagedOldPath;
+  const filePath = selectedFile?.path;
   const fileStatus = isStaged ? selectedFile?.status : selectedFile?.unstagedStatus;
 
   const language = useMemo(() => {
@@ -84,7 +83,7 @@ export const DiffViewer = ({
     return computeLineGroups(lines);
   }, [lines, fileStatus]);
 
-  if (!filePath) {
+  if (!selectedFile) {
     return (
       <div className="flex h-full items-center justify-center">
         <p className="text-sm text-muted-foreground">Select a file to view changes</p>
@@ -92,6 +91,7 @@ export const DiffViewer = ({
     );
   }
 
+  const oldFilePath = isStaged ? selectedFile.stagedOldPath : selectedFile.unstagedOldPath;
   const isPureRename = fileStatus === "renamed-only";
   const isEmptyFile = lines.length === 0 || lines.every((line) => line.content.trim() === "");
   const canPartiallyStage =

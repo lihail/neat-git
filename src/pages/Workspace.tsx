@@ -1725,29 +1725,27 @@ export const Workspace = () => {
               isLoading && "pointer-events-none"
             )}
           >
-            {selectedFile && (
-              <DiffViewer
-                selectedFile={selectedFile}
-                lines={currentState.diffLines}
-                isStaged={currentState.isSelectedFileChangeStaged}
-                isLoading={loadingDiff}
-                wordWrap={wordWrap}
-                onWordWrapChange={setWordWrap}
-                viewMode={diffViewerMode}
-                onViewModeChange={setDiffViewerMode}
-                onViewModeChangeStart={() => {
-                  setLoadingDiff(true);
-                  // Clear diff lines to ensure loader is visible
-                  if (repoPath) {
-                    updateRepoState(repoPath, { diffLines: [] });
-                  }
-                }}
-                onStageLines={handleStageLines}
-                onUnstageLines={handleUnstageLines}
-                onStageHunk={handleStageHunk}
-                onUnstageHunk={handleUnstageHunk}
-              />
-            )}
+            <DiffViewer
+              selectedFile={selectedFile}
+              lines={currentState.diffLines}
+              isStaged={currentState.isSelectedFileChangeStaged}
+              isLoading={loadingDiff}
+              wordWrap={wordWrap}
+              onWordWrapChange={setWordWrap}
+              viewMode={diffViewerMode}
+              onViewModeChange={setDiffViewerMode}
+              onViewModeChangeStart={() => {
+                setLoadingDiff(true);
+                // Clear diff lines to ensure loader is visible
+                if (repoPath) {
+                  updateRepoState(repoPath, { diffLines: [] });
+                }
+              }}
+              onStageLines={handleStageLines}
+              onUnstageLines={handleUnstageLines}
+              onStageHunk={handleStageHunk}
+              onUnstageHunk={handleUnstageHunk}
+            />
           </div>
 
           <div className={cn("flex w-96 flex-col", isLoading && "pointer-events-none")}>
