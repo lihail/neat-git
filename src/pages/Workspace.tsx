@@ -392,23 +392,25 @@ export const Workspace = () => {
         const current = await getCurrentBranch(repoPath);
         const stashList = await listStashes(repoPath);
 
+        const selectedFile = statusList.find((f) => f.path === currentState.selectedFile);
+
         // Check if selected file still exists and adjust section if needed
         let newIsSelectedFileChangeStaged = currentState?.isSelectedFileChangeStaged;
         if (currentState?.selectedFile) {
-          if (currentState.selectedFileChange) {
+          if (selectedFile) {
             // If viewing unstaged but file no longer has unstaged changes, switch to staged
             if (
               currentState.isSelectedFileChangeStaged === false &&
-              !currentState.selectedFileChange.hasUnstaged &&
-              currentState.selectedFileChange.hasStaged
+              !selectedFile.hasUnstaged &&
+              selectedFile.hasStaged
             ) {
               newIsSelectedFileChangeStaged = true;
             }
             // If viewing staged but file no longer has staged changes, switch to unstaged
             else if (
               currentState.isSelectedFileChangeStaged === true &&
-              !currentState.selectedFileChange.hasStaged &&
-              currentState.selectedFileChange.hasUnstaged
+              !selectedFile.hasStaged &&
+              selectedFile.hasUnstaged
             ) {
               newIsSelectedFileChangeStaged = false;
             }
@@ -437,7 +439,7 @@ export const Workspace = () => {
               newIsSelectedFileChangeStaged
             ),
             isAddedUnstagedAfterDeletedStaged(
-              currentState.selectedFileChange,
+              selectedFile,
               newIsSelectedFileChangeStaged ?? false,
               currentState.files
             )
