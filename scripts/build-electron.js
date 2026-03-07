@@ -9,7 +9,7 @@ const rootDir = join(__dirname, "..");
 const isDev = process.env.NODE_ENV === "development";
 
 build({
-  entryPoints: [join(rootDir, "electron/main.ts"), join(rootDir, "electron/preload.ts")],
+  entryPoints: [join(rootDir, "electron", "main.ts"), join(rootDir, "electron", "preload.ts")],
   bundle: true,
   platform: "node",
   target: "node18",
