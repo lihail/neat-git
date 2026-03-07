@@ -814,7 +814,7 @@ export const getDiff = async (
       diffArgs.push(`-U${contextLines}`, `HEAD:${oldFilePath}`, `:${filepath}`);
     } else if (!staged && oldFilePath) {
       // Unstaged rename
-      diffArgs.push(`-U${contextLines}`, `HEAD:${oldFilePath}`, filepath);
+      diffArgs.push(`-U${contextLines}`, "--no-index", "--find-renames", "-", filepath);
     } else if (staged && !oldFilePath) {
       // Staged non rename change
       diffArgs.push("--cached", `-U${contextLines}`, "--", filepath);
@@ -823,7 +823,19 @@ export const getDiff = async (
       diffArgs.push(`-U${contextLines}`, "--", filepath);
     }
 
-    const diffResult = await execGitCommand(diffArgs, repoPath);
+    let diffStdin = "";
+    if (!staged && oldFilePath) {
+      // Unstaged rename - Fetch the old file content from the index (since it's deleted from
+      // disk) to pipe as stdin to git diff, allowing comparison against the new unstaged file
+      const showArgs = ["show", `:${oldFilePath}`];
+      const showResult = await execGitCommand(showArgs, repoPath);
+      if (!showResult.success) {
+        return [];
+      }
+      diffStdin = showResult.output;
+    }
+
+    const diffResult = await execGitCommand(diffArgs, repoPath, undefined, diffStdin);
     if (!diffResult.success) {
       return [];
     }
