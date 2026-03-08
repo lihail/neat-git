@@ -9,20 +9,20 @@
 - Added right-click context menu for changed files
 - Added app settings drawer
 - Added an option to support NeatGit with a one-time donation
-- Fixed bug where global git config was ignored
-- Fixed bug where clicking stash would not stash new (untracked) files
+- Fixed a bug where global git config was ignored
+- Fixed a bug where clicking stash would not stash new (untracked) files
 - Changed app icons
 - Pushing local branch with no tracking remote now automatically configures the upstream branch, instead of showing an error toast
-- Fixed bug where renaming a local branch with tracking remote would cause push to fail with an error toast
-- Fixed bug where user preferences did not save on abrupt app close
+- Fixed a bug where renaming a local branch with tracking remote would cause push to fail with an error toast
+- Fixed a bug where user preferences did not save on abrupt app close
 - Changed "stash and switch branch" toast (that appeared when trying to switch branch with uncommitted changes) to dialog, essentially fixing some bugs with the toast behavior
-- Fixed bug where new files ignored by git would still display in the unstaged changes section
-- Fixed bug where creating a stash would use default user name and email instead of the real git user identity
-- Fixed bug where staged files would sometimes show all lines as changed in the diff viewer due to line ending normalization issues
-- Fixed bug where renaming a local branch would prevent the remote "behind" commit indicator count from appearing after a fetch
-- Fixed bug where the diff was not shown for an unstaged added file when a deletion of the same file was staged
-- Fixed bug where the app would sometimes switch to the other version of a file (staged <-> unstaged) when the app window regained focus
-- Fixed bug where clicking "Browse" or "Create" in main app menu would open two folder selection dialogs
+- Fixed a bug where new files ignored by git would still display in the unstaged changes section
+- Fixed a bug where creating a stash would use default user name and email instead of the real git user identity
+- Fixed a bug where staged files would sometimes show all lines as changed in the diff viewer due to line ending normalization issues
+- Fixed a bug where renaming a local branch would prevent the remote "behind" commit indicator count from appearing after a fetch
+- Fixed a bug where the diff was not shown for an unstaged added file when a deletion of the same file was staged
+- Fixed a bug where the app would sometimes switch to the other version of a file (staged <-> unstaged) when the app window regained focus
+- Fixed a bug where clicking "Browse" or "Create" in main app menu would open two folder selection dialogs
 - Stash button is now disabled when there are no uncommitted changes
 - Switching to a tab of a repo that does not exist on disk now automatically closes that tab with a proper error toast
 - Improved button styling and consistency across the app
@@ -57,27 +57,27 @@
 
 - Added ability to stage and unstage individual lines and hunks in diff viewer for modified files
 - App now includes its own git, no longer requires git to be installed on the user's machine
-- Fixed bug where all stashes of current repo would be deleted upon app start
+- Fixed a bug where all stashes of current repo would be deleted upon app start
 - Added rename/move detection for files, showing an appropriate icon and the old and new file paths
-- Fixed bug where new files in new folders would show truncated paths and throw an error when clicked
-- Fixed bug where clicking "Rename" in the rename branch dialog would do nothing
-- Fixed bug where user setup dialog on first app use would not appear
-- Fixed bug where file status icons in staged and unstaged sections would show the same status, even when the actual changes differed
-- Fixed bug where diff viewer would show stale content when selected file was removed from the changed files list
-- Fixed bug where regaining window focus would reload the diff with the wrong view mode or staged/unstaged section if those settings had changed since the window last lost focus
-- Fixed bug where diff viewer would show identical line numbers for consecutive deleted lines in hunks and full view modes
+- Fixed a bug where new files in new folders would show truncated paths and throw an error when clicked
+- Fixed a bug where clicking "Rename" in the rename branch dialog would do nothing
+- Fixed a bug where user setup dialog on first app use would not appear
+- Fixed a bug where file status icons in staged and unstaged sections would show the same status, even when the actual changes differed
+- Fixed a bug where diff viewer would show stale content when selected file was removed from the changed files list
+- Fixed a bug where regaining window focus would reload the diff with the wrong view mode or staged/unstaged section if those settings had changed since the window last lost focus
+- Fixed a bug where diff viewer would show identical line numbers for consecutive deleted lines in hunks and full view modes
 - App now starts maximized instead of centered in a small window
 - Added validation for existing branch names in the create branch dialog
 - Added the ability to select text in diff viewer
-- Fixed bug where full and hunks diff viewer modes would show only one line number column instead of two (old and new) side by side
-- Fixed bug where diff viewer would display trailing newline changes at end of files
-- Fixed bug where "Lines x-y" separator in hunks view would scroll horizontally with the content when word wrap is off
+- Fixed a bug where full and hunks diff viewer modes would show only one line number column instead of two (old and new) side by side
+- Fixed a bug where diff viewer would display trailing newline changes at end of files
+- Fixed a bug where "Lines x-y" separator in hunks view would scroll horizontally with the content when word wrap is off
 - Added sticky vertical scrolling behavior to "Lines x-y" separators in hunks view
 - Added timeout for git operations to prevent indefinite hangs
 - Added "Save credentials" checkbox when cloning a repository with credentials embedded in the URL
-- Fixed bug where diff viewer would force full mode for staged added files with unstaged changes
+- Fixed a bug where diff viewer would force full mode for staged added files with unstaged changes
 - Improved styling consistency across diff viewer section headers (hunks and split view modes)
-- Fixed bug where stored keychain credentials could be used as fallback when user-provided credentials failed authentication
+- Fixed a bug where stored keychain credentials could be used as fallback when user-provided credentials failed authentication
 - Fixed "Save credentials" checkbox not working when authenticating during clone operations - credentials are now properly saved when the option is selected
 - Close tab and open repository buttons are now disabled during remote operations
 - Added a message when the app is opened in a browser instead of Electron, preventing usage in the browser
@@ -122,17 +122,17 @@
 - For local branches tracking a remote, added remote branch name in the branch right-click menu
 - For local branches tracking a remote, added "Copy Remote Branch Name" option in the branch right-click menu
 - Fixed overflow bug where long branch names would escape their container instead of truncating with ellipsis
-- Fixed bug preventing checkout of remote-only branches when double-clicking them
+- Fixed a bug preventing checkout of remote-only branches when double-clicking them
 - Added cloud/laptop icons to local branches for branches tracking/not tracking a remote respectively
 - Added "Stash & Switch" option when attempting to switch branches with uncommitted changes
 - Improved error message formatting for better readability
 - Removed wrong cursor pointer in diff viewer
 - Removed stage/unstage buttons from diff viewer as they were not working. A permanent, working alternative will be added in the future
 - Moved "New Branch" button from local branches section to the top right action buttons
-- Fixed bug where files with partially staged changes would only appear in either the staged or unstaged changes sections
+- Fixed a bug where files with partially staged changes would only appear in either the staged or unstaged changes sections
 - Fixed few bugs in diff viewer and staged/unstaged changes sections
-- Fixed bug where a repo's toasts would show even after switching repo
-- Fixed bug where file status icons would shrink when file paths are long in staged/unstaged changes sections
+- Fixed a bug where a repo's toasts would show even after switching repo
+- Fixed a bug where file status icons would shrink when file paths are long in staged/unstaged changes sections
 - Removed staged file count display from Commit button
 - Improved UX in staged/unstaged changes sections: stage/unstage buttons now only appear on hover and take no space when hidden, improving readability in long file paths
 - Added app version display to welcome screen
