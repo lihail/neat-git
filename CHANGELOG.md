@@ -1,6 +1,57 @@
 # Changelog
 
-## 0.3.0 - Feb. 8, 2026
+## v0.4.0 - March 8, 2026
+
+### User-facing changes
+
+- Added a Windows version
+- Added rename detection for unstaged changes
+- Added right-click context menu for changed files
+- Added app settings drawer
+- Added an option to support NeatGit with a one-time donation
+- Fixed bug where global git config was ignored
+- Fixed bug where clicking stash would not stash new (untracked) files
+- Changed app icons
+- Pushing local branch with no tracking remote now automatically configures the upstream branch, instead of showing an error toast
+- Fixed bug where renaming a local branch with tracking remote would cause push to fail with an error toast
+- Fixed bug where user preferences did not save on abrupt app close
+- Changed "stash and switch branch" toast (that appeared when trying to switch branch with uncommitted changes) to dialog, essentially fixing some bugs with the toast behavior
+- Fixed bug where new files ignored by git would still display in the unstaged changes section
+- Fixed bug where creating a stash would use default user name and email instead of the real git user identity
+- Fixed bug where staged files would sometimes show all lines as changed in the diff viewer due to line ending normalization issues
+- Fixed bug where renaming a local branch would prevent the remote "behind" commit indicator count from appearing after a fetch
+- Fixed bug where the diff was not shown for an unstaged added file when a deletion of the same file was staged
+- Fixed bug where the app would sometimes switch to the other version of a file (staged <-> unstaged) when the app window regained focus
+- Fixed bug where clicking "Browse" or "Create" in main app menu would open two folder selection dialogs
+- Stash button is now disabled when there are no uncommitted changes
+- Switching to a tab of a repo that does not exist on disk now automatically closes that tab with a proper error toast
+- Improved button styling and consistency across the app
+- Redesigned branch right-click context menu
+- Ensured file changes are displayed in alphabetical order in staged and unstaged sections
+- Changed tooltip location in the rename branch dialog
+- Moved commit button icon to appear after the text
+- Changed wording in SSH trust dialog
+
+### Behind the scenes
+
+- Updated the readme file
+- Added electron backend debug configuration
+- Fixed incorrect types across the codebase
+- Moved shared components from `src/components/git` folder to a new `src/components/common` folder and gave them generic names
+- Removed unnecessary window object checks
+- Added linter to run before build
+- Added a script, `generate-icons`, for generating icons to all platforms using a single source file `icon.svg`
+- Improved components on click handler types
+- Added content security policy to the app
+- Changed linter rule
+- Added linter rule
+- Refactored code
+- Corrected wording in previous changelog file entries
+- Fixed typo in component name
+- Removed duplicate interfaces
+- Removed unused file
+
+## v0.3.0 - Feb. 8, 2026
 
 ### User-facing changes
 
