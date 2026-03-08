@@ -253,7 +253,7 @@ export const isAddedUnstagedAfterDeletedStaged = (
   }
   const hasStagedDeletion = allFiles.some(
     (otherFile) =>
-      otherFile.path === file.path && otherFile.hasStaged && otherFile.status === "deleted"
+      otherFile.path === file.path && otherFile.hasStaged && otherFile.stagedStatus === "deleted"
   );
   return hasStagedDeletion;
 };

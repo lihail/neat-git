@@ -18,7 +18,7 @@ export type FileChangeStatus =
 
 export interface FileChange {
   path: string;
-  status?: FileChangeStatus;
+  stagedStatus?: FileChangeStatus;
   unstagedStatus?: FileChangeStatus;
   hasStaged: boolean;
   hasUnstaged: boolean;

@@ -18,7 +18,7 @@ interface ChangedFileListProps {
 }
 
 const getStatusIcon = (file: FileChange, isStaged: boolean) => {
-  const effectiveStatus = !isStaged && file.unstagedStatus ? file.unstagedStatus : file.status;
+  const effectiveStatus = !isStaged && file.unstagedStatus ? file.unstagedStatus : file.stagedStatus;
 
   if (effectiveStatus === "modified" || effectiveStatus === "renamed-modified") {
     return <FileEdit className="h-4 w-4 flex-shrink-0 text-git-modify" />;
@@ -62,7 +62,7 @@ export const ChangedFileList = ({
   }, [files, discardingFile]);
 
   const getIsUntracked = (file: FileChange) =>
-    file.status === "added" && !isStaged && !file.hasStaged;
+    file.stagedStatus === "added" && !isStaged && !file.hasStaged;
 
   return (
     <div className="space-y-1">

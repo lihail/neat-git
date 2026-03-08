@@ -43,7 +43,7 @@ export const DiffViewer = ({
   onUnstageHunk,
 }: DiffViewerProps) => {
   const filePath = selectedFile?.path;
-  const fileStatus = isStaged ? selectedFile?.status : selectedFile?.unstagedStatus;
+  const fileStatus = isStaged ? selectedFile?.stagedStatus : selectedFile?.unstagedStatus;
 
   const language = useMemo(() => {
     return filePath ? detectLanguageFromPath(filePath) : "text";
@@ -97,7 +97,7 @@ export const DiffViewer = ({
   const canPartiallyStage =
     !isStaged && selectedFile.hasUnstaged && selectedFile.unstagedStatus === "modified";
   const canPartiallyUnstage =
-    isStaged && selectedFile.hasStaged && selectedFile.status === "modified";
+    isStaged && selectedFile.hasStaged && selectedFile.stagedStatus === "modified";
 
   return (
     <div className="flex h-full flex-col relative">

@@ -50,8 +50,8 @@ const isValidUnstagedRenameFilePair = (
   pair: { oldFilePath: string; newFilePath: string },
   stagedFiles: Map<string, FileChange>
 ) => {
-  const stagedOldFileStatus = stagedFiles.get(pair.oldFilePath)?.status;
-  const stagedNewFileStatus = stagedFiles.get(pair.newFilePath)?.status;
+  const stagedOldFileStatus = stagedFiles.get(pair.oldFilePath)?.stagedStatus;
+  const stagedNewFileStatus = stagedFiles.get(pair.newFilePath)?.stagedStatus;
   return !(stagedOldFileStatus === "deleted" || stagedNewFileStatus === "added");
 };
 
@@ -67,12 +67,12 @@ export const parseOrdinaryChange = (line: string): FileChange => {
   const hasStaged = stagedCode !== ".";
   const hasUnstaged = unstagedCode !== ".";
 
-  const status = getStatusByCode(stagedCode);
+  const stagedStatus = getStatusByCode(stagedCode);
   const unstagedStatus = getStatusByCode(unstagedCode);
 
   return {
     path: filePath,
-    status,
+    stagedStatus,
     unstagedStatus,
     hasStaged,
     hasUnstaged,
@@ -94,14 +94,14 @@ export const parseRenameChange = (line: string): FileChange => {
   const hasUnstaged = unstagedCode !== ".";
 
   const similarity = parseInt(renameInfo.slice(1), 10);
-  const status =
+  const stagedStatus =
     similarity === RENAME_SIMILARITY_PERFECT_SCORE ? "renamed-only" : "renamed-modified";
 
   const unstagedStatus = getStatusByCode(unstagedCode);
 
   return {
     path: newPath,
-    status,
+    stagedStatus,
     unstagedStatus,
     hasStaged,
     hasUnstaged,

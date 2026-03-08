@@ -571,7 +571,7 @@ export const Workspace = () => {
 
     try {
       const fileData = currentState.files.find((f) => f.path === filePath);
-      const wasUntracked = fileData?.status === "added" && !fileData?.hasStaged;
+      const wasUntracked = fileData?.stagedStatus === "added" && !fileData?.hasStaged;
 
       await discardChanges(repoPath, filePath, oldFilePath);
 
