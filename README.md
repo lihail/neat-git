@@ -112,7 +112,7 @@ git tag <version>
 git push origin <version>
 ```
 
-4. Create a release the [releases page](https://github.com/lihail/neat-git/releases) and upload the built applications to that page.
+4. Create a release and upload the built applications in the [releases page](https://github.com/lihail/neat-git/releases).
 
 ## Issues & Bugs
 
