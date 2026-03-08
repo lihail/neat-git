@@ -220,8 +220,7 @@ export const validateCloneUrl = (url: string): string | null => {
   return null;
 };
 
-export const getFileChangeOldPath = (files: FileChange[], filePath: string, isStaged: boolean) => {
-  const file = files.find((f) => f.path === filePath);
+export const getFileChangeOldPath = (file: FileChange, isStaged: boolean) => {
   return isStaged ? file?.stagedOldPath : file?.unstagedOldPath;
 };
 

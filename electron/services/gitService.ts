@@ -1565,7 +1565,7 @@ const buildPatchForLines = (diffOutput: string, linesToInclude: DiffLineInfo[]):
 
 export const stageLines = async (repoPath: string, filepath: string, lines: DiffLineInfo[]) => {
   try {
-    if (lines.length === 0 || lines.every((l) => l.type === "context")) {
+    if (lines.length === 0 || lines.every((line) => line.type === "context")) {
       return { success: true };
     }
 
