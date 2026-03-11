@@ -4,6 +4,7 @@ const WORD_WRAP_STORAGE_KEY = "neatgit_word_wrap";
 const DIFF_VIEWER_MODE_STORAGE_KEY = "neatgit_diff_viewer_mode";
 const GIT_SETUP_COMPLETE_STORAGE_KEY = "neatgit_git_setup_complete";
 const THEME_STORAGE_KEY = "neatgit_theme";
+const LICENSE_KEY_STORAGE_KEY = "neatgit_license_key";
 
 export const getTabs = (): string | null => {
   return localStorage.getItem(TABS_STORAGE_KEY);
@@ -59,4 +60,12 @@ export const getTheme = (): string | null => {
 
 export const saveTheme = (themeId: string): void => {
   localStorage.setItem(THEME_STORAGE_KEY, themeId);
+};
+
+export const getLicenseKey = (): string | null => {
+  return localStorage.getItem(LICENSE_KEY_STORAGE_KEY);
+};
+
+export const saveLicenseKey = (key: string): void => {
+  localStorage.setItem(LICENSE_KEY_STORAGE_KEY, key);
 };

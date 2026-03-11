@@ -95,6 +95,9 @@ export default {
             height: "0",
           },
         },
+        "border-beam": {
+          "100%": { "offset-distance": "100%" },
+        },
         "bounce-up": {
           "0%, 100%": {
             transform: "translateY(0)",
@@ -107,6 +110,7 @@ export default {
         },
       },
       animation: {
+        "border-beam": "border-beam var(--duration)s infinite linear",
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "bounce-up": "bounce-up 1s infinite",
