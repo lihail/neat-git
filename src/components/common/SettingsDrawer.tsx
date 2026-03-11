@@ -1,14 +1,14 @@
 import { useState, useEffect, useRef } from "react";
-import { HandHeart, Settings } from "lucide-react";
+import { HandHeart, Settings, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-// import {
-//   Select,
-//   SelectContent,
-//   SelectItem,
-//   SelectTrigger,
-//   SelectValue,
-// } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Sheet,
@@ -18,21 +18,23 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { getGlobalConfig, setGlobalConfig } from "@/lib/git";
-// import { themes, type ThemeId } from "@/lib/themes";
-// import { useTheme } from "@/hooks/useTheme";
+import { themes, type ThemeId } from "@/lib/themes";
+import { useTheme } from "@/hooks/useTheme";
 import { toast } from "@/components/ui/toaster";
 import { SupportNeatGitDialog } from "./SupportNeatGitDialog";
 import { Separator } from "../ui/separator";
+import { useLicenseActivation } from "@/hooks/useLicenseActivation";
 
-// const themeIds = Object.keys(themes) as ThemeId[];
+const themeIds = Object.keys(themes) as ThemeId[];
 
 export const SettingsDrawer = () => {
   const [open, setOpen] = useState(false);
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
-  // const { themeId, setThemeId } = useTheme();
+  const { themeId, setThemeId } = useTheme();
   const [loading, setLoading] = useState(false);
   const [isSupportNeatGitDialogOpen, setIsSupportNeatGitDialogOpen] = useState(false);
+  const { isActivated } = useLicenseActivation();
 
   // Track the last saved values to avoid unnecessary writes
   const savedValues = useRef({ userName: "", userEmail: "" });
@@ -116,30 +118,6 @@ export const SettingsDrawer = () => {
           </SheetHeader>
 
           <div className="mt-6 space-y-8 flex-1 overflow-y-auto">
-            {/* <section className="space-y-3">
-              <h3 className="text-sm font-medium text-foreground">Appearance</h3>
-              <div className="flex items-center gap-4">
-                <label
-                  htmlFor="theme-select"
-                  className="text-sm text-muted-foreground w-[35%] flex-shrink-0"
-                >
-                  Color Theme
-                </label>
-                <Select value={themeId} onValueChange={(value) => setThemeId(value as ThemeId)}>
-                  <SelectTrigger id="theme-select" className="h-8 flex-1 text-sm">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {themeIds.map((id) => (
-                      <SelectItem key={id} value={id}>
-                        {themes[id].name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </section> */}
-
             <section className="space-y-3">
               <div>
                 <h3 className="text-sm font-medium text-foreground">Git Configuration</h3>
@@ -189,6 +167,42 @@ export const SettingsDrawer = () => {
                 </div>
               )}
             </section>
+
+            {isActivated && (
+              <section className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-medium text-foreground">Appearance</h3>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Sparkles className="h-3.5 w-3.5 text-primary" />
+                    </TooltipTrigger>
+                    <TooltipContent side="right" className="text-xs">
+                      Premium feature
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+                <div className="flex items-center gap-4">
+                  <label
+                    htmlFor="theme-select"
+                    className="text-sm text-muted-foreground w-[35%] flex-shrink-0"
+                  >
+                    Color Theme
+                  </label>
+                  <Select value={themeId} onValueChange={(value) => setThemeId(value as ThemeId)}>
+                    <SelectTrigger id="theme-select" className="h-8 flex-1 text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {themeIds.map((id) => (
+                        <SelectItem key={id} value={id}>
+                          {themes[id].name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </section>
+            )}
           </div>
           <section className="mt-auto">
             <Separator orientation="horizontal" className="w-full" />
