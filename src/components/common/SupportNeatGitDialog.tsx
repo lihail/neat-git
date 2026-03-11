@@ -9,7 +9,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Check, ChevronDown, Sparkles } from "lucide-react";
-import { useLicenseActivation } from "@/hooks/useLicenseActivation";
+import { useLicenseActivation } from "@/contexts/licenseActivation";
 import { Card } from "../ui/card";
 import { Separator } from "../ui/separator";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../ui/collapsible";
@@ -42,6 +42,11 @@ export const SupportNeatGitDialog = ({ open, onOpenChange }: SupportNeatGitDialo
     }
   }, [open]);
 
+  const onActivationSuccess = () => {
+    onOpenChange(false);
+    toast.success("NeatGit activated - thank you for your support!");
+  };
+
   const handleClaimAndActivate = async () => {
     const trimmed = transactionId.trim();
     if (!trimmed) {
@@ -59,14 +64,14 @@ export const SupportNeatGitDialog = ({ open, onOpenChange }: SupportNeatGitDialo
     }
 
     const activateResult = await activateLicense(claimResult.licenseKey);
-    setIsClaiming(false);
 
     if (activateResult.success) {
-      onOpenChange(false);
-      toast.success("NeatGit activated — thank you for your support!");
+      onActivationSuccess();
     } else {
       setClaimError(activateResult.error ?? "Failed to activate. Please try again.");
     }
+
+    setIsClaiming(false);
   };
 
   const handleActivateWithKey = async () => {
@@ -78,12 +83,13 @@ export const SupportNeatGitDialog = ({ open, onOpenChange }: SupportNeatGitDialo
     setIsActivating(true);
     setActivationError(null);
     const result = await activateLicense(trimmed);
+
     if (result.success) {
-      onOpenChange(false);
-      toast.success("NeatGit activated — thank you for your support!");
+      onActivationSuccess();
     } else {
       setActivationError(result.error ?? "Invalid license key.");
     }
+
     setIsActivating(false);
   };
 

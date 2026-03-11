@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Workspace } from "./pages/Workspace";
 import { BrowserNotSupportedScreen } from "@/components/common/BrowserNotSupportedScreen";
 import { ThemeProvider } from "@/hooks/useTheme";
+import { LicenseActivationProvider } from "@/contexts/licenseActivation";
 
 const queryClient = new QueryClient();
 
@@ -16,12 +17,14 @@ export const App = () => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Workspace />
-        </TooltipProvider>
-      </ThemeProvider>
+      <LicenseActivationProvider>
+        <ThemeProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Workspace />
+          </TooltipProvider>
+        </ThemeProvider>
+      </LicenseActivationProvider>
     </QueryClientProvider>
   );
 };

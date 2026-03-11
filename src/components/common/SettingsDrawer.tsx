@@ -23,7 +23,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { toast } from "@/components/ui/toaster";
 import { SupportNeatGitDialog } from "./SupportNeatGitDialog";
 import { Separator } from "../ui/separator";
-import { useLicenseActivation } from "@/hooks/useLicenseActivation";
+import { useLicenseActivation } from "@/contexts/licenseActivation";
 
 const themeIds = Object.keys(themes) as ThemeId[];
 
