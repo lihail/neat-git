@@ -23,6 +23,7 @@
 - Fixed a bug where the diff was not shown for an unstaged added file when a deletion of the same file was staged
 - Fixed a bug where the app would sometimes switch to the other version of a file (staged <-> unstaged) when the app window regained focus
 - Fixed a bug where clicking "Browse" or "Create" in main app menu would open two folder selection dialogs
+- Changed colors across the app
 - Stash button is now disabled when there are no uncommitted changes
 - Switching to a tab of a repo that does not exist on disk now automatically closes that tab with a proper error toast
 - Improved button styling and consistency across the app
